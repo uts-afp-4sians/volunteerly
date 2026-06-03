@@ -1,0 +1,55 @@
+import Foundation
+
+// MARK: - Mock Client
+
+/// Swap LiveHTTPClient for MockHTTPClient during development.
+/// Register path → Encodable response pairs in `handlers`.
+final class MockHTTPClient: HTTPClient {
+    static let shared = MockHTTPClient()
+
+    /// Register mock responses: [path: Encodable]
+    var handlers: [String: Any] = [:]
+
+    private let decoder: JSONDecoder = {
+        let d = JSONDecoder()
+        d.dateDecodingStrategy = .iso8601
+        return d
+    }()
+    private let encoder = JSONEncoder()
+
+    func get<T: Decodable>(_ path: String) async throws -> T {
+        try resolve(path)
+    }
+
+    func post<B: Encodable, T: Decodable>(_ path: String, body: B) async throws -> T {
+        try resolve(path)
+    }
+
+    func put<B: Encodable, T: Decodable>(_ path: String, body: B) async throws -> T {
+        try resolve(path)
+    }
+
+    func delete(_ path: String) async throws {
+        // no-op for mock
+    }
+
+    private func resolve<T: Decodable>(_ path: String) throws -> T {
+        // Match exact path or prefix (e.g. "/programs/1" matches "/programs/")
+        let key = handlers.keys.first { path.hasPrefix($0) || path == $0 } ?? path
+        guard let value = handlers[key] else {
+            throw APIError.serverError(404)
+        }
+        let data = try encoder.encode(AnyEncodable(value))
+        return try decoder.decode(T.self, from: data)
+    }
+}
+
+// Utility to encode `Any` that is `Encodable`
+private struct AnyEncodable: Encodable {
+    let value: Any
+    init(_ value: Any) { self.value = value }
+    func encode(to encoder: Encoder) throws {
+        guard let encodable = value as? Encodable else { return }
+        try encodable.encode(to: encoder)
+    }
+}

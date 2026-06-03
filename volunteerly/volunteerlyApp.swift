@@ -9,9 +9,19 @@ import SwiftUI
 
 @main
 struct volunteerlyApp: App {
+    @State private var router = AppRouter()
+
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            Group {
+                switch router.route {
+                case .splash:     SplashView()
+                case .auth:       AuthFlowView()
+                case .onboarding: OnboardingView()
+                case .main:       MainTabView()
+                }
+            }
+            .environment(router)
         }
     }
 }
