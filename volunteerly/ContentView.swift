@@ -2,7 +2,7 @@
 //  ContentView.swift
 //  volunteerly
 //
-//  Created by Ara Lee on 3/6/2026...
+//  Created by Ara Lee and Joanna Lun on 3/6/2026....
 //
 
 import SwiftUI
