@@ -1,5 +1,6 @@
 import SwiftUI
 import Combine
+import MapKit
 
 struct PostProgramView: View {
     @Environment(\.dismiss) private var dismiss
@@ -8,20 +9,17 @@ struct PostProgramView: View {
     @State private var name: String = ""
     @State private var selectedCategoryId: Int = 1
     @State private var description: String = ""
-    @State private var bannerImageURL: String = "https://images.unsplash.com/photo-1544027993-37dbfe43562a"
-    @State private var maxVolunteers: Int = 10
+    @State private var maxVolunteers: Int = 7 // Default to 7 like mockup
     
     // Details
-    @State private var selectedRegion: String = "New South Wales (NSW)"
-    @State private var startDate: Date = Date()
-    @State private var endDate: Date = Date().addingTimeInterval(3600 * 3)
+    @State private var selectedRegion: String = ""
+    @State private var startDate: Date = Calendar.current.date(bySettingHour: 12, minute: 0, second: 0, of: Date()) ?? Date()
+    @State private var endDate: Date = Calendar.current.date(bySettingHour: 13, minute: 0, second: 0, of: Date()) ?? Date().addingTimeInterval(3600)
     @State private var isAllDay: Bool = false
-    @State private var selectedRepeat: String = "None"
+    @State private var selectedRepeat: String = "Every Week" // Matches "Every Week" from mockup
     
     // UI State
     @State private var showAlert = false
-    
-    // Sheet State
     @State private var activeSheet: SheetType? = nil
     
     enum SheetType: Identifiable {
@@ -32,83 +30,39 @@ struct PostProgramView: View {
         var id: Self { self }
     }
 
-    private var formattedDate: String {
-        let formatter = DateFormatter()
-        if isAllDay {
-            formatter.dateFormat = "MMM d, yyyy"
-            return formatter.string(from: startDate)
-        } else {
-            formatter.dateFormat = "MMM d, h:mm a"
-            return formatter.string(from: startDate)
-        }
-    }
-
     var body: some View {
-        ScrollView {
-            VStack(spacing: 24) {
-                bannerSelector
-                
-                VStack(alignment: .leading, spacing: 20) {
-                    // Program Name
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("Program Name *")
-                            .font(.bodyStrong)
-                            .foregroundStyle(Theme.textPrimary)
-                        
-                        HStack {
-                            Image(systemName: "pencil")
-                                .foregroundStyle(Theme.textSecondary)
-                            TextField("Enter program name", text: $name)
-                                .textFieldStyle(.plain)
-                                .font(.bodyText)
-                        }
-                        .padding(.horizontal, 16)
-                        .frame(height: 48)
-                        .background(Color(.systemGray6))
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                    }
-                    
-                    // Category selection
+        VStack(spacing: 0) {
+            // Full width progress bar matching the mockup (roughly 30% progress)
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Rectangle()
+                        .fill(Color(.systemGray6))
+                    Rectangle()
+                        .fill(Color.secondaryBlue)
+                        .frame(width: geo.size.width * 0.3)
+                }
+            }
+            .frame(height: 4)
+            
+            ScrollView {
+                VStack(alignment: .leading, spacing: 24) {
+                    // 1. Category
                     categorySelectorRow
                     
-                    // Description
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("Description *")
-                            .font(.bodyStrong)
-                            .foregroundStyle(Theme.textPrimary)
-                        TextBox(
-                            text: $description,
-                            placeholder: "Describe the activities, requirements, and goal of this program...",
-                            height: 120
-                        )
-                    }
+                    // 2. Program Name
+                    nameField
                     
-                    // Stepper for max volunteers
-                    volunteersStepper
+                    // 3. Description
+                    descriptionField
                     
-                    // Detail Rows (opening bottom sheets)
-                    VStack(spacing: 12) {
-                        Button {
-                            activeSheet = .location
-                        } label: {
-                            DetailRow(title: "Location", value: selectedRegion, icon: "mappin.and.ellipse")
-                        }
-                        .buttonStyle(.plain)
-
-                        Button {
-                            activeSheet = .date
-                        } label: {
-                            DetailRow(title: "Date & Time", value: formattedDate, icon: "calendar")
-                        }
-                        .buttonStyle(.plain)
-
-                        Button {
-                            activeSheet = .repeatSelection
-                        } label: {
-                            DetailRow(title: "Repeat", value: selectedRepeat, icon: "repeat")
-                        }
-                        .buttonStyle(.plain)
-                    }
+                    // 4. Location
+                    locationInput
+                    
+                    // 5. Date
+                    dateSection
+                    
+                    // 6. Volunteers Needed
+                    volunteersSliderSection
                     
                     // Submit button
                     Button {
@@ -129,12 +83,25 @@ struct PostProgramView: View {
                     .padding(.top, 10)
                 }
                 .padding(.horizontal, 20)
+                .padding(.vertical, 24)
             }
-            .padding(.vertical, 16)
+            .background(Color.pageBackground)
         }
-        .background(Color.pageBackground)
-        .navigationTitle("Post a Program")
+        .navigationTitle("Post Program")
         .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(true)
+        .toolbar(.visible, for: .navigationBar)
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button {
+                    dismiss()
+                } label: {
+                    Image(systemName: "arrow.left")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(.primary)
+                }
+            }
+        }
         .alert("Program Posted!", isPresented: $showAlert) {
             Button("OK") {
                 dismiss()
@@ -180,61 +147,20 @@ struct PostProgramView: View {
 
     // MARK: - Subviews
 
-    private var bannerSelector: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Banner Image")
-                .font(.bodyStrong)
+    private func requiredLabel(_ text: String) -> some View {
+        HStack(spacing: 2) {
+            Text(text)
+                .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(Theme.textPrimary)
-                .padding(.horizontal, 20)
-            
-            Button {
-                let mockImages = [
-                    "https://images.unsplash.com/photo-1544027993-37dbfe43562a",
-                    "https://images.unsplash.com/photo-1593113598332-cd288d649433",
-                    "https://images.unsplash.com/photo-1488521787991-ed7bbaae773c"
-                ]
-                if let index = mockImages.firstIndex(of: bannerImageURL) {
-                    bannerImageURL = mockImages[(index + 1) % mockImages.count]
-                } else {
-                    bannerImageURL = mockImages[0]
-                }
-            } label: {
-                ZStack {
-                    AsyncImage(url: URL(string: bannerImageURL)) { image in
-                        image
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                    } placeholder: {
-                        Rectangle().fill(Color(.systemGray5))
-                    }
-                    .frame(height: 140)
-                    .frame(maxWidth: .infinity)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                    
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(.black.opacity(0.3))
-                    
-                    VStack(spacing: 6) {
-                        Image(systemName: "camera.fill")
-                            .font(.system(size: 24))
-                            .foregroundStyle(.white)
-                        Text("Tap to Change Photo")
-                            .font(.buttonLabel)
-                            .foregroundStyle(.white)
-                    }
-                }
-                .frame(height: 140)
-                .padding(.horizontal, 20)
-            }
-            .buttonStyle(.plain)
+            Text("*")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(Color.fieldError)
         }
     }
 
     private var categorySelectorRow: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Select Category *")
-                .font(.bodyStrong)
-                .foregroundStyle(Theme.textPrimary)
+            requiredLabel("Category")
             
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
@@ -251,95 +177,180 @@ struct PostProgramView: View {
         }
     }
 
-    private var volunteersStepper: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Max Volunteers *")
-                    .font(.bodyStrong)
-                    .foregroundStyle(Theme.textPrimary)
-                Text("Ensure enough capacity")
-                    .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
-            }
+    private var nameField: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            requiredLabel("Program name")
             
-            Spacer()
-            
-            HStack(spacing: 20) {
-                Button {
-                    if maxVolunteers > 1 { maxVolunteers -= 1 }
-                } label: {
-                    Image(systemName: "minus.circle.fill")
-                        .font(.system(size: 28))
-                        .foregroundStyle(maxVolunteers > 1 ? Color.brand : .secondary)
-                }
-                .buttonStyle(.plain)
-                
-                Text("\(maxVolunteers)")
-                    .font(.system(size: 20, weight: .bold))
-                    .frame(width: 36, alignment: .center)
-                
-                Button {
-                    maxVolunteers += 1
-                } label: {
-                    Image(systemName: "plus.circle.fill")
-                        .font(.system(size: 28))
-                        .foregroundStyle(Color.brand)
-                }
-                .buttonStyle(.plain)
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .background(Color(.systemGray6))
-            .clipShape(Capsule())
+            TextField("Enter program name", text: $name)
+                .textFieldStyle(.plain)
+                .font(.bodyText)
+                .padding(.horizontal, 16)
+                .frame(height: 48)
+                .background(Color(.systemGray6))
+                .clipShape(RoundedRectangle(cornerRadius: 12))
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 16)
-        .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(Theme.border, lineWidth: 1)
-        )
     }
-}
 
-// MARK: - Detail Row Component
-
-struct DetailRow: View {
-    let title: String
-    let value: String
-    let icon: String
-    
-    var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: icon)
-                .font(.system(size: 18))
-                .foregroundStyle(Color.brand)
-                .frame(width: 24)
-            
-            Text(title)
-                .font(.bodyText)
-                .foregroundStyle(Theme.textPrimary)
-            
-            Spacer()
-            
-            Text(value)
-                .font(.bodyText)
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-            
-            Image(systemName: "chevron.right")
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(.secondary)
+    private var descriptionField: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            requiredLabel("Description")
+            TextBox(
+                text: $description,
+                placeholder: "Describe the activities, requirements, and goal of this program...",
+                height: 120
+            )
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 16)
-        .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(Theme.border, lineWidth: 1)
-        )
+    }
+
+    private var locationInput: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            requiredLabel("Location")
+            
+            Button {
+                activeSheet = .location
+            } label: {
+                HStack {
+                    Image(systemName: "magnifyingglass")
+                        .foregroundStyle(Theme.textSecondary)
+                    Text(selectedRegion.isEmpty ? "Search" : selectedRegion)
+                        .font(.bodyText)
+                        .foregroundStyle(selectedRegion.isEmpty ? Theme.textSecondary : Theme.textPrimary)
+                    Spacer()
+                }
+                .padding(.horizontal, 16)
+                .frame(height: 42)
+                .background(Color(.systemGray6), in: Capsule())
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    private func formatDateOnly(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "d MMM yyyy"
+        return formatter.string(from: date)
+    }
+
+    private func formatTimeOnly(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "h:mm a"
+        return formatter.string(from: date)
+    }
+
+    private var dateSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            requiredLabel("Date")
+            
+            VStack(spacing: 12) {
+                // Starts row
+                Button {
+                    activeSheet = .date
+                } label: {
+                    HStack {
+                        Text("Starts")
+                            .font(.bodyText)
+                            .foregroundStyle(Theme.textPrimary)
+                        Spacer()
+                        Text(formatDateOnly(startDate))
+                            .font(.system(size: 14, weight: .medium))
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(Color(.systemGray5), in: RoundedRectangle(cornerRadius: 6))
+                        Text(formatTimeOnly(startDate))
+                            .font(.system(size: 14, weight: .medium))
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(Color(.systemGray5), in: RoundedRectangle(cornerRadius: 6))
+                    }
+                }
+                .buttonStyle(.plain)
+                
+                Divider()
+                
+                // Ends row
+                Button {
+                    activeSheet = .date
+                } label: {
+                    HStack {
+                        Text("Ends")
+                            .font(.bodyText)
+                            .foregroundStyle(Theme.textPrimary)
+                        Spacer()
+                        Text(formatDateOnly(endDate))
+                            .font(.system(size: 14, weight: .medium))
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(Color(.systemGray5), in: RoundedRectangle(cornerRadius: 6))
+                        Text(formatTimeOnly(endDate))
+                            .font(.system(size: 14, weight: .medium))
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(Color(.systemGray5), in: RoundedRectangle(cornerRadius: 6))
+                    }
+                }
+                .buttonStyle(.plain)
+                
+                Divider()
+                
+                // Repeat row
+                Button {
+                    activeSheet = .repeatSelection
+                } label: {
+                    HStack {
+                        Text("Repeat")
+                            .font(.bodyText)
+                            .foregroundStyle(Theme.textPrimary)
+                        Spacer()
+                        Text(selectedRepeat)
+                            .font(.bodyText)
+                            .foregroundStyle(.secondary)
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(16)
+            .background(Color(.systemGray6))
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+        }
+    }
+
+    private var volunteersSliderSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            requiredLabel("Volunteers Needed")
+            
+            VStack(spacing: 8) {
+                // Value indicator above the slider
+                Text("\(Int(maxVolunteers))")
+                    .font(.bodyStrong)
+                    .foregroundStyle(Color.secondaryBlue)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                
+                Slider(
+                    value: Binding(
+                        get: { Double(maxVolunteers) },
+                        set: { maxVolunteers = Int(round($0)) }
+                    ),
+                    range: 1...10
+                )
+                
+                HStack {
+                    Text("1")
+                        .font(.system(size: 12, weight: .semibold))
+                        .italic()
+                        .foregroundStyle(Theme.textSecondary)
+                    Spacer()
+                    Text("10")
+                        .font(.system(size: 12, weight: .semibold))
+                        .italic()
+                        .foregroundStyle(Theme.textSecondary)
+                }
+                .padding(.horizontal, 8)
+            }
+            .padding(.vertical, 12)
+        }
     }
 }
 
@@ -373,7 +384,6 @@ struct RegionSelectionView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Subtle locating progress bar
             if locationManager.isLocating {
                 HStack(spacing: 8) {
                     ProgressView()
@@ -599,8 +609,6 @@ struct RepeatSelectionView: View {
 
 // MARK: - Location Manager
 
-import CoreLocation
-
 @MainActor
 class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
     private let manager = CLLocationManager()
@@ -646,30 +654,34 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
             return
         }
         
-        let geocoder = CLGeocoder()
-        geocoder.reverseGeocodeLocation(location) { [weak self] placemarks, error in
-            Task { @MainActor in
-                self?.isLocating = false
-                if let error = error {
-                    self?.errorMessage = "Failed to detect: \(error.localizedDescription)"
-                    return
-                }
-                
-                if let placemark = placemarks?.first {
-                    let state = placemark.administrativeArea ?? ""
-                    let locality = placemark.locality ?? placemark.subLocality ?? ""
-                    
-                    if !locality.isEmpty && !state.isEmpty {
-                        self?.currentLocationName = "\(locality), \(state)"
-                    } else if !state.isEmpty {
-                        self?.currentLocationName = state
-                    } else if let country = placemark.country {
-                        self?.currentLocationName = country
-                    } else {
-                        self?.errorMessage = "Could not resolve location."
-                    }
-                }
+        Task { @MainActor [weak self] in
+            guard let self = self else { return }
+            
+            // MapKit's MKReverseGeocodingRequest to replace deprecated CLGeocoder
+            guard let request = MKReverseGeocodingRequest(location: location) else {
+                self.errorMessage = "Could not create geocoding request."
+                self.isLocating = false
+                return
             }
+            do {
+                let mapItems = try await request.mapItems
+                if let mapItem = mapItems.first {
+                    if let short = mapItem.address?.shortAddress, !short.isEmpty {
+                        self.currentLocationName = short
+                    } else if let city = mapItem.addressRepresentations?.cityName, !city.isEmpty {
+                        self.currentLocationName = city
+                    } else if let full = mapItem.address?.fullAddress, !full.isEmpty {
+                        self.currentLocationName = full
+                    } else {
+                        self.errorMessage = "Could not resolve location."
+                    }
+                } else {
+                    self.errorMessage = "No location items found."
+                }
+            } catch {
+                self.errorMessage = "Error detecting location: \(error.localizedDescription)"
+            }
+            self.isLocating = false
         }
     }
     
