@@ -11,9 +11,9 @@ TEST_DB_PATH = Path(tempfile.gettempdir()) / f"volunteerly-api-tests-{os.getpid(
 os.environ["PROJECT_ENV"] = "staging"
 os.environ["DATABASE_URL"] = f"sqlite+aiosqlite:///{TEST_DB_PATH}"
 
-from src.lib.database import Base, engine  # noqa: E402
+from src.lib import all_models  # noqa: E402, F401  (registers all models on Base)
+from src.lib.database import Base, async_session_factory, engine  # noqa: E402
 from src.main import app  # noqa: E402
-from src.users import model as _users_model  # noqa: E402, F401
 
 if TEST_DB_PATH.exists():
     TEST_DB_PATH.unlink()
@@ -21,12 +21,20 @@ if TEST_DB_PATH.exists():
 
 @pytest.fixture(autouse=True)
 def reset_database() -> Iterator[None]:
-    """Reset the SQLite test database for each test."""
+    """Reset the SQLite test database and re-seed MockData for each test."""
 
     async def _reset() -> None:
         async with engine.begin() as connection:
             await connection.run_sync(Base.metadata.drop_all)
             await connection.run_sync(Base.metadata.create_all)
+        # Seed the same fixtures the iOS app mocks so contract tests can assert
+        # the live API returns identical payloads.
+        from scripts.seed import _rows
+
+        async with async_session_factory() as session:
+            for row in _rows():
+                session.add(row)
+            await session.commit()
 
     asyncio.run(_reset())
     yield

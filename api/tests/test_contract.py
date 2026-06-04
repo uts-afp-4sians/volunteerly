@@ -1,0 +1,161 @@
+"""Contract tests: assert the live API matches the iOS mock contract.
+
+Field sets below mirror the `CodingKeys` in volunteerly/Core/Models/*.swift and
+the handlers registered in Core/Networking/MockData.swift.
+"""
+
+from fastapi.testclient import TestClient
+
+PROGRAM_KEYS = {
+    "program_id",
+    "creator_user_id",
+    "category_id",
+    "location_id",
+    "program_name",
+    "description",
+    "banner_image_url",
+    "start_datetime",
+    "end_datetime",
+    "max_volunteers",
+    "status",
+    "is_deleted",
+    "deleted_at",
+    "created_at",
+}
+
+
+def test_list_programs(client: TestClient) -> None:
+    res = client.get("/programs")
+    assert res.status_code == 200
+    body = res.json()
+    assert len(body) == 4
+    first = body[0]
+    assert set(first.keys()) == PROGRAM_KEYS
+    assert first["program_id"] == 1
+    assert first["program_name"] == "Centennial Park Tree Planting"
+    assert first["status"] == "open"
+    assert body[3]["status"] == "full"
+
+
+def test_get_program(client: TestClient) -> None:
+    res = client.get("/programs/1")
+    assert res.status_code == 200
+    assert set(res.json().keys()) == PROGRAM_KEYS
+    assert res.json()["program_id"] == 1
+
+
+def test_get_program_not_found(client: TestClient) -> None:
+    assert client.get("/programs/999").status_code == 404
+
+
+def test_datetimes_are_iso8601_with_timezone(client: TestClient) -> None:
+    # iOS decodes with .iso8601, which requires a timezone designator.
+    program = client.get("/programs/1").json()
+    assert program["start_datetime"] == "2026-07-01T08:00:00Z"
+    assert program["created_at"].endswith("Z")
+    assert program["deleted_at"] is None
+
+
+def test_list_categories(client: TestClient) -> None:
+    res = client.get("/categories")
+    assert res.status_code == 200
+    body = res.json()
+    assert len(body) == 8
+    assert set(body[0].keys()) == {"category_id", "category_name"}
+    assert body[0] == {"category_id": 1, "category_name": "Environment"}
+
+
+def test_list_keywords(client: TestClient) -> None:
+    res = client.get("/keywords")
+    assert res.status_code == 200
+    body = res.json()
+    assert len(body) == 3
+    assert set(body[0].keys()) == {"keyword_id", "category_id", "keyword_name"}
+    assert body[0] == {
+        "keyword_id": 1,
+        "category_id": 1,
+        "keyword_name": "Tree Planting",
+    }
+
+
+def test_get_user(client: TestClient) -> None:
+    res = client.get("/users/1")
+    assert res.status_code == 200
+    body = res.json()
+    assert set(body.keys()) == {
+        "user_id",
+        "email",
+        "is_deleted",
+        "deleted_at",
+        "created_at",
+    }
+    assert body["user_id"] == 1
+    assert body["email"] == "jane.doe@example.com"
+    assert body["is_deleted"] is False
+    assert body["deleted_at"] is None
+
+
+def test_get_user_profile(client: TestClient) -> None:
+    res = client.get("/users/1/profile")
+    assert res.status_code == 200
+    body = res.json()
+    assert set(body.keys()) == {
+        "user_id",
+        "first_name",
+        "last_name",
+        "date_of_birth",
+        "profile_image_url",
+        "occupation",
+        "goal_text",
+        "location_id",
+    }
+    assert body["first_name"] == "Jane"
+    assert body["last_name"] == "Doe"
+    assert body["location_id"] == 1
+
+
+def test_list_user_interests(client: TestClient) -> None:
+    res = client.get("/users/1/interests")
+    assert res.status_code == 200
+    body = res.json()
+    assert len(body) == 2
+    assert set(body[0].keys()) == {"user_id", "keyword_id"}
+    assert {row["keyword_id"] for row in body} == {1, 2}
+
+
+def test_list_program_keywords(client: TestClient) -> None:
+    res = client.get("/programs/1/keywords")
+    assert res.status_code == 200
+    body = res.json()
+    assert body == [{"program_id": 1, "keyword_id": 1}]
+
+
+def test_list_program_posts(client: TestClient) -> None:
+    res = client.get("/programs/1/posts")
+    assert res.status_code == 200
+    body = res.json()
+    assert len(body) == 2
+    assert set(body[0].keys()) == {
+        "post_id",
+        "program_id",
+        "author_user_id",
+        "title",
+        "body",
+        "created_at",
+    }
+    assert body[0]["title"] == "What should I bring?"
+
+
+def test_list_post_comments(client: TestClient) -> None:
+    res = client.get("/programs/1/posts/1/comments")
+    assert res.status_code == 200
+    body = res.json()
+    assert len(body) == 1
+    assert set(body[0].keys()) == {
+        "comment_id",
+        "post_id",
+        "author_user_id",
+        "body",
+        "created_at",
+    }
+    assert body[0]["comment_id"] == 1

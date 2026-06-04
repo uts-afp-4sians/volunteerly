@@ -6,9 +6,9 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from alembic import context
+from src.lib import all_models  # noqa: F401  (registers all models on Base)
 from src.lib.config import settings
 from src.lib.database import Base
-from src.users import model as users_model  # noqa: F401
 
 config = context.config
 

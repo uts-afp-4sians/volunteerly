@@ -157,6 +157,14 @@ async def readiness_check() -> dict[str, str]:
     return {"status": "ready"}
 
 
-# Register routers here as features are added, e.g.:
-# from src.programs.router import router as programs_router
-# app.include_router(programs_router, prefix="/api/programs", tags=["programs"])
+# Feature routers. Paths are root-level to match the iOS HTTPClient contract
+# (e.g. GET /programs, GET /users/{id}) — see Core/Networking/MockData.swift.
+from src.categories.router import router as categories_router  # noqa: E402
+from src.forum.router import router as forum_router  # noqa: E402
+from src.programs.router import router as programs_router  # noqa: E402
+from src.users.router import router as users_router  # noqa: E402
+
+app.include_router(programs_router)
+app.include_router(forum_router)
+app.include_router(users_router)
+app.include_router(categories_router)

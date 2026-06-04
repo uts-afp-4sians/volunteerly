@@ -57,6 +57,11 @@ test = "pytest tests/"
 cmd = "python scripts/gen_openapi.py"
 env = { PYTHONPATH = "." }
 
+# Seed the DB with MockData fixtures
+[tool.poe.tasks.seed]
+cmd = "python scripts/seed.py"
+env = { PYTHONPATH = "." }
+
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
