@@ -12,7 +12,7 @@ struct ProgramListView: View {
                 header
                 title
                 searchBar
-                additionalFiltersButton
+                additionalFilters
                 categoryRow
                 content
             }
@@ -74,9 +74,29 @@ struct ProgramListView: View {
         .padding(.horizontal, horizontalPadding)
     }
 
+    @ViewBuilder
+    private var additionalFilters: some View {
+        additionalFiltersButton
+            .overlay(alignment: .top) {
+                if showFilters {
+                    AdditionalFiltersPanel(
+                        maxDistance: $viewModel.maxDistance,
+                        memberCount: $viewModel.memberCount,
+                        distanceRange: viewModel.distanceRange,
+                        memberRange: viewModel.memberRange,
+                        onToggle: { withAnimation(.snappy) { showFilters = false } }
+                    )
+                    .shadow(color: .black.opacity(0.12), radius: 12, y: 4)
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+                }
+            }
+            .padding(.horizontal, horizontalPadding)
+            .zIndex(1)
+    }
+
     private var additionalFiltersButton: some View {
         Button {
-            showFilters.toggle()
+            withAnimation(.snappy) { showFilters = true }
         } label: {
             Text("Additional filters")
                 .font(.system(size: 14))
@@ -86,7 +106,6 @@ struct ProgramListView: View {
                 .background(Color(.systemGray6), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
         }
         .buttonStyle(.plain)
-        .padding(.horizontal, horizontalPadding)
     }
 
     private var categoryRow: some View {

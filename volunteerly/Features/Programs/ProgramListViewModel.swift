@@ -10,13 +10,28 @@ final class ProgramListViewModel {
     var searchQuery = ""
     var selectedCategoryId: Int?
 
+    // MARK: - Additional filters
+
+    /// Bounds for the "Additional filters" sliders.
+    let distanceRange: ClosedRange<Double> = 0...50    // km
+    let memberRange: ClosedRange<Double> = 0...100
+
+    /// Maximum distance in km. Stored for the UI; distance filtering is a no-op
+    /// until programs carry a distance / the device location is available.
+    var maxDistance: Double = 50
+    /// Upper bound on a program's volunteer capacity. Defaults to the top of the
+    /// range so nothing is filtered out until the user moves the slider.
+    var memberCount: Double = 100
+
     var filteredPrograms: [Program] {
         programs.filter { program in
             let matchesCategory = selectedCategoryId == nil || program.categoryId == selectedCategoryId
             let matchesSearch = searchQuery.isEmpty
                 || program.name.localizedCaseInsensitiveContains(searchQuery)
                 || program.description.localizedCaseInsensitiveContains(searchQuery)
-            return matchesCategory && matchesSearch
+            let matchesMembers = memberCount >= memberRange.upperBound
+                || Double(program.maxVolunteers) <= memberCount
+            return matchesCategory && matchesSearch && matchesMembers
         }
     }
 
