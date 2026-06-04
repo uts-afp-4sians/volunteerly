@@ -1,0 +1,912 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "volunteerly-api",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Health Check",
+        "description": "Detailed health check endpoint with service statuses.",
+        "operationId": "health_check_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health/live": {
+      "get": {
+        "summary": "Liveness Check",
+        "description": "Simple liveness probe.",
+        "operationId": "liveness_check_health_live_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Liveness Check Health Live Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "summary": "Readiness Check",
+        "description": "Readiness probe - checks if the app can serve traffic.",
+        "operationId": "readiness_check_health_ready_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Readiness Check Health Ready Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/programs": {
+      "get": {
+        "tags": [
+          "programs"
+        ],
+        "summary": "List Programs",
+        "operationId": "list_programs_programs_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProgramRead"
+                  },
+                  "type": "array",
+                  "title": "Response List Programs Programs Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/programs/{program_id}": {
+      "get": {
+        "tags": [
+          "programs"
+        ],
+        "summary": "Get Program",
+        "operationId": "get_program_programs__program_id__get",
+        "parameters": [
+          {
+            "name": "program_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Program Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProgramRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/programs/{program_id}/keywords": {
+      "get": {
+        "tags": [
+          "programs"
+        ],
+        "summary": "List Program Keywords",
+        "operationId": "list_program_keywords_programs__program_id__keywords_get",
+        "parameters": [
+          {
+            "name": "program_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Program Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProgramKeywordRead"
+                  },
+                  "title": "Response List Program Keywords Programs  Program Id  Keywords Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/programs/{program_id}/posts": {
+      "get": {
+        "tags": [
+          "forum"
+        ],
+        "summary": "List Program Posts",
+        "operationId": "list_program_posts_programs__program_id__posts_get",
+        "parameters": [
+          {
+            "name": "program_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Program Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ForumPostRead"
+                  },
+                  "title": "Response List Program Posts Programs  Program Id  Posts Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/programs/{program_id}/posts/{post_id}/comments": {
+      "get": {
+        "tags": [
+          "forum"
+        ],
+        "summary": "List Post Comments",
+        "operationId": "list_post_comments_programs__program_id__posts__post_id__comments_get",
+        "parameters": [
+          {
+            "name": "program_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Program Id"
+            }
+          },
+          {
+            "name": "post_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Post Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ForumCommentRead"
+                  },
+                  "title": "Response List Post Comments Programs  Program Id  Posts  Post Id  Comments Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/{user_id}": {
+      "get": {
+        "tags": [
+          "users"
+        ],
+        "summary": "Get User",
+        "operationId": "get_user_users__user_id__get",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "User Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/{user_id}/profile": {
+      "get": {
+        "tags": [
+          "users"
+        ],
+        "summary": "Get User Profile",
+        "operationId": "get_user_profile_users__user_id__profile_get",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "User Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserProfileRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/{user_id}/interests": {
+      "get": {
+        "tags": [
+          "users"
+        ],
+        "summary": "List User Interests",
+        "operationId": "list_user_interests_users__user_id__interests_get",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "User Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UserInterestRead"
+                  },
+                  "title": "Response List User Interests Users  User Id  Interests Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/categories": {
+      "get": {
+        "tags": [
+          "categories"
+        ],
+        "summary": "List Categories",
+        "operationId": "list_categories_categories_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProgramCategoryRead"
+                  },
+                  "type": "array",
+                  "title": "Response List Categories Categories Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/keywords": {
+      "get": {
+        "tags": [
+          "categories"
+        ],
+        "summary": "List Keywords",
+        "operationId": "list_keywords_keywords_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/KeywordRead"
+                  },
+                  "type": "array",
+                  "title": "Response List Keywords Keywords Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ForumCommentRead": {
+        "properties": {
+          "comment_id": {
+            "type": "integer",
+            "title": "Comment Id"
+          },
+          "post_id": {
+            "type": "integer",
+            "title": "Post Id"
+          },
+          "author_user_id": {
+            "type": "integer",
+            "title": "Author User Id"
+          },
+          "body": {
+            "type": "string",
+            "title": "Body"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "comment_id",
+          "post_id",
+          "author_user_id",
+          "body",
+          "created_at"
+        ],
+        "title": "ForumCommentRead",
+        "description": "Wire shape matching iOS `ForumComment`."
+      },
+      "ForumPostRead": {
+        "properties": {
+          "post_id": {
+            "type": "integer",
+            "title": "Post Id"
+          },
+          "program_id": {
+            "type": "integer",
+            "title": "Program Id"
+          },
+          "author_user_id": {
+            "type": "integer",
+            "title": "Author User Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "body": {
+            "type": "string",
+            "title": "Body"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "post_id",
+          "program_id",
+          "author_user_id",
+          "title",
+          "body",
+          "created_at"
+        ],
+        "title": "ForumPostRead",
+        "description": "Wire shape matching iOS `ForumPost`."
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "HealthResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "healthy",
+              "degraded",
+              "unhealthy"
+            ],
+            "title": "Status"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version",
+            "default": "0.1.0"
+          },
+          "services": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/ServiceStatus"
+            },
+            "type": "object",
+            "title": "Services"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "services"
+        ],
+        "title": "HealthResponse",
+        "description": "Health check response with detailed service statuses."
+      },
+      "KeywordRead": {
+        "properties": {
+          "keyword_id": {
+            "type": "integer",
+            "title": "Keyword Id"
+          },
+          "category_id": {
+            "type": "integer",
+            "title": "Category Id"
+          },
+          "keyword_name": {
+            "type": "string",
+            "title": "Keyword Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "keyword_id",
+          "category_id",
+          "keyword_name"
+        ],
+        "title": "KeywordRead",
+        "description": "Wire shape matching iOS `Keyword`."
+      },
+      "ProgramCategoryRead": {
+        "properties": {
+          "category_id": {
+            "type": "integer",
+            "title": "Category Id"
+          },
+          "category_name": {
+            "type": "string",
+            "title": "Category Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "category_id",
+          "category_name"
+        ],
+        "title": "ProgramCategoryRead",
+        "description": "Wire shape matching iOS `ProgramCategory`."
+      },
+      "ProgramKeywordRead": {
+        "properties": {
+          "program_id": {
+            "type": "integer",
+            "title": "Program Id"
+          },
+          "keyword_id": {
+            "type": "integer",
+            "title": "Keyword Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "program_id",
+          "keyword_id"
+        ],
+        "title": "ProgramKeywordRead",
+        "description": "Wire shape matching iOS `ProgramKeyword`."
+      },
+      "ProgramRead": {
+        "properties": {
+          "program_id": {
+            "type": "integer",
+            "title": "Program Id"
+          },
+          "creator_user_id": {
+            "type": "integer",
+            "title": "Creator User Id"
+          },
+          "category_id": {
+            "type": "integer",
+            "title": "Category Id"
+          },
+          "location_id": {
+            "type": "integer",
+            "title": "Location Id"
+          },
+          "program_name": {
+            "type": "string",
+            "title": "Program Name"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "banner_image_url": {
+            "title": "Banner Image Url",
+            "nullable": true,
+            "type": "string"
+          },
+          "start_datetime": {
+            "type": "string",
+            "title": "Start Datetime"
+          },
+          "end_datetime": {
+            "type": "string",
+            "title": "End Datetime"
+          },
+          "max_volunteers": {
+            "type": "integer",
+            "title": "Max Volunteers"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ProgramStatus"
+          },
+          "is_deleted": {
+            "type": "boolean",
+            "title": "Is Deleted"
+          },
+          "deleted_at": {
+            "title": "Deleted At",
+            "nullable": true,
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "program_id",
+          "creator_user_id",
+          "category_id",
+          "location_id",
+          "program_name",
+          "description",
+          "start_datetime",
+          "end_datetime",
+          "max_volunteers",
+          "status",
+          "is_deleted",
+          "created_at"
+        ],
+        "title": "ProgramRead",
+        "description": "Wire shape matching iOS `Program`."
+      },
+      "ProgramStatus": {
+        "type": "string",
+        "enum": [
+          "draft",
+          "open",
+          "full",
+          "closed",
+          "cancelled"
+        ],
+        "title": "ProgramStatus",
+        "description": "Lifecycle status of a program (wire values match iOS ProgramStatus)."
+      },
+      "ServiceStatus": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "healthy",
+              "unhealthy"
+            ],
+            "title": "Status"
+          },
+          "latency_ms": {
+            "title": "Latency Ms",
+            "nullable": true,
+            "type": "number"
+          },
+          "error": {
+            "title": "Error",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "ServiceStatus",
+        "description": "Individual service health status."
+      },
+      "UserInterestRead": {
+        "properties": {
+          "user_id": {
+            "type": "integer",
+            "title": "User Id"
+          },
+          "keyword_id": {
+            "type": "integer",
+            "title": "Keyword Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id",
+          "keyword_id"
+        ],
+        "title": "UserInterestRead",
+        "description": "Wire shape matching iOS `UserInterest`."
+      },
+      "UserProfileRead": {
+        "properties": {
+          "user_id": {
+            "type": "integer",
+            "title": "User Id"
+          },
+          "first_name": {
+            "type": "string",
+            "title": "First Name"
+          },
+          "last_name": {
+            "type": "string",
+            "title": "Last Name"
+          },
+          "date_of_birth": {
+            "title": "Date Of Birth",
+            "nullable": true,
+            "type": "string"
+          },
+          "profile_image_url": {
+            "title": "Profile Image Url",
+            "nullable": true,
+            "type": "string"
+          },
+          "occupation": {
+            "title": "Occupation",
+            "nullable": true,
+            "type": "string"
+          },
+          "goal_text": {
+            "title": "Goal Text",
+            "nullable": true,
+            "type": "string"
+          },
+          "location_id": {
+            "title": "Location Id",
+            "nullable": true,
+            "type": "integer"
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id",
+          "first_name",
+          "last_name"
+        ],
+        "title": "UserProfileRead",
+        "description": "Wire shape matching iOS `UserProfile`."
+      },
+      "UserRead": {
+        "properties": {
+          "user_id": {
+            "type": "integer",
+            "title": "User Id"
+          },
+          "email": {
+            "type": "string",
+            "title": "Email"
+          },
+          "is_deleted": {
+            "type": "boolean",
+            "title": "Is Deleted"
+          },
+          "deleted_at": {
+            "title": "Deleted At",
+            "nullable": true,
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id",
+          "email",
+          "is_deleted",
+          "created_at"
+        ],
+        "title": "UserRead",
+        "description": "Wire shape matching iOS `User`."
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}

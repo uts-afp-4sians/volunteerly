@@ -1,0 +1,81 @@
+[project]
+name = "volunteerly-api"
+version = "0.1.0"
+description = "Volunteerly FastAPI backend API"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi[standard]>=0.135.3",
+    "sqlalchemy>=2.0.49",
+    "alembic>=1.18.4",
+    "pydantic-settings>=2.13.1",
+    "structlog>=25.0.0",
+]
+
+[project.optional-dependencies]
+# Driver for connecting to Turso (libSQL). Pulls in `libsql-experimental`, a
+# Rust extension that compiles from source — only install where you actually
+# connect to Turso (production). Local dev/tests/Docker use stdlib pysqlite.
+#   uv sync --extra turso
+turso = ["sqlalchemy-libsql>=0.2.0"]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.15.9",
+    "poethepoet>=0.43.0",
+    "mypy>=1.20.0",
+    "pytest>=8.4.0",
+    "pytest-cov>=7.1.0",
+    "factory-boy>=3.3.3",
+]
+
+[tool.uv]
+managed = true
+
+[tool.poe.tasks]
+dev = "fastapi dev src/main.py --port 8000"
+start = "fastapi run src/main.py --port 8000"
+
+# Database
+migrate = "alembic upgrade head"
+"migrate-create" = "alembic revision --autogenerate -m"
+"migrate-down" = "alembic downgrade -1"
+
+# Linting & Formatting
+lint = "ruff check --fix --unsafe-fixes ."
+format = "ruff format ."
+check = ["lint", "format"]
+
+# Type checking
+typecheck = "mypy src"
+
+# All checks
+"all-checks" = ["check", "typecheck"]
+
+# Testing
+test = "pytest tests/"
+"test-cov" = "pytest tests/ --cov=src --cov-report=html"
+
+# OpenAPI
+[tool.poe.tasks.gen-openapi]
+cmd = "python scripts/gen_openapi.py"
+env = { PYTHONPATH = "." }
+
+# Seed the DB with MockData fixtures
+[tool.poe.tasks.seed]
+cmd = "python scripts/seed.py"
+env = { PYTHONPATH = "." }
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v"
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+plugins = ["pydantic.mypy"]
+exclude = ["alembic"]
+
+[[tool.mypy.overrides]]
+module = ["sqlalchemy_libsql.*"]
+ignore_missing_imports = true

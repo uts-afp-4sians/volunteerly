@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+
+# Local SQLite dev database
+*.db
+*.db-journal
+*.db-wal
+*.db-shm

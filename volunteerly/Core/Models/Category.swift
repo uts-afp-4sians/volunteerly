@@ -1,6 +1,6 @@
 import Foundation
 
-struct ProgramCategory: Identifiable, Codable {
+nonisolated struct ProgramCategory: Identifiable, Codable {
     let id: Int
     let name: String
 
@@ -10,7 +10,7 @@ struct ProgramCategory: Identifiable, Codable {
     }
 }
 
-struct Keyword: Identifiable, Codable {
+nonisolated struct Keyword: Identifiable, Codable {
     let id: Int
     let categoryId: Int
     let name: String
@@ -19,5 +19,16 @@ struct Keyword: Identifiable, Codable {
         case id = "keyword_id"
         case categoryId = "category_id"
         case name = "keyword_name"
+    }
+}
+
+/// Junction between a user and a keyword they're interested in (USER_INTEREST).
+nonisolated struct UserInterest: Codable {
+    let userId: Int
+    let keywordId: Int
+
+    enum CodingKeys: String, CodingKey {
+        case userId = "user_id"
+        case keywordId = "keyword_id"
     }
 }

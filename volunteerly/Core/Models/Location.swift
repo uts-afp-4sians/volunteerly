@@ -1,6 +1,6 @@
 import Foundation
 
-struct Location: Identifiable, Codable {
+nonisolated struct Location: Identifiable, Codable {
     let id: Int
     let city: String
     let stateRegion: String?

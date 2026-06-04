@@ -7,6 +7,7 @@ enum AppRoute {
     case main
 }
 
+@MainActor
 @Observable
 final class AppRouter {
     var route: AppRoute = .splash

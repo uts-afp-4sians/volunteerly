@@ -1,3 +1,5 @@
 xcuserdata/
 *.xcuserstate
 DerivedData/
+.build/
+.github/hooks/superset-notify.json

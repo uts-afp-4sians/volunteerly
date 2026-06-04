@@ -1,0 +1,15 @@
+[tools]
+python = "3.12"
+uv = "latest"
+
+[tasks]
+dev = { run = "uv run poe dev", description = "Start API server" }
+install = { run = "uv sync", description = "Install dependencies", sources = ["pyproject.toml", "uv.lock"] }
+lint = { run = "uv run poe lint", description = "Lint API" }
+format = { run = "uv run poe format", description = "Format API" }
+test = { run = "uv run poe test", description = "Test API" }
+typecheck = { run = "uv run poe typecheck", description = "Type check API" }
+migrate = { run = "uv run poe migrate", description = "Run DB migrations" }
+"migrate:create" = { run = "uv run poe migrate-create", description = "Create migration" }
+"gen:openapi" = { run = "uv run poe gen-openapi", description = "Generate OpenAPI schema" }
+seed = { run = "uv run poe seed", description = "Seed DB with MockData fixtures" }

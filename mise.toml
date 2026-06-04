@@ -1,0 +1,31 @@
+# Monorepo task orchestration.
+# `mise gen:api` regenerates the OpenAPI spec from the API, then the Swift client
+# for the mobile app from that spec. The spec (api/openapi.json) is the single
+# source of truth for both sides.
+
+[settings]
+# Required for the `spm:` backend that provides the swift-openapi-generator binary.
+experimental = true
+
+[tools]
+uv = "latest"
+turso = "latest"
+"spm:apple/swift-openapi-generator" = "1.12.2"
+
+[tasks."gen:api"]
+description = "Regenerate the OpenAPI spec (API) and the Swift client (mobile)"
+run = [
+  "cd api && mise run gen:openapi",
+  "mise run gen:api:mobile",
+]
+
+[tasks."gen:api:mobile"]
+description = "Generate the Swift OpenAPI client from api/openapi.json"
+sources = ["api/openapi.json", "openapi-generator-config.yaml"]
+outputs = ["volunteerly/Core/Networking/Generated/Client.swift", "volunteerly/Core/Networking/Generated/Types.swift"]
+run = """
+mkdir -p volunteerly/Core/Networking/Generated
+swift-openapi-generator generate api/openapi.json \
+  --config openapi-generator-config.yaml \
+  --output-directory volunteerly/Core/Networking/Generated
+"""
