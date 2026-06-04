@@ -86,7 +86,12 @@ struct PostProgramView: View {
                 .padding(.horizontal, 20)
                 .padding(.vertical, 24)
             }
+            .scrollDismissesKeyboard(.interactively)
             .background(Color.pageBackground)
+        }
+        .background(Color.pageBackground)
+        .onTapGesture {
+            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
         }
         .navigationTitle("Post Program")
         .navigationBarTitleDisplayMode(.inline)
