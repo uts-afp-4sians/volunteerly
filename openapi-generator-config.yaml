@@ -1,0 +1,17 @@
+# Config for swift-openapi-generator (run via `mise gen:api`).
+# Source of truth is api/openapi.json — regenerate, don't hand-edit the output.
+generate:
+  - types
+  - client
+accessModifier: internal
+
+# Only generate the parts of the API the app actually uses, to keep the output
+# small. `filter` includes the listed items plus any schemas they depend on.
+# Add a tag/path here as new screens start consuming new resources, then re-run
+# `mise gen:api`. Supported keys: tags, paths, operations, schemas.
+filter:
+  paths:
+    - /health
+  tags:
+    - programs
+    - categories

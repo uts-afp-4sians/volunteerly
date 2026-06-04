@@ -1,5 +1,5 @@
 {
-  "openapi": "3.1.0",
+  "openapi": "3.0.3",
   "info": {
     "title": "volunteerly-api",
     "version": "0.1.0"
@@ -674,15 +674,9 @@
             "title": "Description"
           },
           "banner_image_url": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Banner Image Url"
+            "title": "Banner Image Url",
+            "nullable": true,
+            "type": "string"
           },
           "start_datetime": {
             "type": "string",
@@ -704,15 +698,9 @@
             "title": "Is Deleted"
           },
           "deleted_at": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Deleted At"
+            "title": "Deleted At",
+            "nullable": true,
+            "type": "string"
           },
           "created_at": {
             "type": "string",
@@ -760,26 +748,14 @@
             "title": "Status"
           },
           "latency_ms": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Latency Ms"
+            "title": "Latency Ms",
+            "nullable": true,
+            "type": "number"
           },
           "error": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Error"
+            "title": "Error",
+            "nullable": true,
+            "type": "string"
           }
         },
         "type": "object",
@@ -823,59 +799,29 @@
             "title": "Last Name"
           },
           "date_of_birth": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Date Of Birth"
+            "title": "Date Of Birth",
+            "nullable": true,
+            "type": "string"
           },
           "profile_image_url": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Profile Image Url"
+            "title": "Profile Image Url",
+            "nullable": true,
+            "type": "string"
           },
           "occupation": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Occupation"
+            "title": "Occupation",
+            "nullable": true,
+            "type": "string"
           },
           "goal_text": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Goal Text"
+            "title": "Goal Text",
+            "nullable": true,
+            "type": "string"
           },
           "location_id": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Location Id"
+            "title": "Location Id",
+            "nullable": true,
+            "type": "integer"
           }
         },
         "type": "object",
@@ -902,15 +848,9 @@
             "title": "Is Deleted"
           },
           "deleted_at": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Deleted At"
+            "title": "Deleted At",
+            "nullable": true,
+            "type": "string"
           },
           "created_at": {
             "type": "string",
