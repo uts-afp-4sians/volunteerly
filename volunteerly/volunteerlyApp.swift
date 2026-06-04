@@ -11,6 +11,10 @@ import SwiftUI
 struct volunteerlyApp: App {
     @State private var router = AppRouter()
 
+    init() {
+        MockData.registerAll(in: MockHTTPClient.shared)
+    }
+
     var body: some Scene {
         WindowGroup {
             Group {
@@ -25,3 +29,4 @@ struct volunteerlyApp: App {
         }
     }
 }
+
