@@ -1,14 +1,303 @@
 import SwiftUI
+import MapKit
 
 struct ProgramDetailView: View {
     let programId: Int
 
+    @State private var viewModel: ProgramDetailViewModel
+    @State private var showJoinedConfirmation = false
+    @Environment(\.dismiss) private var dismiss
+
+    private let horizontalPadding: CGFloat = 20
+
+    init(programId: Int) {
+        self.programId = programId
+        _viewModel = State(initialValue: ProgramDetailViewModel(programId: programId))
+    }
+
     var body: some View {
-        Text("Coming soon")
-            .foregroundStyle(.secondary)
-            .navigationTitle("Program Detail")
-            .navigationBarTitleDisplayMode(.inline)
+        ZStack(alignment: .top) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+                    banner
+                    content
+                }
+            }
+            .ignoresSafeArea(edges: .top)
+
+            topControls
+                .padding(.horizontal, horizontalPadding)
+        }
+        .toolbar(.hidden, for: .navigationBar)
+        .task {
+            if viewModel.program == nil {
+                await viewModel.load()
+            }
+        }
+        .fullScreenCover(isPresented: $showJoinedConfirmation) {
+            if let program = viewModel.program {
+                ProgramJoinedView(
+                    program: program,
+                    goal: viewModel.category?.name,
+                    teammateCount: program.maxVolunteers,
+                    onMeetTheTeam: { showJoinedConfirmation = false },
+                    onFindOtherOpportunities: {
+                        showJoinedConfirmation = false
+                        dismiss()
+                    }
+                )
+            }
+        }
+    }
+
+    // MARK: - Banner
+
+    private var banner: some View {
+        ZStack {
+            AsyncImage(url: URL(string: viewModel.program?.bannerImageURL ?? "")) { image in
+                image.resizable().aspectRatio(contentMode: .fill)
+            } placeholder: {
+                Rectangle().fill(Color(.systemGray5))
+            }
+        }
+        .frame(height: 220)
+        .frame(maxWidth: .infinity)
+        .clipped()
+        .overlay(alignment: .bottom) {
+            pageDots
+                .padding(.bottom, 18)
+        }
+    }
+
+    private var pageDots: some View {
+        HStack(spacing: 17) {
+            ForEach(0..<3) { index in
+                Circle()
+                    .fill(.white.opacity(index == 0 ? 0.9 : 0.5))
+                    .frame(width: 9, height: 9)
+            }
+        }
+    }
+
+    private var topControls: some View {
+        HStack {
+            circleButton(systemName: "arrow.left") { dismiss() }
+
+            Spacer()
+
+            HStack(spacing: 17) {
+                circleButton(systemName: "square.and.arrow.up") {}
+                circleButton(systemName: viewModel.isBookmarked ? "bookmark.fill" : "bookmark") {
+                    viewModel.toggleBookmark()
+                }
+            }
+        }
+    }
+
+    private func circleButton(systemName: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: systemName)
+                .font(.system(size: 16, weight: .medium))
+                .foregroundStyle(.primary)
+                .frame(width: 32, height: 32)
+                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Content
+
+    @ViewBuilder
+    private var content: some View {
+        if let error = viewModel.errorMessage, viewModel.program == nil {
+            ContentUnavailableView("Couldn't load program", systemImage: "exclamationmark.triangle", description: Text(error))
+                .padding(.top, 60)
+        } else if let program = viewModel.program {
+            VStack(alignment: .leading, spacing: 32) {
+                heading(program)
+                locationSection
+                opportunitySection(program)
+                hostSection
+                participantGrid
+                joinButton
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, horizontalPadding)
+            .padding(.top, 20)
+            .padding(.bottom, 40)
+        } else {
+            ProgressView()
+                .frame(maxWidth: .infinity)
+                .padding(.top, 60)
+        }
+    }
+
+    private func heading(_ program: Program) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(program.name)
+                .font(.system(size: 30, weight: .bold))
+                .foregroundStyle(.primary)
+            Text(program.description)
+                .font(.system(size: 16))
+                .foregroundStyle(.primary)
+        }
+    }
+
+    // MARK: Location
+
+    private var locationSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Location")
+                    .font(.system(size: 24, weight: .bold))
+                Text(viewModel.location?.displayName ?? "Location to be announced")
+                    .font(.system(size: 16))
+                    .foregroundStyle(.primary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            map
+        }
+    }
+
+    @ViewBuilder
+    private var map: some View {
+        if let coordinate = locationCoordinate {
+            Map(initialPosition: .region(MKCoordinateRegion(
+                center: coordinate,
+                latitudinalMeters: 800,
+                longitudinalMeters: 800
+            ))) {
+                Marker(viewModel.location?.city ?? "", coordinate: coordinate)
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 179)
+            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .allowsHitTesting(false)
+        } else {
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(Color(.systemGray5))
+                .frame(height: 179)
+                .overlay(
+                    Image(systemName: "map")
+                        .font(.system(size: 28))
+                        .foregroundStyle(.secondary)
+                )
+        }
+    }
+
+    private var locationCoordinate: CLLocationCoordinate2D? {
+        guard let lat = viewModel.location?.latitude,
+              let lon = viewModel.location?.longitude else { return nil }
+        return CLLocationCoordinate2D(latitude: lat, longitude: lon)
+    }
+
+    // MARK: Upcoming opportunity
+
+    private func opportunitySection(_ program: Program) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            divider
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Upcoming volunteer opportunities")
+                        .font(.system(size: 16))
+                        .foregroundStyle(Color(red: 0, green: 0x76 / 255, blue: 1)) // #0076FF
+                    Text("\(dayText(program.startDatetime))\n\(timeRange(program))")
+                        .font(.system(size: 16))
+                        .foregroundStyle(.primary)
+                }
+                Spacer(minLength: 12)
+                Text("Occurs every \(weekdayShort(program.startDatetime))")
+                    .font(.system(size: 16))
+                    .foregroundStyle(.tertiary)
+                    .multilineTextAlignment(.trailing)
+            }
+            .padding(.vertical, 16)
+            divider
+        }
+    }
+
+    // MARK: About host
+
+    private var hostSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("About Host")
+                .font(.system(size: 24, weight: .bold))
+            HStack(spacing: 16) {
+                AsyncImage(url: URL(string: viewModel.host?.profileImageURL ?? "")) { image in
+                    image.resizable().aspectRatio(contentMode: .fill)
+                } placeholder: {
+                    Circle().fill(Color(.systemGray5))
+                }
+                .frame(width: 63, height: 63)
+                .clipShape(Circle())
+
+                Text(viewModel.host?.fullName ?? "User name")
+                    .font(.system(size: 16))
+                    .foregroundStyle(.primary)
+            }
+            divider
+        }
+    }
+
+    // MARK: Participants
+
+    /// Placeholder participant avatars. Real participant data isn't wired yet,
+    /// so this mirrors the design's avatar grid using the program's capacity.
+    private var participantGrid: some View {
+        let count = min(viewModel.program?.maxVolunteers ?? 0, 8)
+        let columns = Array(repeating: GridItem(.flexible(), spacing: 18, alignment: .leading), count: 5)
+        return LazyVGrid(columns: columns, alignment: .leading, spacing: 18) {
+            ForEach(0..<count, id: \.self) { _ in
+                Circle()
+                    .fill(Color(.systemGray5))
+                    .frame(width: 56, height: 56)
+            }
+        }
+    }
+
+    // MARK: Join
+
+    private var joinButton: some View {
+        Button {
+            withAnimation(.snappy) { viewModel.toggleJoin() }
+            if viewModel.isJoined { showJoinedConfirmation = true }
+        } label: {
+            Text(viewModel.isJoined ? "Joined" : "Join")
+                .font(.system(size: 16, weight: viewModel.isJoined ? .semibold : .regular))
+                .foregroundStyle(viewModel.isJoined ? Color.accentColor : .primary)
+                .frame(maxWidth: .infinity)
+                .frame(height: 42)
+                .background(Color(.systemGray6), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Helpers
+
+    private var divider: some View {
+        Rectangle()
+            .fill(Color(.separator))
+            .frame(height: 1)
+    }
+
+    private func dayText(_ date: Date) -> String {
+        date.formatted(.dateTime.weekday(.wide).day().month(.abbreviated).year())
+    }
+
+    private func timeRange(_ program: Program) -> String {
+        let start = program.startDatetime.formatted(date: .omitted, time: .shortened)
+        let end = program.endDatetime.formatted(date: .omitted, time: .shortened)
+        return "\(start) - \(end)"
+    }
+
+    private func weekdayShort(_ date: Date) -> String {
+        date.formatted(.dateTime.weekday(.abbreviated))
     }
 }
 
-#Preview { ProgramDetailView(programId: 1) }
+#Preview {
+    let _ = MockData.registerAll(in: MockHTTPClient.shared)
+    return NavigationStack {
+        ProgramDetailView(programId: 1)
+    }
+}
