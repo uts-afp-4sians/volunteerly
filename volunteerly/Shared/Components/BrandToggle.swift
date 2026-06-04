@@ -8,17 +8,17 @@ import SwiftUI
 struct BrandToggle: View {
     @Binding var isOn: Bool
 
-    private let trackWidth: CGFloat = 100
-    private let trackHeight: CGFloat = 50
+    private let trackWidth: CGFloat = 102
+    private let trackHeight: CGFloat = 53
     private let knobSize: CGFloat = 40
-    private let inset: CGFloat = 15
+    private let inset: CGFloat = 10
 
     var body: some View {
         Button {
             isOn.toggle()
         } label: {
             RoundedRectangle(cornerRadius: 30, style: .continuous)
-                .fill(isOn ? Color.brand : Color(.systemGray4))
+                .fill(isOn ? Color.brand : Color(red: 0.87, green: 0.87, blue: 0.87))
                 .frame(width: trackWidth, height: trackHeight)
                 .overlay(alignment: isOn ? .trailing : .leading) {
                     Circle()
