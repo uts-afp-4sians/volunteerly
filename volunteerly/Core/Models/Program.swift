@@ -76,3 +76,14 @@ struct ProgramBookmark: Codable {
         case bookmarkedAt = "bookmarked_at"
     }
 }
+
+/// Junction tagging a program with a keyword (PROGRAM_KEYWORD).
+struct ProgramKeyword: Codable {
+    let programId: Int
+    let keywordId: Int
+
+    enum CodingKeys: String, CodingKey {
+        case programId = "program_id"
+        case keywordId = "keyword_id"
+    }
+}

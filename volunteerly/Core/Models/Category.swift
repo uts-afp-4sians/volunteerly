@@ -21,3 +21,14 @@ struct Keyword: Identifiable, Codable {
         case name = "keyword_name"
     }
 }
+
+/// Junction between a user and a keyword they're interested in (USER_INTEREST).
+struct UserInterest: Codable {
+    let userId: Int
+    let keywordId: Int
+
+    enum CodingKeys: String, CodingKey {
+        case userId = "user_id"
+        case keywordId = "keyword_id"
+    }
+}

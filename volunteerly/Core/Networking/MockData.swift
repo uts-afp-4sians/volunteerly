@@ -37,6 +37,17 @@ enum MockData {
     // MARK: Category & Keywords
     static let category = ProgramCategory(id: 1, name: "Environment")
 
+    static let categories: [ProgramCategory] = [
+        ProgramCategory(id: 1, name: "Environment"),
+        ProgramCategory(id: 2, name: "Community"),
+        ProgramCategory(id: 3, name: "Education"),
+        ProgramCategory(id: 4, name: "Health"),
+        ProgramCategory(id: 5, name: "Animals"),
+        ProgramCategory(id: 6, name: "Seniors"),
+        ProgramCategory(id: 7, name: "Food"),
+        ProgramCategory(id: 8, name: "Arts")
+    ]
+
     static let keywords: [Keyword] = [
         Keyword(id: 1, categoryId: 1, name: "Tree Planting"),
         Keyword(id: 2, categoryId: 1, name: "Beach Cleanup"),
@@ -76,7 +87,51 @@ enum MockData {
             isDeleted: false,
             deletedAt: nil,
             createdAt: .now
+        ),
+        Program(
+            id: 3,
+            creatorUserId: 1,
+            categoryId: 3,
+            locationId: 1,
+            name: "After-School Reading Club",
+            description: "Help local primary students build confidence by reading together once a week.",
+            bannerImageURL: "https://picsum.photos/seed/prog3/800/400",
+            startDatetime: ISO8601DateFormatter().date(from: "2026-07-08T15:30:00Z")!,
+            endDatetime: ISO8601DateFormatter().date(from: "2026-07-08T17:00:00Z")!,
+            maxVolunteers: 12,
+            status: .open,
+            isDeleted: false,
+            deletedAt: nil,
+            createdAt: .now
+        ),
+        Program(
+            id: 4,
+            creatorUserId: 1,
+            categoryId: 6,
+            locationId: 1,
+            name: "Senior Tech Support Drop-In",
+            description: "Spend an afternoon helping seniors get comfortable with their phones and laptops.",
+            bannerImageURL: "https://picsum.photos/seed/prog4/800/400",
+            startDatetime: ISO8601DateFormatter().date(from: "2026-07-20T13:00:00Z")!,
+            endDatetime: ISO8601DateFormatter().date(from: "2026-07-20T16:00:00Z")!,
+            maxVolunteers: 8,
+            status: .full,
+            isDeleted: false,
+            deletedAt: nil,
+            createdAt: .now
         )
+    ]
+
+    // MARK: User Interests (USER_INTEREST junction)
+    static let userInterests: [UserInterest] = [
+        UserInterest(userId: 1, keywordId: 1),
+        UserInterest(userId: 1, keywordId: 2)
+    ]
+
+    // MARK: Program Keywords (PROGRAM_KEYWORD junction)
+    static let programKeywords: [ProgramKeyword] = [
+        ProgramKeyword(programId: 1, keywordId: 1),
+        ProgramKeyword(programId: 2, keywordId: 2)
     ]
 
     // MARK: Participation
@@ -125,12 +180,17 @@ enum MockData {
             "/programs":            programs,
             "/programs/1":          programs[0],
             "/programs/2":          programs[1],
+            "/programs/3":          programs[2],
+            "/programs/4":          programs[3],
             "/users/1":             user,
             "/users/1/profile":     userProfile,
             "/programs/1/posts":    forumPosts,
             "/programs/1/posts/1/comments": forumComments,
-            "/categories":          [category],
-            "/keywords":            keywords
+            "/categories":          categories,
+            "/keywords":            keywords,
+            "/users/1/interests":   userInterests,
+            "/programs/1/keywords": programKeywords,
+            "/programs/2/keywords": [programKeywords[1]]
         ]
     }
 }

@@ -38,8 +38,11 @@ final class MockHTTPClient: HTTPClient {
     }
 
     private func resolve<T: Decodable>(_ path: String) throws -> T {
-        // Match exact path or prefix (e.g. "/programs/1" matches "/programs/")
-        let key = handlers.keys.first { path.hasPrefix($0) || path == $0 } ?? path
+        // Match the most specific (longest) registered key that the path matches,
+        // so nested routes like "/users/1/interests" win over "/users/1".
+        let key = handlers.keys
+            .filter { path == $0 || path.hasPrefix($0) }
+            .max(by: { $0.count < $1.count }) ?? path
         guard let value = handlers[key] else {
             throw APIError.serverError(404)
         }
