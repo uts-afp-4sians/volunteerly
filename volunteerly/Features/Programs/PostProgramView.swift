@@ -1,6 +1,7 @@
 import SwiftUI
 import Combine
 import MapKit
+import CoreLocation
 
 struct PostProgramView: View {
     @Environment(\.dismiss) private var dismiss
