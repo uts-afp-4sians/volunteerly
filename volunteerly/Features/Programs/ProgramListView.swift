@@ -3,8 +3,6 @@ import SwiftUI
 struct ProgramListView: View {
     @State private var viewModel = ProgramListViewModel()
     @State private var showFilters = false
-    @State private var showPostProgram = false
-
     private let horizontalPadding: CGFloat = 20
 
     var body: some View {
@@ -34,18 +32,14 @@ struct ProgramListView: View {
             }
 
             // Floating Action Button (FAB)
-            Button {
-                showPostProgram = true
+            NavigationLink {
+                PostProgramView()
             } label: {
                 Image(systemName: "plus")
             }
             .buttonStyle(FABButtonStyle())
             .padding(.trailing, 20)
             .padding(.bottom, 20)
-        }
-        .sheet(isPresented: $showPostProgram) {
-            PostProgramView()
-                .presentationDragIndicator(.visible)
         }
     }
 

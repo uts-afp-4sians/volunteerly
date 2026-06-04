@@ -44,135 +44,126 @@ struct PostProgramView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(spacing: 24) {
-                    bannerSelector
+        ScrollView {
+            VStack(spacing: 24) {
+                bannerSelector
+                
+                VStack(alignment: .leading, spacing: 20) {
+                    // Program Name
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Program Name *")
+                            .font(.bodyStrong)
+                            .foregroundStyle(Theme.textPrimary)
+                        
+                        HStack {
+                            Image(systemName: "pencil")
+                                .foregroundStyle(Theme.textSecondary)
+                            TextField("Enter program name", text: $name)
+                                .textFieldStyle(.plain)
+                                .font(.bodyText)
+                        }
+                        .padding(.horizontal, 16)
+                        .frame(height: 48)
+                        .background(Color(.systemGray6))
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                    }
                     
-                    VStack(alignment: .leading, spacing: 20) {
-                        // Program Name
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text("Program Name *")
-                                .font(.bodyStrong)
-                                .foregroundStyle(Theme.textPrimary)
-                            
-                            HStack {
-                                Image(systemName: "pencil")
-                                    .foregroundStyle(Theme.textSecondary)
-                                TextField("Enter program name", text: $name)
-                                    .textFieldStyle(.plain)
-                                    .font(.bodyText)
-                            }
-                            .padding(.horizontal, 16)
-                            .frame(height: 48)
-                            .background(Color(.systemGray6))
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                        }
-                        
-                        // Category selection
-                        categorySelectorRow
-                        
-                        // Description
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text("Description *")
-                                .font(.bodyStrong)
-                                .foregroundStyle(Theme.textPrimary)
-                            TextBox(
-                                text: $description,
-                                placeholder: "Describe the activities, requirements, and goal of this program...",
-                                height: 120
-                            )
-                        }
-                        
-                        // Stepper for max volunteers
-                        volunteersStepper
-                        
-                        // Detail Rows (opening bottom sheets)
-                        VStack(spacing: 12) {
-                            Button {
-                                activeSheet = .location
-                            } label: {
-                                DetailRow(title: "Location", value: selectedRegion, icon: "mappin.and.ellipse")
-                            }
-                            .buttonStyle(.plain)
-
-                            Button {
-                                activeSheet = .date
-                            } label: {
-                                DetailRow(title: "Date & Time", value: formattedDate, icon: "calendar")
-                            }
-                            .buttonStyle(.plain)
-
-                            Button {
-                                activeSheet = .repeatSelection
-                            } label: {
-                                DetailRow(title: "Repeat", value: selectedRepeat, icon: "repeat")
-                            }
-                            .buttonStyle(.plain)
-                        }
-                        
-                        // Submit button
+                    // Category selection
+                    categorySelectorRow
+                    
+                    // Description
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Description *")
+                            .font(.bodyStrong)
+                            .foregroundStyle(Theme.textPrimary)
+                        TextBox(
+                            text: $description,
+                            placeholder: "Describe the activities, requirements, and goal of this program...",
+                            height: 120
+                        )
+                    }
+                    
+                    // Stepper for max volunteers
+                    volunteersStepper
+                    
+                    // Detail Rows (opening bottom sheets)
+                    VStack(spacing: 12) {
                         Button {
-                            if !name.isEmpty && !description.isEmpty {
-                                showAlert = true
-                            }
+                            activeSheet = .location
                         } label: {
-                            Text("Post Program")
-                                .font(.bodyStrong)
-                                .foregroundStyle(Color.onBrand)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 50)
-                                .background(Color.brand, in: RoundedRectangle(cornerRadius: 25))
-                                .opacity(name.isEmpty || description.isEmpty ? 0.6 : 1.0)
+                            DetailRow(title: "Location", value: selectedRegion, icon: "mappin.and.ellipse")
                         }
-                        .disabled(name.isEmpty || description.isEmpty)
                         .buttonStyle(.plain)
-                        .padding(.top, 10)
+
+                        Button {
+                            activeSheet = .date
+                        } label: {
+                            DetailRow(title: "Date & Time", value: formattedDate, icon: "calendar")
+                        }
+                        .buttonStyle(.plain)
+
+                        Button {
+                            activeSheet = .repeatSelection
+                        } label: {
+                            DetailRow(title: "Repeat", value: selectedRepeat, icon: "repeat")
+                        }
+                        .buttonStyle(.plain)
                     }
-                    .padding(.horizontal, 20)
+                    
+                    // Submit button
+                    Button {
+                        if !name.isEmpty && !description.isEmpty {
+                            showAlert = true
+                        }
+                    } label: {
+                        Text("Post Program")
+                            .font(.bodyStrong)
+                            .foregroundStyle(Color.onBrand)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 50)
+                            .background(Color.brand, in: RoundedRectangle(cornerRadius: 25))
+                            .opacity(name.isEmpty || description.isEmpty ? 0.6 : 1.0)
+                    }
+                    .disabled(name.isEmpty || description.isEmpty)
+                    .buttonStyle(.plain)
+                    .padding(.top, 10)
                 }
-                .padding(.vertical, 16)
+                .padding(.horizontal, 20)
             }
-            .background(Color.pageBackground)
-            .navigationTitle("Post a Program")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button("Cancel") {
-                        dismiss()
+            .padding(.vertical, 16)
+        }
+        .background(Color.pageBackground)
+        .navigationTitle("Post a Program")
+        .navigationBarTitleDisplayMode(.inline)
+        .alert("Program Posted!", isPresented: $showAlert) {
+            Button("OK") {
+                dismiss()
+            }
+        } message: {
+            Text("Your program '\(name)' has been successfully posted.")
+        }
+        .sheet(item: $activeSheet) { type in
+            NavigationStack {
+                Group {
+                    switch type {
+                    case .location:
+                        RegionSelectionView(selectedRegion: $selectedRegion)
+                    case .date:
+                        DateSelectionView(startDate: $startDate, endDate: $endDate, isAllDay: $isAllDay)
+                    case .repeatSelection:
+                        RepeatSelectionView(selectedRepeat: $selectedRepeat)
                     }
                 }
-            }
-            .alert("Program Posted!", isPresented: $showAlert) {
-                Button("OK") {
-                    dismiss()
-                }
-            } message: {
-                Text("Your program '\(name)' has been successfully posted.")
-            }
-            .sheet(item: $activeSheet) { type in
-                NavigationStack {
-                    Group {
-                        switch type {
-                        case .location:
-                            RegionSelectionView(selectedRegion: $selectedRegion)
-                        case .date:
-                            DateSelectionView(startDate: $startDate, endDate: $endDate, isAllDay: $isAllDay)
-                        case .repeatSelection:
-                            RepeatSelectionView(selectedRepeat: $selectedRepeat)
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button("Close") {
+                            activeSheet = nil
                         }
                     }
-                    .toolbar {
-                        ToolbarItem(placement: .topBarTrailing) {
-                            Button("Close") {
-                                activeSheet = nil
-                            }
-                        }
-                    }
                 }
-                .presentationDetents(detents(for: type))
-                .presentationDragIndicator(.visible)
             }
+            .presentationDetents(detents(for: type))
+            .presentationDragIndicator(.visible)
         }
     }
 
