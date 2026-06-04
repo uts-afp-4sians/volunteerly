@@ -4,13 +4,18 @@ struct SplashView: View {
     @Environment(AppRouter.self) var router
 
     var body: some View {
-        VStack {
-            Image(systemName: "hands.sparkles.fill")
-                .font(.system(size: 64))
-                .foregroundStyle(.green)
+        VStack(spacing: 16) {
+            Image(.logo)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 140, height: 140)
+            
             Text("Volunteerly")
-                .font(.largeTitle.bold())
+                .font(.pageTitle)
+                .foregroundStyle(Theme.textPrimary)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Theme.background)
         .task {
             try? await Task.sleep(for: .seconds(2))
             router.route = SessionManager.shared.hasSession ? .main : .auth
