@@ -1,6 +1,6 @@
 import Foundation
 
-struct User: Identifiable, Codable {
+nonisolated struct User: Identifiable, Codable {
     let id: Int
     let email: String
     let isDeleted: Bool
@@ -16,7 +16,7 @@ struct User: Identifiable, Codable {
     }
 }
 
-struct UserProfile: Codable {
+nonisolated struct UserProfile: Codable {
     let userId: Int
     let firstName: String
     let lastName: String

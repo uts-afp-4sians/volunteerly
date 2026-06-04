@@ -1,6 +1,6 @@
 import Foundation
 
-struct Program: Identifiable, Codable {
+nonisolated struct Program: Identifiable, Codable {
     let id: Int
     let creatorUserId: Int
     let categoryId: Int
@@ -34,7 +34,7 @@ struct Program: Identifiable, Codable {
     }
 }
 
-enum ProgramStatus: String, Codable {
+nonisolated enum ProgramStatus: String, Codable {
     case draft
     case open
     case full
@@ -42,7 +42,7 @@ enum ProgramStatus: String, Codable {
     case cancelled
 }
 
-struct ProgramParticipation: Identifiable, Codable {
+nonisolated struct ProgramParticipation: Identifiable, Codable {
     let id: Int
     let programId: Int
     let userId: Int
@@ -58,14 +58,14 @@ struct ProgramParticipation: Identifiable, Codable {
     }
 }
 
-enum ParticipationStatus: String, Codable {
+nonisolated enum ParticipationStatus: String, Codable {
     case pending
     case approved
     case rejected
     case withdrawn
 }
 
-struct ProgramBookmark: Codable {
+nonisolated struct ProgramBookmark: Codable {
     let userId: Int
     let programId: Int
     let bookmarkedAt: Date
@@ -78,7 +78,7 @@ struct ProgramBookmark: Codable {
 }
 
 /// Junction tagging a program with a keyword (PROGRAM_KEYWORD).
-struct ProgramKeyword: Codable {
+nonisolated struct ProgramKeyword: Codable {
     let programId: Int
     let keywordId: Int
 

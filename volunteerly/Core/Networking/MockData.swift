@@ -182,6 +182,7 @@ enum MockData {
             "/programs/2":          programs[1],
             "/programs/3":          programs[2],
             "/programs/4":          programs[3],
+            "/locations/1":         location,
             "/users/1":             user,
             "/users/1/profile":     userProfile,
             "/programs/1/posts":    forumPosts,

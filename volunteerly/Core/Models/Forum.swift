@@ -1,6 +1,6 @@
 import Foundation
 
-struct ForumPost: Identifiable, Codable {
+nonisolated struct ForumPost: Identifiable, Codable {
     let id: Int
     let programId: Int
     let authorUserId: Int
@@ -18,7 +18,7 @@ struct ForumPost: Identifiable, Codable {
     }
 }
 
-struct ForumComment: Identifiable, Codable {
+nonisolated struct ForumComment: Identifiable, Codable {
     let id: Int
     let postId: Int
     let authorUserId: Int
