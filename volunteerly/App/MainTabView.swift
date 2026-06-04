@@ -9,7 +9,7 @@ struct MainTabView: View {
                         ProgramDetailView(programId: programId)
                     }
             }
-            .tabItem { Label("Programs", systemImage: "list.bullet") }
+            .tabItem { SwiftUI.Label("Programs", systemImage: "list.bullet") }
 
             NavigationStack {
                 MyProgramsView()
@@ -17,7 +17,7 @@ struct MainTabView: View {
                         ProgramDetailView(programId: programId)
                     }
             }
-            .tabItem { Label("My Programs", systemImage: "person.crop.circle") }
+            .tabItem { SwiftUI.Label("My Programs", systemImage: "person.crop.circle") }
         }
     }
 }
