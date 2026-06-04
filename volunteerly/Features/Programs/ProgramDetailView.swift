@@ -21,10 +21,12 @@ struct ProgramDetailView: View {
                 VStack(alignment: .leading, spacing: 0) {
                     banner
                     
-                    content
-                        .padding(.horizontal, horizontalPadding)
-                        .padding(.top, 20)
-                        .padding(.bottom, 40)
+                    VStack(alignment: .leading, spacing: 0) {
+                        content
+                    }
+                    .padding(.horizontal, horizontalPadding)
+                    .padding(.top, 20)
+                    .padding(.bottom, 40)
                 }
             }
             .ignoresSafeArea(edges: .top)
