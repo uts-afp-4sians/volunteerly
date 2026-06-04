@@ -5,7 +5,7 @@ import SwiftUI
 ///
 /// - First state  — grey track, knob to the left.
 /// - Second state — brand-green track, knob to the right.
-struct BrandToggle: View {
+struct Toggle: View {
     @Binding var isOn: Bool
 
     private let trackWidth: CGFloat = 102
@@ -31,7 +31,7 @@ struct BrandToggle: View {
         .buttonStyle(.plain)
         .animation(.easeOut(duration: 0.18), value: isOn)
         .accessibilityRepresentation {
-            Toggle("", isOn: $isOn)
+            SwiftUI.Toggle("", isOn: $isOn)
         }
     }
 }
@@ -43,11 +43,11 @@ struct BrandToggle: View {
         var body: some View {
             VStack(spacing: 24) {
                 VStack(spacing: 6) {
-                    BrandToggle(isOn: $first)
+                    Toggle(isOn: $first)
                     Text("First state").font(.labelItalic)
                 }
                 VStack(spacing: 6) {
-                    BrandToggle(isOn: $second)
+                    Toggle(isOn: $second)
                     Text("Second state").font(.labelItalic)
                 }
             }
