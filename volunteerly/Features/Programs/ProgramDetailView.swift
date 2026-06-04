@@ -20,13 +20,18 @@ struct ProgramDetailView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
                     banner
+                    
                     content
+                        .padding(.horizontal, horizontalPadding)
+                        .padding(.top, 20)
+                        .padding(.bottom, 40)
                 }
             }
             .ignoresSafeArea(edges: .top)
 
             topControls
                 .padding(.horizontal, horizontalPadding)
+                .padding(.top, 8)
         }
         .toolbar(.hidden, for: .navigationBar)
         .task {
@@ -122,9 +127,6 @@ struct ProgramDetailView: View {
                 joinButton
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, horizontalPadding)
-            .padding(.top, 20)
-            .padding(.bottom, 40)
         } else {
             ProgressView()
                 .frame(maxWidth: .infinity)
