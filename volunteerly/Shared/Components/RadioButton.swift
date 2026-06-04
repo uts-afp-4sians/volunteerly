@@ -3,22 +3,18 @@ import SwiftUI
 /// The design-system **Radio** button: a brand-green pill with a 20×20 indicator
 /// 15px in from the leading edge and an SF Pro Regular 14 label in `#f5f5f5`.
 ///
-/// - Selected  — solid white indicator (Node 200-482).
-/// - Completed — hollow white ring (Node 200-490).
+/// - Unselected  — solid white indicator (Node 200-482).
+/// - Selected    — hollow white ring (Node 200-490).
 ///
 /// Pill: height 48px, 20px rounded corners; label padded 15px on all sides.
-enum RadioButtonState {
-    case selected
-    case completed
-}
-
 struct RadioButton: View {
     let title: String
-    let state: RadioButtonState
-    let action: () -> Void
+    @Binding var isSelected: Bool
 
     var body: some View {
-        Button(action: action) {
+        Button {
+            isSelected.toggle()
+        } label: {
             HStack(spacing: 0) {
                 indicator
                     .frame(width: 20, height: 20)
@@ -43,28 +39,34 @@ struct RadioButton: View {
 
     @ViewBuilder
     private var indicator: some View {
-        switch state {
-        case .selected:
-            Circle()
-                .fill(Color.onBrand)
-        case .completed:
+        if isSelected {
             Circle()
                 .strokeBorder(Color.onBrand, lineWidth: 3)
+        } else {
+            Circle()
+                .fill(Color.onBrand)
         }
     }
 }
 
 #Preview("Radio states") {
-    VStack(spacing: 24) {
-        VStack(spacing: 6) {
-            RadioButton(title: "Selected state", state: .selected) {}
-            Text("Selected (Solid white circle)").font(.labelItalic)
-        }
-        VStack(spacing: 6) {
-            RadioButton(title: "Completed state", state: .completed) {}
-            Text("Completed (Hollow white ring)").font(.labelItalic)
+    struct Demo: View {
+        @State private var off = false
+        @State private var on = true
+        var body: some View {
+            VStack(spacing: 24) {
+                VStack(spacing: 6) {
+                    RadioButton(title: "Unselected state", isSelected: $off)
+                    Text("Unselected (Solid white circle)").font(.labelItalic)
+                }
+                VStack(spacing: 6) {
+                    RadioButton(title: "Selected state", isSelected: $on)
+                    Text("Selected (Hollow white ring)").font(.labelItalic)
+                }
+            }
+            .padding(40)
+            .background(Color.pageBackground)
         }
     }
-    .padding(40)
-    .background(Color.pageBackground)
+    return Demo()
 }
