@@ -15,7 +15,11 @@ final class MockHTTPClient: HTTPClient {
         d.dateDecodingStrategy = .iso8601
         return d
     }()
-    private let encoder = JSONEncoder()
+    private let encoder: JSONEncoder = {
+        let e = JSONEncoder()
+        e.dateEncodingStrategy = .iso8601
+        return e
+    }()
 
     func get<T: Decodable>(_ path: String) async throws -> T {
         try resolve(path)
