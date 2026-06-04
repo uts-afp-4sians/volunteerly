@@ -3,31 +3,49 @@ import SwiftUI
 struct ProgramListView: View {
     @State private var viewModel = ProgramListViewModel()
     @State private var showFilters = false
+    @State private var showPostProgram = false
 
     private let horizontalPadding: CGFloat = 20
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                header
-                title
-                searchBar
-                additionalFilters
-                categoryRow
-                content
+        ZStack(alignment: .bottomTrailing) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    header
+                    title
+                    searchBar
+                    additionalFilters
+                    categoryRow
+                    content
+                }
+                .padding(.top, 16)
+                .padding(.bottom, 80)
             }
-            .padding(.vertical, 16)
-        }
-        .scrollDismissesKeyboard(.immediately)
-        .background(Color(.systemBackground))
-        .toolbar(.hidden, for: .navigationBar)
-        .task {
-            if viewModel.programs.isEmpty {
+            .scrollDismissesKeyboard(.immediately)
+            .background(Color(.systemBackground))
+            .toolbar(.hidden, for: .navigationBar)
+            .task {
+                if viewModel.programs.isEmpty {
+                    await viewModel.load()
+                }
+            }
+            .refreshable {
                 await viewModel.load()
             }
+
+            // Floating Action Button (FAB)
+            Button {
+                showPostProgram = true
+            } label: {
+                Image(systemName: "plus")
+            }
+            .buttonStyle(FABButtonStyle())
+            .padding(.trailing, 20)
+            .padding(.bottom, 20)
         }
-        .refreshable {
-            await viewModel.load()
+        .sheet(isPresented: $showPostProgram) {
+            PostProgramView()
+                .presentationDragIndicator(.visible)
         }
     }
 
@@ -147,6 +165,32 @@ struct ProgramListView: View {
             }
             .padding(.horizontal, horizontalPadding)
         }
+    }
+}
+
+struct FABButtonStyle: ButtonStyle {
+    @Environment(\.isFocused) private var environmentFocused
+
+    func makeBody(configuration: Configuration) -> some View {
+        let isPressed = configuration.isPressed
+        let isFocused = environmentFocused
+
+        configuration.label
+            .font(.system(size: 24, weight: .semibold))
+            .foregroundStyle(Color.onBrand)
+            .frame(width: 56, height: 56)
+            .background(
+                Circle()
+                    .fill(isPressed ? Color.brandDark : Color.brand)
+            )
+            .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 4)
+            .overlay(
+                Circle()
+                    .strokeBorder(Color.brand, lineWidth: isFocused ? 2 : 0)
+                    .padding(-4)
+            )
+            .scaleEffect(isPressed ? 0.95 : 1.0)
+            .animation(.easeOut(duration: 0.12), value: isPressed)
     }
 }
 
