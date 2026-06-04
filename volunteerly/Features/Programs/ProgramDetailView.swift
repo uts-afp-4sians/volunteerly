@@ -60,20 +60,22 @@ struct ProgramDetailView: View {
     // MARK: - Banner
 
     private var banner: some View {
-        ZStack {
-            AsyncImage(url: URL(string: viewModel.program?.bannerImageURL ?? "")) { image in
-                image.resizable().aspectRatio(contentMode: .fill)
-            } placeholder: {
-                Rectangle().fill(Color(.systemGray5))
+        Color.clear
+            .overlay(
+                AsyncImage(url: URL(string: viewModel.program?.bannerImageURL ?? "")) { image in
+                    image.resizable().aspectRatio(contentMode: .fill)
+                } placeholder: {
+                    Rectangle().fill(Color(.systemGray5))
+                }
+            )
+            .frame(height: 220)
+            .contentShape(Rectangle())
+            .clipped()
+            .clipShape(UnevenRoundedRectangle(bottomLeadingRadius: 8, bottomTrailingRadius: 8, style: .continuous))
+            .overlay(alignment: .bottom) {
+                pageDots
+                    .padding(.bottom, 18)
             }
-        }
-        .frame(height: 220)
-        .frame(maxWidth: .infinity)
-        .clipShape(UnevenRoundedRectangle(bottomLeadingRadius: 8, bottomTrailingRadius: 8, style: .continuous))
-        .overlay(alignment: .bottom) {
-            pageDots
-                .padding(.bottom, 18)
-        }
     }
 
     private var pageDots: some View {
@@ -254,7 +256,7 @@ struct ProgramDetailView: View {
     /// so this mirrors the design's avatar grid using the program's capacity.
     private var participantGrid: some View {
         let count = min(viewModel.program?.maxVolunteers ?? 0, 8)
-        let columns = Array(repeating: GridItem(.flexible(), spacing: 18, alignment: .leading), count: 5)
+        let columns = [GridItem(.adaptive(minimum: 56, maximum: 56), spacing: 18, alignment: .leading)]
         return LazyVGrid(columns: columns, alignment: .leading, spacing: 18) {
             ForEach(0..<count, id: \.self) { _ in
                 Circle()
