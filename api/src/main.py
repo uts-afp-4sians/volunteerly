@@ -11,7 +11,7 @@ from pydantic import BaseModel
 from sqlalchemy import text
 
 from src.lib.config import settings
-from src.lib.database import async_session_factory
+from src.lib.database import session_factory
 from src.lib.logging import configure_logging, get_logger
 
 # Configure logging first
@@ -106,14 +106,14 @@ class HealthResponse(BaseModel):
     services: dict[str, ServiceStatus]
 
 
-async def check_database() -> ServiceStatus:
+def check_database() -> ServiceStatus:
     """Check database connectivity."""
     import time
 
     start = time.perf_counter()
     try:
-        async with async_session_factory() as session:
-            await session.execute(text("SELECT 1"))
+        with session_factory() as session:
+            session.execute(text("SELECT 1"))
         latency = (time.perf_counter() - start) * 1000
         return ServiceStatus(status="healthy", latency_ms=round(latency, 2))
     except Exception as e:
@@ -124,9 +124,9 @@ async def check_database() -> ServiceStatus:
 
 
 @app.get("/health")
-async def health_check() -> HealthResponse:
+def health_check() -> HealthResponse:
     """Detailed health check endpoint with service statuses."""
-    services: dict[str, ServiceStatus] = {"database": await check_database()}
+    services: dict[str, ServiceStatus] = {"database": check_database()}
 
     statuses = [s.status for s in services.values()]
     if all(s == "healthy" for s in statuses):
@@ -146,9 +146,9 @@ async def liveness_check() -> dict[str, str]:
 
 
 @app.get("/health/ready")
-async def readiness_check() -> dict[str, str]:
+def readiness_check() -> dict[str, str]:
     """Readiness probe - checks if the app can serve traffic."""
-    db_status = await check_database()
+    db_status = check_database()
     if db_status.status == "unhealthy":
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,

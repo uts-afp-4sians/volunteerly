@@ -2,13 +2,15 @@
 
 FastAPI backend for Volunteerly.
 
-**Stack:** FastAPI · SQLAlchemy 2.0 (async) · Alembic · Pydantic Settings ·
+**Stack:** FastAPI · SQLAlchemy 2.0 · Alembic · Pydantic Settings ·
 structlog · uv · ruff · mypy · pytest. Managed with [mise](https://mise.jdx.dev/)
 and [poe](https://poethepoet.natn.io/).
 
 **Database:** SQLite via [Turso](https://turso.tech) (libSQL) in production, and a
-local SQLite file (`aiosqlite`) for development and tests. Same SQL dialect both
-places — only `DATABASE_URL` changes.
+local SQLite file (stdlib pysqlite) for development and tests. Same SQL dialect
+both places — only `DATABASE_URL` changes. The app is synchronous because Turso's
+libSQL SQLAlchemy driver has no async dialect (FastAPI runs sync routes in a
+threadpool).
 
 ## Prerequisites
 

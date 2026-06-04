@@ -7,13 +7,12 @@ keys) and safe to re-run.
     uv run python scripts/seed.py
 """
 
-import asyncio
 from datetime import UTC, datetime
 
 from src.categories.model import Keyword, ProgramCategory
 from src.common.enums import ParticipationStatus, ProgramStatus
 from src.forum.model import ForumComment, ForumPost
-from src.lib.database import Base, async_session_factory, engine
+from src.lib.database import Base, engine, session_factory
 from src.locations.model import Location
 from src.programs.model import (
     Program,
@@ -208,17 +207,16 @@ def _rows() -> list[Base]:
     ]
 
 
-async def seed() -> None:
+def seed() -> None:
     # Convenience for fresh local dev DBs; no-ops if Alembic already created them.
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    Base.metadata.create_all(engine)
 
-    async with async_session_factory() as session:
+    with session_factory() as session:
         for row in _rows():
-            await session.merge(row)
-        await session.commit()
+            session.merge(row)
+        session.commit()
     print("Seeded database with MockData fixtures.")
 
 
 if __name__ == "__main__":
-    asyncio.run(seed())
+    seed()

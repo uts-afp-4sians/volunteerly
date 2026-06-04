@@ -1,0 +1,40 @@
+# Fly.io config for the Volunteerly API (Turso-backed, stateless).
+#
+# First time:  fly launch --no-deploy   (or `fly apps create volunteerly-api`)
+# Set secrets, then:  fly deploy
+# See DEPLOY.md for the full walkthrough.
+
+app = "volunteerly-api"          # change to your unique Fly app name
+primary_region = "syd"           # Sydney — keep the Turso db in a nearby region
+
+[build]
+  # Build the Turso-capable image (compiles the libSQL Rust driver remotely).
+  target = "prod"
+
+[env]
+  # `staging` keeps /docs reachable for the iOS dev. Set to "prod" to lock it down.
+  PROJECT_ENV = "staging"
+  # DATABASE_URL is provided as a SECRET (it carries the Turso auth token):
+  #   fly secrets set DATABASE_URL='sqlite+libsql://<db>.turso.io/?authToken=<token>&secure=true'
+
+[deploy]
+  # Run migrations against Turso before the new version goes live.
+  release_command = "alembic upgrade head"
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  auto_stop_machines = "stop"     # scale to zero when idle (saves free allowance)
+  auto_start_machines = true      # wake on first request (adds a cold start)
+  min_machines_running = 0        # set to 1 to avoid cold starts (e.g. before a demo)
+
+  [[http_service.checks]]
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "10s"
+    method = "GET"
+    path = "/health/live"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"

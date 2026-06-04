@@ -1,0 +1,29 @@
+# Local containerized API with a persistent SQLite database.
+#
+#   docker compose up --build -d          # build + start (runs migrations)
+#   docker compose exec api uv run python scripts/seed.py   # load mock fixtures
+#   docker compose down                   # stop (data survives on the volume)
+#   docker compose down -v                # stop AND delete the data volume
+#
+# The database lives on the `api-data` named volume at /data, so it persists
+# across container recreation. Point DATABASE_URL at Turso to use that instead.
+services:
+  api:
+    build:
+      context: .
+      target: local
+    image: volunteerly-api:local
+    ports:
+      - "8080:8000"
+    environment:
+      PROJECT_ENV: local
+      DATABASE_URL: sqlite:////data/dev.db
+    volumes:
+      - api-data:/data
+    # Apply migrations on startup, then serve (binaries are on PATH).
+    command: >
+      sh -c "alembic upgrade head &&
+             fastapi run src/main.py --port 8000"
+
+volumes:
+  api-data:

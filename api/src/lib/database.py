@@ -1,12 +1,7 @@
-from collections.abc import AsyncGenerator
+from collections.abc import Generator
 
-from sqlalchemy import MetaData
-from sqlalchemy.ext.asyncio import (
-    AsyncSession,
-    async_sessionmaker,
-    create_async_engine,
-)
-from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy import MetaData, create_engine
+from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 from src.lib.config import settings
 
@@ -26,27 +21,36 @@ class Base(DeclarativeBase):
     metadata = MetaData(naming_convention=convention)
 
 
-# Async engine. SQLite (aiosqlite locally, libsql for Turso in prod).
-engine = create_async_engine(
+# Synchronous engine. The app is sync because Turso's libSQL SQLAlchemy driver
+# (sqlite+libsql) has no async dialect; FastAPI runs sync routes in a threadpool.
+#   * local dev / tests → sqlite:// (stdlib pysqlite)
+#   * production        → sqlite+libsql:// (Turso)
+connect_args: dict[str, object] = {}
+if settings.DATABASE_URL.startswith(("sqlite://", "sqlite+pysqlite")):
+    # Allow pooled SQLite connections to cross FastAPI's threadpool boundaries.
+    connect_args["check_same_thread"] = False
+
+engine = create_engine(
     settings.DATABASE_URL,
     echo=settings.PROJECT_ENV == "local",
     pool_pre_ping=True,
+    connect_args=connect_args,
 )
 
-# Async session factory
-async_session_factory = async_sessionmaker(
+# Session factory
+session_factory = sessionmaker(
     engine,
-    class_=AsyncSession,
+    class_=Session,
     expire_on_commit=False,
 )
 
 
-async def get_db() -> AsyncGenerator[AsyncSession, None]:
+def get_db() -> Generator[Session, None, None]:
     """Dependency for database session injection."""
-    async with async_session_factory() as session:
+    with session_factory() as session:
         try:
             yield session
-            await session.commit()
+            session.commit()
         except Exception:
-            await session.rollback()
+            session.rollback()
             raise

@@ -19,9 +19,9 @@ class Settings(BaseSettings):
     PROJECT_ENV: Literal["local", "staging", "prod"] = "local"
 
     # Database
-    # Local dev: sqlite+aiosqlite:///./dev.db
+    # Local dev: sqlite:///./dev.db  (stdlib pysqlite)
     # Production (Turso): sqlite+libsql://<db>.turso.io/?authToken=...&secure=true
-    DATABASE_URL: str = "sqlite+aiosqlite:///./dev.db"
+    DATABASE_URL: str = "sqlite:///./dev.db"
 
     # CORS
     CORS_ORIGINS: list[str] = ["http://localhost:3000"]
