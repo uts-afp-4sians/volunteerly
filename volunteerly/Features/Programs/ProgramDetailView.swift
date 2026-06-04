@@ -67,7 +67,7 @@ struct ProgramDetailView: View {
         }
         .frame(height: 220)
         .frame(maxWidth: .infinity)
-        .clipped()
+        .clipShape(UnevenRoundedRectangle(bottomLeadingRadius: 8, bottomTrailingRadius: 8, style: .continuous))
         .overlay(alignment: .bottom) {
             pageDots
                 .padding(.bottom, 18)
@@ -102,10 +102,10 @@ struct ProgramDetailView: View {
     private func circleButton(systemName: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: systemName)
-                .font(.system(size: 16, weight: .medium))
-                .foregroundStyle(.primary)
+                .font(.bodyStrong)
+                .foregroundStyle(Theme.textPrimary)
                 .frame(width: 32, height: 32)
-                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .background(Color(.systemGray6), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
         }
         .buttonStyle(.plain)
     }
@@ -135,13 +135,14 @@ struct ProgramDetailView: View {
     }
 
     private func heading(_ program: Program) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 8) {
             Text(program.name)
-                .font(.system(size: 30, weight: .bold))
-                .foregroundStyle(.primary)
+                .font(.subheading)
+                .bold()
+                .foregroundStyle(Theme.textPrimary)
             Text(program.description)
-                .font(.system(size: 16))
-                .foregroundStyle(.primary)
+                .font(.bodyText)
+                .foregroundStyle(Theme.textPrimary)
         }
     }
 
@@ -151,10 +152,12 @@ struct ProgramDetailView: View {
         VStack(alignment: .leading, spacing: 16) {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Location")
-                    .font(.system(size: 24, weight: .bold))
+                    .font(.sectionHeader)
+                    .bold()
+                    .foregroundStyle(Theme.textPrimary)
                 Text(viewModel.location?.displayName ?? "Location to be announced")
-                    .font(.system(size: 16))
-                    .foregroundStyle(.primary)
+                    .font(.bodyText)
+                    .foregroundStyle(Theme.textPrimary)
                     .fixedSize(horizontal: false, vertical: true)
             }
             map
@@ -198,19 +201,19 @@ struct ProgramDetailView: View {
     private func opportunitySection(_ program: Program) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             divider
-            HStack(alignment: .top) {
+            HStack(alignment: .bottom) {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Upcoming volunteer opportunities")
-                        .font(.system(size: 16))
-                        .foregroundStyle(Color(red: 0, green: 0x76 / 255, blue: 1)) // #0076FF
+                        .font(.bodyText)
+                        .foregroundStyle(Color.blue)
                     Text("\(dayText(program.startDatetime))\n\(timeRange(program))")
-                        .font(.system(size: 16))
-                        .foregroundStyle(.primary)
+                        .font(.bodyText)
+                        .foregroundStyle(Theme.textPrimary)
                 }
                 Spacer(minLength: 12)
                 Text("Occurs every \(weekdayShort(program.startDatetime))")
-                    .font(.system(size: 16))
-                    .foregroundStyle(.tertiary)
+                    .font(.bodyText)
+                    .foregroundStyle(Theme.textSecondary)
                     .multilineTextAlignment(.trailing)
             }
             .padding(.vertical, 16)
@@ -223,7 +226,9 @@ struct ProgramDetailView: View {
     private var hostSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("About Host")
-                .font(.system(size: 24, weight: .bold))
+                .font(.sectionHeader)
+                .bold()
+                .foregroundStyle(Theme.textPrimary)
             HStack(spacing: 16) {
                 AsyncImage(url: URL(string: viewModel.host?.profileImageURL ?? "")) { image in
                     image.resizable().aspectRatio(contentMode: .fill)
@@ -234,8 +239,8 @@ struct ProgramDetailView: View {
                 .clipShape(Circle())
 
                 Text(viewModel.host?.fullName ?? "User name")
-                    .font(.system(size: 16))
-                    .foregroundStyle(.primary)
+                    .font(.bodyText)
+                    .foregroundStyle(Theme.textPrimary)
             }
             divider
         }
@@ -265,11 +270,11 @@ struct ProgramDetailView: View {
             if viewModel.isJoined { showJoinedConfirmation = true }
         } label: {
             Text(viewModel.isJoined ? "Joined" : "Join")
-                .font(.system(size: 16, weight: viewModel.isJoined ? .semibold : .regular))
-                .foregroundStyle(viewModel.isJoined ? Color.accentColor : .primary)
+                .font(.actionButtonLabel)
+                .foregroundStyle(viewModel.isJoined ? Theme.success : Color.blue)
                 .frame(maxWidth: .infinity)
-                .frame(height: 42)
-                .background(Color(.systemGray6), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .frame(height: 61)
+                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 13, style: .continuous))
         }
         .buttonStyle(.plain)
     }
@@ -278,7 +283,7 @@ struct ProgramDetailView: View {
 
     private var divider: some View {
         Rectangle()
-            .fill(Color(.separator))
+            .fill(Theme.border)
             .frame(height: 1)
     }
 

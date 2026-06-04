@@ -17,6 +17,8 @@ extension Font {
     static let bodyText = Font.system(size: 16, weight: .regular)
     /// Button text — SF Pro Regular 14.
     static let buttonLabel = Font.system(size: 14, weight: .regular)
+    /// Large button text (e.g. Action Sheet action button) — SF Pro Display Regular 20.
+    static let actionButtonLabel = Font.system(size: 20, weight: .regular)
     /// Labels and filler content — SF Pro Regular Italic 14.
     static let labelItalic = Font.system(size: 14, weight: .regular).italic()
 }
