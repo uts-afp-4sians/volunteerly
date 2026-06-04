@@ -30,7 +30,7 @@ struct AdditionalFiltersPanel: View {
 
     private func filterRow(title: String, value: Binding<Double>, range: ClosedRange<Double>) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            BrandSlider(value: value, range: range)
+            Slider(value: value, range: range)
             Text(title)
                 .font(.system(size: 16))
                 .foregroundStyle(.primary)

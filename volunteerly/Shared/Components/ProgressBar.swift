@@ -52,7 +52,7 @@ struct ProgressBar: View {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Interactive").font(.labelItalic)
                     ProgressBar(progress: progress)
-                    Slider(value: $progress, in: 0...1)
+                    SwiftUI.Slider(value: $progress, in: 0...1)
                 }
             }
             .padding(40)
