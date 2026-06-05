@@ -34,6 +34,30 @@ nonisolated struct Program: Identifiable, Codable {
     }
 }
 
+/// Create payload for `POST /programs`. The creator is derived server-side from
+/// the auth token; nil fields are omitted (the server defaults `location_id`).
+nonisolated struct ProgramCreateRequest: Encodable {
+    let categoryId: Int
+    let programName: String
+    let description: String
+    let startDatetime: Date
+    let endDatetime: Date
+    let maxVolunteers: Int
+    var bannerImageURL: String? = nil
+    var locationId: Int? = nil
+
+    enum CodingKeys: String, CodingKey {
+        case categoryId = "category_id"
+        case programName = "program_name"
+        case description
+        case startDatetime = "start_datetime"
+        case endDatetime = "end_datetime"
+        case maxVolunteers = "max_volunteers"
+        case bannerImageURL = "banner_image_url"
+        case locationId = "location_id"
+    }
+}
+
 nonisolated enum ProgramStatus: String, Codable {
     case draft
     case open

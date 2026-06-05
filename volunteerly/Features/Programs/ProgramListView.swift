@@ -37,7 +37,7 @@ struct ProgramListView: View {
 
             // Floating Action Button (FAB)
             NavigationLink {
-                PostProgramView()
+                PostProgramView(onCreated: { Task { await viewModel.load() } })
             } label: {
                 Image(systemName: "plus")
             }

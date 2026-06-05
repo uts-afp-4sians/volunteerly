@@ -5,12 +5,29 @@ import CoreLocation
 
 struct PostProgramView: View {
     @Environment(\.dismiss) private var dismiss
-    
+
+    private let httpClient: HTTPClient
+    /// Called after a program is successfully created, so the caller can refresh.
+    private let onCreated: () -> Void
+
+    init(
+        httpClient: HTTPClient = LiveHTTPClient.shared,
+        onCreated: @escaping () -> Void = {}
+    ) {
+        self.httpClient = httpClient
+        self.onCreated = onCreated
+    }
+
     // Form State
     @State private var name: String = ""
     @State private var selectedCategoryId: Int = 1
     @State private var description: String = ""
     @State private var maxVolunteers: Int = 7 // Default to 7 like mockup
+
+    // Categories loaded from the backend.
+    @State private var categories: [ProgramCategory] = []
+    @State private var isSubmitting = false
+    @State private var errorMessage: String?
     
     // Details
     @State private var selectedRegion: String = ""
@@ -20,7 +37,6 @@ struct PostProgramView: View {
     @State private var selectedRepeat: String = "Every Week" // Matches "Every Week" from mockup
     
     // UI State
-    @State private var showAlert = false
     @State private var activeSheet: SheetType? = nil
     
     enum SheetType: Identifiable {
@@ -68,19 +84,22 @@ struct PostProgramView: View {
                     
                     // Submit button
                     Button {
-                        if !name.isEmpty && !description.isEmpty {
-                            showAlert = true
-                        }
+                        Task { await submit() }
                     } label: {
-                        Text("Post Program")
-                            .font(.bodyStrong)
-                            .foregroundStyle(Color.onBrand)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 50)
-                            .background(Color.brand, in: RoundedRectangle(cornerRadius: 25))
-                            .opacity(name.isEmpty || description.isEmpty ? 0.6 : 1.0)
+                        Group {
+                            if isSubmitting {
+                                ProgressView().tint(Color.onBrand)
+                            } else {
+                                Text("Post Program").font(.bodyStrong)
+                            }
+                        }
+                        .foregroundStyle(Color.onBrand)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 50)
+                        .background(Color.brand, in: RoundedRectangle(cornerRadius: 25))
+                        .opacity(canSubmit ? 1.0 : 0.6)
                     }
-                    .disabled(name.isEmpty || description.isEmpty)
+                    .disabled(!canSubmit)
                     .buttonStyle(.plain)
                     .padding(.top, 10)
                 }
@@ -93,6 +112,9 @@ struct PostProgramView: View {
         .background(Color.pageBackground)
         .onTapGesture {
             UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+        }
+        .task {
+            if categories.isEmpty { await loadCategories() }
         }
         .navigationTitle("Post Program")
         .navigationBarTitleDisplayMode(.inline)
@@ -109,12 +131,16 @@ struct PostProgramView: View {
                 }
             }
         }
-        .alert("Program Posted!", isPresented: $showAlert) {
-            Button("OK") {
-                dismiss()
-            }
+        .alert(
+            "Couldn't post program",
+            isPresented: Binding(
+                get: { errorMessage != nil },
+                set: { if !$0 { errorMessage = nil } }
+            )
+        ) {
+            Button("OK") {}
         } message: {
-            Text("Your program '\(name)' has been successfully posted.")
+            Text(errorMessage ?? "")
         }
         .sheet(item: $activeSheet) { type in
             switch type {
@@ -160,6 +186,48 @@ struct PostProgramView: View {
         .presentationDragIndicator(.visible)
     }
 
+    // MARK: - Actions
+
+    private var canSubmit: Bool {
+        !name.isEmpty && !description.isEmpty && selectedCategoryId != 0 && !isSubmitting
+    }
+
+    private func loadCategories() async {
+        do {
+            let cats: [ProgramCategory] = try await httpClient.get("/categories")
+            categories = cats
+            if let first = cats.first,
+               !cats.contains(where: { $0.id == selectedCategoryId }) {
+                selectedCategoryId = first.id
+            }
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    private func submit() async {
+        guard canSubmit else { return }
+        errorMessage = nil
+        isSubmitting = true
+        defer { isSubmitting = false }
+
+        do {
+            let request = ProgramCreateRequest(
+                categoryId: selectedCategoryId,
+                programName: name,
+                description: description,
+                startDatetime: startDate,
+                endDatetime: endDate,
+                maxVolunteers: maxVolunteers
+            )
+            let _: Program = try await httpClient.post("/programs", body: request)
+            onCreated()
+            dismiss()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
     // MARK: - Subviews
 
     private func requiredLabel(_ text: String) -> some View {
@@ -179,7 +247,7 @@ struct PostProgramView: View {
             
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
-                    ForEach(MockData.categories) { category in
+                    ForEach(categories) { category in
                         CategoryChip(
                             category: category,
                             isSelected: selectedCategoryId == category.id
@@ -369,4 +437,9 @@ struct PostProgramView: View {
     }
 }
 
-#Preview { PostProgramView() }
+#Preview {
+    let _ = MockData.registerAll(in: MockHTTPClient.shared)
+    return NavigationStack {
+        PostProgramView(httpClient: MockHTTPClient.shared)
+    }
+}
