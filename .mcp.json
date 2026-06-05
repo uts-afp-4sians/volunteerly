@@ -6,6 +6,21 @@
         "-y",
         "@rui.branco/figma-mcp"
       ]
+    },
+    "serena": {
+      "command": "serena",
+      "args": [
+        "start-mcp-server",
+        "--context",
+        "claude-code",
+        "--project",
+        ".",
+        "--open-web-dashboard",
+        "false"
+      ],
+      "env": {
+        "SERENA_LOG_LEVEL": "info"
+      }
     }
   }
 }
