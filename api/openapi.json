@@ -201,6 +201,50 @@
             }
           }
         }
+      },
+      "post": {
+        "tags": [
+          "programs"
+        ],
+        "summary": "Create Program",
+        "operationId": "create_program_programs_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProgramCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProgramRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
       }
     },
     "/programs/{program_id}": {
@@ -881,6 +925,61 @@
         ],
         "title": "ProgramCategoryRead",
         "description": "Wire shape matching iOS `ProgramCategory`."
+      },
+      "ProgramCreate": {
+        "properties": {
+          "category_id": {
+            "type": "integer",
+            "title": "Category Id"
+          },
+          "program_name": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Program Name"
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Description"
+          },
+          "start_datetime": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Start Datetime"
+          },
+          "end_datetime": {
+            "type": "string",
+            "format": "date-time",
+            "title": "End Datetime"
+          },
+          "max_volunteers": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Max Volunteers"
+          },
+          "banner_image_url": {
+            "title": "Banner Image Url",
+            "nullable": true,
+            "type": "string"
+          },
+          "location_id": {
+            "title": "Location Id",
+            "nullable": true,
+            "type": "integer"
+          }
+        },
+        "type": "object",
+        "required": [
+          "category_id",
+          "program_name",
+          "description",
+          "start_datetime",
+          "end_datetime",
+          "max_volunteers"
+        ],
+        "title": "ProgramCreate",
+        "description": "Create payload for a new program. The creator is taken from the caller's\nauth token, and ``location_id`` falls back to the first known location when\nomitted (the client's free-text region picker isn't mapped to a location\nrow yet)."
       },
       "ProgramKeywordRead": {
         "properties": {

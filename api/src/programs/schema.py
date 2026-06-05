@@ -1,7 +1,25 @@
-from pydantic import BaseModel, ConfigDict
+from datetime import datetime
+
+from pydantic import BaseModel, ConfigDict, Field
 
 from src.common.enums import ParticipationStatus, ProgramStatus
 from src.common.schema import UTCDateTime
+
+
+class ProgramCreate(BaseModel):
+    """Create payload for a new program. The creator is taken from the caller's
+    auth token, and ``location_id`` falls back to the first known location when
+    omitted (the client's free-text region picker isn't mapped to a location
+    row yet)."""
+
+    category_id: int
+    program_name: str = Field(min_length=1, max_length=255)
+    description: str = Field(min_length=1)
+    start_datetime: datetime
+    end_datetime: datetime
+    max_volunteers: int = Field(ge=1)
+    banner_image_url: str | None = None
+    location_id: int | None = None
 
 
 class ProgramRead(BaseModel):
