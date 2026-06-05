@@ -24,8 +24,7 @@ struct RegionSelectionView: View {
                     .foregroundStyle(.secondary)
                 TextField("Search", text: $searchText)
                     .textFieldStyle(.plain)
-                Image(systemName: "mic.fill")
-                    .foregroundStyle(.secondary)
+                MicButton(text: $searchText)
             }
             .padding(.horizontal, 16)
             .frame(height: 44)

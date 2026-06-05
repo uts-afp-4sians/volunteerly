@@ -51,8 +51,7 @@ struct MyProgramsView: View {
                 TextField("Search", text: $viewModel.searchQuery)
                     .textFieldStyle(.plain)
                     .submitLabel(.search)
-                Image(systemName: "mic.fill")
-                    .foregroundStyle(.secondary)
+                MicButton(text: $viewModel.searchQuery)
             }
             .padding(.horizontal, 16)
             .frame(height: 44)
