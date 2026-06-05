@@ -44,7 +44,7 @@ struct ProgramCard: View {
 
                 HStack(spacing: 12) {
                     metric(systemImage: "person.2.fill", text: "\(program.maxVolunteers)")
-                    metric(systemImage: "map.fill", text: distanceKm.map(Self.distanceText) ?? startDateText)
+                    metric(systemImage: "map.fill", text: distanceKm.map(Self.distanceText) ?? "-")
                 }
                 .fixedSize()
             }
@@ -64,10 +64,6 @@ struct ProgramCard: View {
                 .font(.system(size: 12))
                 .foregroundStyle(.secondary)
         }
-    }
-
-    private var startDateText: String {
-        program.startDatetime.formatted(.dateTime.month(.abbreviated).day())
     }
 
     private static func distanceText(_ km: Double) -> String {
