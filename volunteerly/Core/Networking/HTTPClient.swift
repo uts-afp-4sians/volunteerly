@@ -32,7 +32,9 @@ enum APIError: Error, LocalizedError {
 final class LiveHTTPClient: HTTPClient {
     static let shared = LiveHTTPClient()
 
-    private let baseURL = URL(string: "https://api.volunteerly.com/v1")!
+    // Single source of truth for the backend origin (see APIClient.swift).
+    // Routes are root-level (`/auth/login`, `/programs`), so no path prefix.
+    private let baseURL = API.defaultServerURL
     private let session = URLSession.shared
     private let decoder: JSONDecoder = {
         let d = JSONDecoder()

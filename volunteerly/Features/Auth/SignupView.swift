@@ -2,6 +2,8 @@ import SwiftUI
 import PhotosUI
 
 struct SignupView: View {
+    @Environment(AppRouter.self) private var router
+
     @State private var firstName = ""
     @State private var lastName = ""
     @State private var dateOfBirth = Date()
@@ -12,6 +14,8 @@ struct SignupView: View {
     @State private var location = ""
     @State private var profileItem: PhotosPickerItem?
     @State private var profileImageData: Data?
+    @State private var isSubmitting = false
+    @State private var errorMessage: String?
 
     private let totalSteps = 6
     private let currentStep = 1
@@ -28,6 +32,12 @@ struct SignupView: View {
                 locationField
                 optionalDivider
                 profilePictureSection
+                if let errorMessage {
+                    Text(errorMessage)
+                        .font(.footnote)
+                        .foregroundStyle(.red)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
                 Spacer().frame(height: 8)
                 continueButton
             }
@@ -255,16 +265,43 @@ struct SignupView: View {
     // MARK: Continue
 
     private var continueButton: some View {
-        NavigationLink(value: AuthRoute.signupForm) {
-            Text("Continue")
-                .font(.headline)
-                .foregroundStyle(.white)
-                .frame(maxWidth: .infinity)
-                .frame(height: 54)
-                .background(canContinue ? Theme.forest : Theme.forest.opacity(0.4))
-                .clipShape(RoundedRectangle(cornerRadius: 24))
+        Button {
+            Task { await submit() }
+        } label: {
+            ZStack {
+                if isSubmitting {
+                    ProgressView().tint(.white)
+                } else {
+                    Text("Continue").font(.headline)
+                }
+            }
+            .foregroundStyle(.white)
+            .frame(maxWidth: .infinity)
+            .frame(height: 54)
+            .background(canContinue ? Theme.forest : Theme.forest.opacity(0.4))
+            .clipShape(RoundedRectangle(cornerRadius: 24))
         }
-        .disabled(!canContinue)
+        .disabled(!canContinue || isSubmitting)
+    }
+
+    // MARK: Actions
+
+    private func submit() async {
+        errorMessage = nil
+        isSubmitting = true
+        defer { isSubmitting = false }
+
+        do {
+            try await AuthService.shared.register(
+                email: email,
+                password: password,
+                firstName: firstName,
+                lastName: lastName
+            )
+            router.route = .main
+        } catch {
+            errorMessage = error.localizedDescription
+        }
     }
 
     private var canContinue: Bool {

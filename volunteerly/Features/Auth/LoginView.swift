@@ -8,8 +8,6 @@ struct LoginView: View {
     @State private var isSubmitting = false
     @State private var errorMessage: String?
 
-    private let client: HTTPClient = MockHTTPClient.shared
-
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 28) {
@@ -172,12 +170,7 @@ struct LoginView: View {
         defer { isSubmitting = false }
 
         do {
-            let response: AuthResponse = try await client.post(
-                "/auth/login",
-                body: LoginRequest(email: email, password: password)
-            )
-            SessionManager.shared.token = response.token
-            LiveHTTPClient.shared.authToken = response.token
+            try await AuthService.shared.login(email: email, password: password)
             router.route = .main
         } catch {
             errorMessage = error.localizedDescription

@@ -13,6 +13,9 @@ struct volunteerlyApp: App {
 
     init() {
         MockData.registerAll(in: MockHTTPClient.shared)
+        // Re-attach a persisted JWT so a returning user's authenticated
+        // requests carry the Bearer header before any new login.
+        AuthService.shared.restoreSession()
     }
 
     var body: some Scene {
