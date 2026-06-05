@@ -53,6 +53,8 @@ ENV PATH="/app/.venv/bin:${PATH}"
 ENV PYTHONPATH=/app
 EXPOSE 8000
 # Run from the copied venv directly (no `uv run` → no runtime re-sync).
+# Migrations are applied by the `migrate` GitHub Actions workflow before a
+# deploy goes live, not at container start.
 CMD ["fastapi", "run", "src/main.py", "--port", "8000"]
 
 # ---- local: pysqlite, with a /data mount point for a persistent SQLite file --

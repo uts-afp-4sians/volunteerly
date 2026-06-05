@@ -1,0 +1,61 @@
+name: migrate
+
+# Applies Alembic migrations to the production Turso database.
+#
+# Render's free plan has no pre-deploy hook, so schema migrations were never run
+# on deploy — the app shipped code expecting columns the live DB didn't have
+# (e.g. programs.commitment_frequency), 500-ing every programs endpoint. This
+# workflow runs `alembic upgrade head` in CI instead.
+#
+# Requires the `DATABASE_URL` repository secret: the Turso libSQL URL, e.g.
+#   sqlite+libsql://<db>.turso.io/?authToken=<token>&secure=true
+#
+# Ordering note: Render auto-deploys on push to main. This workflow only fires
+# when migration-related files change, but it still races the deploy. The
+# migrations it runs are expected to be backward-compatible (additive) so either
+# order is safe. For strict migrate-before-deploy, turn off Render auto-deploy
+# and trigger a deploy hook from this workflow after the migrate step.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "api/alembic/**"
+      - "api/pyproject.toml"
+      - "api/uv.lock"
+      - ".github/workflows/migrate.yml"
+  workflow_dispatch: {}
+
+# Never run two migrations against the same DB at once; never cancel one midway.
+concurrency:
+  group: migrate-prod
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: api
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      # The `turso` extra pulls in sqlalchemy-libsql (prebuilt manylinux wheel),
+      # which the alembic engine needs to talk to Turso.
+      - name: Install dependencies
+        run: uv sync --frozen --no-dev --extra turso
+
+      - name: Apply migrations
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          PROJECT_ENV: prod
+        run: uv run alembic upgrade head
