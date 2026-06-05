@@ -17,6 +17,8 @@ PROGRAM_KEYS = {
     "start_datetime",
     "end_datetime",
     "max_volunteers",
+    "commitment_frequency",
+    "commitment_duration",
     "status",
     "is_deleted",
     "deleted_at",

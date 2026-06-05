@@ -2,7 +2,12 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from src.common.enums import ParticipationStatus, ProgramStatus
+from src.common.enums import (
+    CommitmentDuration,
+    CommitmentFrequency,
+    ParticipationStatus,
+    ProgramStatus,
+)
 from src.common.schema import UTCDateTime
 
 
@@ -18,6 +23,8 @@ class ProgramCreate(BaseModel):
     start_datetime: datetime
     end_datetime: datetime
     max_volunteers: int = Field(ge=1)
+    commitment_frequency: CommitmentFrequency | None = None
+    commitment_duration: CommitmentDuration | None = None
     banner_image_url: str | None = None
     location_id: int | None = None
 
@@ -37,6 +44,8 @@ class ProgramRead(BaseModel):
     start_datetime: UTCDateTime
     end_datetime: UTCDateTime
     max_volunteers: int
+    commitment_frequency: CommitmentFrequency | None = None
+    commitment_duration: CommitmentDuration | None = None
     status: ProgramStatus
     is_deleted: bool
     deleted_at: UTCDateTime | None = None

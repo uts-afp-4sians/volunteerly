@@ -184,18 +184,92 @@
           "programs"
         ],
         "summary": "List Programs",
+        "description": "List non-deleted programs, optionally narrowed by query-string filters.\nRepeated params (``team_size``, ``commitment_frequency``,\n``commitment_duration``) are OR-ed within a group and AND-ed across groups.",
         "operationId": "list_programs_programs_get",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "Search in name/description",
+              "title": "Q",
+              "nullable": true,
+              "type": "string"
+            },
+            "description": "Search in name/description"
+          },
+          {
+            "name": "category_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "title": "Category Id",
+              "nullable": true,
+              "type": "integer"
+            }
+          },
+          {
+            "name": "team_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "title": "Team Size",
+              "nullable": true,
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/TeamSize"
+              }
+            }
+          },
+          {
+            "name": "commitment_frequency",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "title": "Commitment Frequency",
+              "nullable": true,
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/CommitmentFrequency"
+              }
+            }
+          },
+          {
+            "name": "commitment_duration",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "title": "Commitment Duration",
+              "nullable": true,
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/CommitmentDuration"
+              }
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
+                  "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/ProgramRead"
                   },
-                  "type": "array",
                   "title": "Response List Programs Programs Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -208,15 +282,20 @@
         ],
         "summary": "Create Program",
         "operationId": "create_program_programs_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/ProgramCreate"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "201": {
@@ -239,12 +318,7 @@
               }
             }
           }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ]
+        }
       }
     },
     "/programs/{program_id}": {
@@ -704,6 +778,26 @@
         "title": "AuthResponse",
         "description": "Wire shape matching iOS `AuthResponse` ({ token, user })."
       },
+      "CommitmentDuration": {
+        "type": "string",
+        "enum": [
+          "under_2",
+          "three_to_six",
+          "seven_to_nine",
+          "continuous"
+        ],
+        "title": "CommitmentDuration",
+        "description": "Expected length of commitment in months, as filter buckets (wire values\nmatch iOS CommitmentDuration)."
+      },
+      "CommitmentFrequency": {
+        "type": "string",
+        "enum": [
+          "weekly",
+          "monthly"
+        ],
+        "title": "CommitmentFrequency",
+        "description": "How often a program expects volunteers to show up (wire values match iOS)."
+      },
       "ForumCommentRead": {
         "properties": {
           "comment_id": {
@@ -958,6 +1052,22 @@
             "minimum": 1.0,
             "title": "Max Volunteers"
           },
+          "commitment_frequency": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CommitmentFrequency"
+              }
+            ]
+          },
+          "commitment_duration": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CommitmentDuration"
+              }
+            ]
+          },
           "banner_image_url": {
             "title": "Banner Image Url",
             "nullable": true,
@@ -1042,6 +1152,22 @@
           "max_volunteers": {
             "type": "integer",
             "title": "Max Volunteers"
+          },
+          "commitment_frequency": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CommitmentFrequency"
+              }
+            ]
+          },
+          "commitment_duration": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CommitmentDuration"
+              }
+            ]
           },
           "status": {
             "$ref": "#/components/schemas/ProgramStatus"
@@ -1153,6 +1279,17 @@
         ],
         "title": "ServiceStatus",
         "description": "Individual service health status."
+      },
+      "TeamSize": {
+        "type": "string",
+        "enum": [
+          "small",
+          "medium",
+          "large",
+          "open"
+        ],
+        "title": "TeamSize",
+        "description": "Team-size preference buckets used as a `GET /programs` filter. Not stored\non the program; mapped to ``max_volunteers`` ranges at query time (wire\nvalues match iOS TeamSize)."
       },
       "UserInterestRead": {
         "properties": {

@@ -11,7 +11,12 @@ from datetime import UTC, datetime
 
 from src.auth.security import hash_password
 from src.categories.model import Keyword, ProgramCategory
-from src.common.enums import ParticipationStatus, ProgramStatus
+from src.common.enums import (
+    CommitmentDuration,
+    CommitmentFrequency,
+    ParticipationStatus,
+    ProgramStatus,
+)
 from src.forum.model import ForumComment, ForumPost
 from src.lib.database import Base, engine, session_factory
 from src.locations.model import Location
@@ -89,6 +94,8 @@ def _rows() -> list[Base]:
             start_datetime=_dt("2026-07-01T08:00:00+00:00"),
             end_datetime=_dt("2026-07-01T12:00:00+00:00"),
             max_volunteers=30,
+            commitment_frequency=CommitmentFrequency.MONTHLY,
+            commitment_duration=CommitmentDuration.THREE_TO_SIX,
             status=ProgramStatus.OPEN,
             is_deleted=False,
             deleted_at=None,
@@ -107,6 +114,8 @@ def _rows() -> list[Base]:
             start_datetime=_dt("2026-07-15T07:00:00+00:00"),
             end_datetime=_dt("2026-07-15T10:00:00+00:00"),
             max_volunteers=50,
+            commitment_frequency=CommitmentFrequency.MONTHLY,
+            commitment_duration=CommitmentDuration.CONTINUOUS,
             status=ProgramStatus.OPEN,
             is_deleted=False,
             deleted_at=None,
@@ -126,6 +135,8 @@ def _rows() -> list[Base]:
             start_datetime=_dt("2026-07-08T15:30:00+00:00"),
             end_datetime=_dt("2026-07-08T17:00:00+00:00"),
             max_volunteers=12,
+            commitment_frequency=CommitmentFrequency.WEEKLY,
+            commitment_duration=CommitmentDuration.SEVEN_TO_NINE,
             status=ProgramStatus.OPEN,
             is_deleted=False,
             deleted_at=None,
@@ -145,6 +156,8 @@ def _rows() -> list[Base]:
             start_datetime=_dt("2026-07-20T13:00:00+00:00"),
             end_datetime=_dt("2026-07-20T16:00:00+00:00"),
             max_volunteers=8,
+            commitment_frequency=CommitmentFrequency.WEEKLY,
+            commitment_duration=CommitmentDuration.UNDER_2,
             status=ProgramStatus.FULL,
             is_deleted=False,
             deleted_at=None,
