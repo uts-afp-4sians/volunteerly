@@ -15,6 +15,8 @@ struct ResetPasswordView: View {
     @State private var didSend = false
     @State private var errorMessage: String?
 
+    private static let activeButtonColor = Color(red: 0x7E / 255, green: 0x92 / 255, blue: 0x4E / 255)
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 28) {
@@ -88,7 +90,7 @@ struct ResetPasswordView: View {
             .foregroundStyle(.white)
             .frame(maxWidth: .infinity)
             .frame(height: 54)
-            .background(Theme.gold)
+            .background(Self.activeButtonColor)
             .clipShape(RoundedRectangle(cornerRadius: 24))
         }
         .disabled(isSubmitting || !isValidEmail)

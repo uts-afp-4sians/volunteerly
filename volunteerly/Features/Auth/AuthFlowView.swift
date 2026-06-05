@@ -6,8 +6,9 @@ struct AuthFlowView: View {
             LoginView()
                 .navigationDestination(for: AuthRoute.self) { route in
                     switch route {
-                    case .signup:     SignupView()
-                    case .signupForm: SignupFormView()
+                    case .signup:        SignupView()
+                    case .signupForm:    SignupFormView()
+                    case .resetPassword: ResetPasswordView()
                     }
                 }
         }
@@ -17,6 +18,7 @@ struct AuthFlowView: View {
 enum AuthRoute: Hashable {
     case signup
     case signupForm
+    case resetPassword
 }
 
 #Preview { AuthFlowView() }
