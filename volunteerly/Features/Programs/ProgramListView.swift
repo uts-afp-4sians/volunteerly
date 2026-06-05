@@ -1,9 +1,13 @@
 import SwiftUI
 
 struct ProgramListView: View {
-    @State private var viewModel = ProgramListViewModel()
+    @State private var viewModel: ProgramListViewModel
     @State private var showFilters = false
     private let horizontalPadding: CGFloat = 20
+
+    init(httpClient: HTTPClient = LiveHTTPClient.shared) {
+        _viewModel = State(initialValue: ProgramListViewModel(httpClient: httpClient))
+    }
 
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
@@ -191,9 +195,9 @@ struct FABButtonStyle: ButtonStyle {
 #Preview {
     let _ = MockData.registerAll(in: MockHTTPClient.shared)
     return NavigationStack {
-        ProgramListView()
+        ProgramListView(httpClient: MockHTTPClient.shared)
             .navigationDestination(for: Int.self) { id in
-                ProgramDetailView(programId: id)
+                ProgramDetailView(programId: id, httpClient: MockHTTPClient.shared)
             }
     }
 }

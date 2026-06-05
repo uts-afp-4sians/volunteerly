@@ -18,7 +18,7 @@ final class ProgramDetailViewModel {
 
     private let httpClient: HTTPClient
 
-    init(programId: Int, httpClient: HTTPClient = MockHTTPClient.shared) {
+    init(programId: Int, httpClient: HTTPClient = LiveHTTPClient.shared) {
         self.programId = programId
         self.httpClient = httpClient
     }

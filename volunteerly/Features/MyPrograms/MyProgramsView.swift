@@ -1,8 +1,12 @@
 import SwiftUI
 
 struct MyProgramsView: View {
-    @State private var viewModel = MyProgramsViewModel()
+    @State private var viewModel: MyProgramsViewModel
     private let horizontalPadding: CGFloat = 20
+
+    init(httpClient: HTTPClient = LiveHTTPClient.shared) {
+        _viewModel = State(initialValue: MyProgramsViewModel(httpClient: httpClient))
+    }
 
     var body: some View {
         ScrollView {
@@ -198,9 +202,9 @@ struct MyProgramRow: View {
 #Preview {
     let _ = MockData.registerAll(in: MockHTTPClient.shared)
     return NavigationStack {
-        MyProgramsView()
+        MyProgramsView(httpClient: MockHTTPClient.shared)
             .navigationDestination(for: Int.self) { id in
-                ProgramDetailView(programId: id)
+                ProgramDetailView(programId: id, httpClient: MockHTTPClient.shared)
             }
     }
 }

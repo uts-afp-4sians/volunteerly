@@ -31,7 +31,7 @@ final class MyProgramsViewModel {
 
     private let httpClient: HTTPClient
 
-    init(httpClient: HTTPClient = MockHTTPClient.shared) {
+    init(httpClient: HTTPClient = LiveHTTPClient.shared) {
         self.httpClient = httpClient
     }
 

@@ -10,9 +10,11 @@ struct ProgramDetailView: View {
 
     private let horizontalPadding: CGFloat = 20
 
-    init(programId: Int) {
+    init(programId: Int, httpClient: HTTPClient = LiveHTTPClient.shared) {
         self.programId = programId
-        _viewModel = State(initialValue: ProgramDetailViewModel(programId: programId))
+        _viewModel = State(
+            initialValue: ProgramDetailViewModel(programId: programId, httpClient: httpClient)
+        )
     }
 
     var body: some View {
@@ -309,6 +311,6 @@ struct ProgramDetailView: View {
 #Preview {
     let _ = MockData.registerAll(in: MockHTTPClient.shared)
     return NavigationStack {
-        ProgramDetailView(programId: 1)
+        ProgramDetailView(programId: 1, httpClient: MockHTTPClient.shared)
     }
 }
