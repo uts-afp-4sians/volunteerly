@@ -111,3 +111,26 @@ def test_filter_by_team_size_bucket(client: TestClient) -> None:
 def test_filters_combine_with_and(client: TestClient) -> None:
     query = "?category_id=1&commitment_frequency=monthly&team_size=open"
     assert _ids(client, query) == {1, 2}
+
+
+def test_list_omits_distance_without_coords(client: TestClient) -> None:
+    # No lat/lng → nothing to measure against, so distance_km stays null.
+    body = client.get("/programs").json()
+    assert body and all(p["distance_km"] is None for p in body)
+
+
+def test_list_includes_distance_with_coords(client: TestClient) -> None:
+    # Caller sitting on program 1's coordinates (location 1) → 0 km for it, and
+    # the other programs sit at their own spots, so distances vary per card.
+    body = client.get("/programs?lat=-33.8688&lng=151.2093").json()
+    by_id = {p["program_id"]: p["distance_km"] for p in body}
+    assert all(isinstance(d, (int, float)) for d in by_id.values())
+    assert by_id[1] == 0.0  # sits exactly on the query point
+    assert by_id[2] > 0  # a different location is measurably farther
+
+
+def test_list_distance_grows_with_separation(client: TestClient) -> None:
+    # ~1 degree of latitude is ~111 km, so every Sydney program is >100 km away.
+    body = client.get("/programs?lat=-32.8688&lng=151.2093").json()
+    assert body
+    assert all(program["distance_km"] > 100 for program in body)

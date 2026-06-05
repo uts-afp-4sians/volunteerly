@@ -346,6 +346,8 @@ internal struct Client: APIProtocol {
     /// List non-deleted programs, optionally narrowed by query-string filters.
     /// Repeated params (``team_size``, ``commitment_frequency``,
     /// ``commitment_duration``) are OR-ed within a group and AND-ed across groups.
+    /// When ``lat``/``lng`` are supplied, each program carries ``distance_km`` —
+    /// the straight-line distance from the caller to its location.
     ///
     /// - Remark: HTTP `GET /programs`.
     /// - Remark: Generated from `#/paths//programs/get(list_programs_programs_get)`.
@@ -397,6 +399,20 @@ internal struct Client: APIProtocol {
                     explode: true,
                     name: "commitment_duration",
                     value: input.query.commitment_duration
+                )
+                try converter.setQueryItemAsURI(
+                    in: &request,
+                    style: .form,
+                    explode: true,
+                    name: "lat",
+                    value: input.query.lat
+                )
+                try converter.setQueryItemAsURI(
+                    in: &request,
+                    style: .form,
+                    explode: true,
+                    name: "lng",
+                    value: input.query.lng
                 )
                 converter.setAcceptHeader(
                     in: &request.headerFields,
@@ -690,6 +706,338 @@ internal struct Client: APIProtocol {
                 case 422:
                     let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
                     let body: Operations.list_program_keywords_programs__program_id__keywords_get.Output.UnprocessableContent.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.HTTPValidationError.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .unprocessableContent(.init(body: body))
+                default:
+                    return .undocumented(
+                        statusCode: response.status.code,
+                        .init(
+                            headerFields: response.headerFields,
+                            body: responseBody
+                        )
+                    )
+                }
+            }
+        )
+    }
+    /// Get Similar Program
+    ///
+    /// One "nearby" program to suggest on the detail screen.
+    ///
+    /// Picked server-side so the client never pulls whole tables: each strategy is a
+    /// bounded ``LIMIT 1`` query. Prefers the geographically nearest program (when
+    /// coordinates exist), then the same city, region, category, and finally any
+    /// other program. ``distance_km`` is set only for the coordinate-based match.
+    ///
+    /// - Remark: HTTP `GET /programs/{program_id}/similar`.
+    /// - Remark: Generated from `#/paths//programs/{program_id}/similar/get(get_similar_program_programs__program_id__similar_get)`.
+    internal func get_similar_program_programs__program_id__similar_get(_ input: Operations.get_similar_program_programs__program_id__similar_get.Input) async throws -> Operations.get_similar_program_programs__program_id__similar_get.Output {
+        try await client.send(
+            input: input,
+            forOperation: Operations.get_similar_program_programs__program_id__similar_get.id,
+            serializer: { input in
+                let path = try converter.renderedPath(
+                    template: "/programs/{}/similar",
+                    parameters: [
+                        input.path.program_id
+                    ]
+                )
+                var request: HTTPTypes.HTTPRequest = .init(
+                    soar_path: path,
+                    method: .get
+                )
+                suppressMutabilityWarning(&request)
+                converter.setAcceptHeader(
+                    in: &request.headerFields,
+                    contentTypes: input.headers.accept
+                )
+                return (request, nil)
+            },
+            deserializer: { response, responseBody in
+                switch response.status.code {
+                case 200:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Operations.get_similar_program_programs__program_id__similar_get.Output.Ok.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.SimilarProgramRead.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .ok(.init(body: body))
+                case 422:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Operations.get_similar_program_programs__program_id__similar_get.Output.UnprocessableContent.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.HTTPValidationError.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .unprocessableContent(.init(body: body))
+                default:
+                    return .undocumented(
+                        statusCode: response.status.code,
+                        .init(
+                            headerFields: response.headerFields,
+                            body: responseBody
+                        )
+                    )
+                }
+            }
+        )
+    }
+    /// Get Participation Summary
+    ///
+    /// Capacity snapshot for the Join counter, including whether the caller has
+    /// already joined.
+    ///
+    /// - Remark: HTTP `GET /programs/{program_id}/participations`.
+    /// - Remark: Generated from `#/paths//programs/{program_id}/participations/get(get_participation_summary_programs__program_id__participations_get)`.
+    internal func get_participation_summary_programs__program_id__participations_get(_ input: Operations.get_participation_summary_programs__program_id__participations_get.Input) async throws -> Operations.get_participation_summary_programs__program_id__participations_get.Output {
+        try await client.send(
+            input: input,
+            forOperation: Operations.get_participation_summary_programs__program_id__participations_get.id,
+            serializer: { input in
+                let path = try converter.renderedPath(
+                    template: "/programs/{}/participations",
+                    parameters: [
+                        input.path.program_id
+                    ]
+                )
+                var request: HTTPTypes.HTTPRequest = .init(
+                    soar_path: path,
+                    method: .get
+                )
+                suppressMutabilityWarning(&request)
+                converter.setAcceptHeader(
+                    in: &request.headerFields,
+                    contentTypes: input.headers.accept
+                )
+                return (request, nil)
+            },
+            deserializer: { response, responseBody in
+                switch response.status.code {
+                case 200:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Operations.get_participation_summary_programs__program_id__participations_get.Output.Ok.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.ProgramParticipationSummary.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .ok(.init(body: body))
+                case 422:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Operations.get_participation_summary_programs__program_id__participations_get.Output.UnprocessableContent.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.HTTPValidationError.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .unprocessableContent(.init(body: body))
+                default:
+                    return .undocumented(
+                        statusCode: response.status.code,
+                        .init(
+                            headerFields: response.headerFields,
+                            body: responseBody
+                        )
+                    )
+                }
+            }
+        )
+    }
+    /// Join Program
+    ///
+    /// Join the program as the authenticated user, returning the refreshed
+    /// capacity snapshot. Rejects joins when the program isn't open, is at
+    /// capacity, or the caller has already joined.
+    ///
+    /// - Remark: HTTP `POST /programs/{program_id}/participations`.
+    /// - Remark: Generated from `#/paths//programs/{program_id}/participations/post(join_program_programs__program_id__participations_post)`.
+    internal func join_program_programs__program_id__participations_post(_ input: Operations.join_program_programs__program_id__participations_post.Input) async throws -> Operations.join_program_programs__program_id__participations_post.Output {
+        try await client.send(
+            input: input,
+            forOperation: Operations.join_program_programs__program_id__participations_post.id,
+            serializer: { input in
+                let path = try converter.renderedPath(
+                    template: "/programs/{}/participations",
+                    parameters: [
+                        input.path.program_id
+                    ]
+                )
+                var request: HTTPTypes.HTTPRequest = .init(
+                    soar_path: path,
+                    method: .post
+                )
+                suppressMutabilityWarning(&request)
+                converter.setAcceptHeader(
+                    in: &request.headerFields,
+                    contentTypes: input.headers.accept
+                )
+                return (request, nil)
+            },
+            deserializer: { response, responseBody in
+                switch response.status.code {
+                case 201:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Operations.join_program_programs__program_id__participations_post.Output.Created.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.ProgramParticipationSummary.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .created(.init(body: body))
+                case 422:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Operations.join_program_programs__program_id__participations_post.Output.UnprocessableContent.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.HTTPValidationError.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .unprocessableContent(.init(body: body))
+                default:
+                    return .undocumented(
+                        statusCode: response.status.code,
+                        .init(
+                            headerFields: response.headerFields,
+                            body: responseBody
+                        )
+                    )
+                }
+            }
+        )
+    }
+    /// Leave Program
+    ///
+    /// Withdraw the authenticated user's participation, freeing their slot.
+    ///
+    /// - Remark: HTTP `DELETE /programs/{program_id}/participations`.
+    /// - Remark: Generated from `#/paths//programs/{program_id}/participations/delete(leave_program_programs__program_id__participations_delete)`.
+    internal func leave_program_programs__program_id__participations_delete(_ input: Operations.leave_program_programs__program_id__participations_delete.Input) async throws -> Operations.leave_program_programs__program_id__participations_delete.Output {
+        try await client.send(
+            input: input,
+            forOperation: Operations.leave_program_programs__program_id__participations_delete.id,
+            serializer: { input in
+                let path = try converter.renderedPath(
+                    template: "/programs/{}/participations",
+                    parameters: [
+                        input.path.program_id
+                    ]
+                )
+                var request: HTTPTypes.HTTPRequest = .init(
+                    soar_path: path,
+                    method: .delete
+                )
+                suppressMutabilityWarning(&request)
+                converter.setAcceptHeader(
+                    in: &request.headerFields,
+                    contentTypes: input.headers.accept
+                )
+                return (request, nil)
+            },
+            deserializer: { response, responseBody in
+                switch response.status.code {
+                case 204:
+                    return .noContent(.init())
+                case 422:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Operations.leave_program_programs__program_id__participations_delete.Output.UnprocessableContent.Body
                     let chosenContentType = try converter.bestContentType(
                         received: contentType,
                         options: [

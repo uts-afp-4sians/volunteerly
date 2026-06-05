@@ -5,14 +5,21 @@ import Foundation
 enum MockData {
 
     // MARK: Location
-    static let location = Location(
-        id: 1,
-        city: "Sydney",
-        stateRegion: "NSW",
-        country: "Australia",
-        latitude: -33.8688,
-        longitude: 151.2093
-    )
+    /// Distinct Sydney-area spots (mirrors scripts/seed.py) so each program has
+    /// its own coordinates and the list can show a per-card distance.
+    static let locations: [Location] = [
+        Location(id: 1, city: "Sydney", stateRegion: "NSW", country: "Australia",
+                 latitude: -33.8688, longitude: 151.2093),
+        Location(id: 2, city: "Bondi Beach", stateRegion: "NSW", country: "Australia",
+                 latitude: -33.8908, longitude: 151.2743),
+        Location(id: 3, city: "Newtown", stateRegion: "NSW", country: "Australia",
+                 latitude: -33.8983, longitude: 151.1784),
+        Location(id: 4, city: "Chatswood", stateRegion: "NSW", country: "Australia",
+                 latitude: -33.7969, longitude: 151.1803)
+    ]
+
+    /// The primary location, kept for call sites that want a single default.
+    static let location = locations[0]
 
     // MARK: User
     static let user = User(
@@ -78,7 +85,7 @@ enum MockData {
             id: 2,
             creatorUserId: 1,
             categoryId: 1,
-            locationId: 1,
+            locationId: 2,
             name: "Bondi Beach Cleanup",
             description: "Help keep Bondi Beach clean by joining our monthly cleanup crew.",
             bannerImageURL: "https://picsum.photos/seed/prog2/800/400",
@@ -96,7 +103,7 @@ enum MockData {
             id: 3,
             creatorUserId: 1,
             categoryId: 3,
-            locationId: 1,
+            locationId: 3,
             name: "After-School Reading Club",
             description: "Help local primary students build confidence by reading together once a week.",
             bannerImageURL: "https://picsum.photos/seed/prog3/800/400",
@@ -114,7 +121,7 @@ enum MockData {
             id: 4,
             creatorUserId: 1,
             categoryId: 6,
-            locationId: 1,
+            locationId: 4,
             name: "Senior Tech Support Drop-In",
             description: "Spend an afternoon helping seniors get comfortable with their phones and laptops.",
             bannerImageURL: "https://picsum.photos/seed/prog4/800/400",
@@ -132,7 +139,7 @@ enum MockData {
             id: 5,
             creatorUserId: 1,
             categoryId: 2,
-            locationId: 1,
+            locationId: 2,
             name: "Harbour Foreshore Restoration",
             description: "A weekend spent clearing weeds and replanting natives along the foreshore.",
             bannerImageURL: "https://picsum.photos/seed/prog5/800/400",
@@ -150,7 +157,7 @@ enum MockData {
             id: 6,
             creatorUserId: 1,
             categoryId: 7,
-            locationId: 1,
+            locationId: 3,
             name: "Community Kitchen Lunch Service",
             description: "Prepared and served hot meals for those doing it tough in the inner city.",
             bannerImageURL: "https://picsum.photos/seed/prog6/800/400",
@@ -168,7 +175,7 @@ enum MockData {
             id: 7,
             creatorUserId: 1,
             categoryId: 5,
-            locationId: 1,
+            locationId: 4,
             name: "Wildlife Shelter Open Day",
             description: "Awaiting confirmation to help out at the local wildlife shelter open day.",
             bannerImageURL: "https://picsum.photos/seed/prog7/800/400",
@@ -204,6 +211,20 @@ enum MockData {
         status: .approved,
         joinedAt: .now
     )
+
+    /// Capacity snapshot the detail screen reads from
+    /// `/programs/{id}/participations`. Program 1 reflects the seeded join.
+    static func participationSummary(for program: Program) -> ProgramParticipationSummary {
+        let joined = program.id == 1
+        let count = joined ? 1 : 0
+        return ProgramParticipationSummary(
+            programId: program.id,
+            participantCount: count,
+            maxVolunteers: program.maxVolunteers,
+            isFull: count >= program.maxVolunteers,
+            joined: joined
+        )
+    }
 
     // MARK: Forum
     static let forumPosts: [ForumPost] = [
@@ -247,7 +268,6 @@ enum MockData {
             "/programs/5":          programs[4],
             "/programs/6":          programs[5],
             "/programs/7":          programs[6],
-            "/locations/1":         location,
             "/users/1":             user,
             "/users/1/profile":     userProfile,
             "/programs/1/posts":    forumPosts,
@@ -258,5 +278,12 @@ enum MockData {
             "/programs/1/keywords": programKeywords,
             "/programs/2/keywords": [programKeywords[1]]
         ]
+        for program in programs {
+            client.handlers["/programs/\(program.id)/participations"] =
+                participationSummary(for: program)
+        }
+        for location in locations {
+            client.handlers["/locations/\(location.id)"] = location
+        }
     }
 }

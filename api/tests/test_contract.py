@@ -23,6 +23,10 @@ PROGRAM_KEYS = {
     "is_deleted",
     "deleted_at",
     "created_at",
+    # Optional enrichments, null in list responses unless requested:
+    "participant_count",
+    "is_full",
+    "distance_km",
 }
 
 

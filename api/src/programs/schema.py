@@ -50,6 +50,25 @@ class ProgramRead(BaseModel):
     is_deleted: bool
     deleted_at: UTCDateTime | None = None
     created_at: UTCDateTime
+    # Capacity state belongs to the program resource itself, so the detail fetch
+    # carries the Join counter without a second round-trip. Populated by
+    # ``GET /programs/{id}``; ``None`` in list responses (avoids an N+1 count).
+    participant_count: int | None = None
+    is_full: bool | None = None
+    # Straight-line distance (km) from the caller's coordinates to the program's
+    # location, set by ``GET /programs`` only when ``lat``/``lng`` are supplied
+    # and the location has coordinates; ``None`` otherwise.
+    distance_km: float | None = None
+
+
+class SimilarProgramRead(BaseModel):
+    """A single "nearby" suggestion for the program detail screen, picked
+    server-side with a bounded ``LIMIT 1`` query. ``distance_km`` is the
+    straight-line distance from the source program when both have coordinates,
+    else ``None`` (the match was made by city/region/category)."""
+
+    program: ProgramRead
+    distance_km: float | None = None
 
 
 class ProgramKeywordRead(BaseModel):
@@ -71,6 +90,17 @@ class ProgramParticipationRead(BaseModel):
     user_id: int
     participation_status: ParticipationStatus
     joined_at: UTCDateTime
+
+
+class ProgramParticipationSummary(BaseModel):
+    """Capacity snapshot for a program from the caller's perspective, used by the
+    iOS detail screen to render the Join counter and gate the Join button."""
+
+    program_id: int
+    participant_count: int
+    max_volunteers: int
+    is_full: bool
+    joined: bool
 
 
 class ProgramBookmarkRead(BaseModel):

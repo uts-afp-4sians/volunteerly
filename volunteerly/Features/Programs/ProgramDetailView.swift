@@ -355,7 +355,7 @@ struct ProgramDetailView: View {
         VStack(alignment: .leading, spacing: 16) {
             sectionHeader("Similar program nearby")
             NavigationLink(value: similar.id) {
-                ProgramCard(program: similar)
+                ProgramCard(program: similar, distanceKm: viewModel.similarDistanceKm)
             }
             .buttonStyle(.plain)
         }
@@ -366,17 +366,23 @@ struct ProgramDetailView: View {
     private func joinBar(_ program: Program) -> some View {
         HStack(spacing: 16) {
             Button {
-                withAnimation(.snappy) { viewModel.toggleJoin() }
-                if viewModel.isJoined { showJoinedConfirmation = true }
+                Task {
+                    let didJoin = await viewModel.toggleJoin()
+                    if didJoin {
+                        withAnimation(.snappy) { showJoinedConfirmation = true }
+                    }
+                }
             } label: {
-                Text(viewModel.isJoined ? "Joined" : "Join")
+                Text(joinLabel)
                     .font(.actionButtonLabel)
-                    .foregroundStyle(viewModel.isJoined ? Theme.success : Color.blue)
+                    .foregroundStyle(joinLabelColor)
                     .frame(maxWidth: .infinity)
                     .frame(height: 61)
                     .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 13, style: .continuous))
             }
             .buttonStyle(.plain)
+            .disabled(!viewModel.canToggleJoin)
+            .opacity(viewModel.canToggleJoin ? 1 : 0.5)
 
             HStack(spacing: 6) {
                 Image(systemName: "person.2.fill")
@@ -388,6 +394,16 @@ struct ProgramDetailView: View {
             .accessibilityElement(children: .combine)
             .accessibilityLabel("\(viewModel.participantCount) of \(program.maxVolunteers) volunteers joined")
         }
+    }
+
+    private var joinLabel: String {
+        if viewModel.isJoined { return "Joined" }
+        return viewModel.isFull ? "Full" : "Join"
+    }
+
+    private var joinLabelColor: Color {
+        if viewModel.isJoined { return Theme.success }
+        return viewModel.isFull ? Theme.textSecondary : Color.blue
     }
 
     // MARK: - Helpers

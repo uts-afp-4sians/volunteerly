@@ -17,6 +17,14 @@ nonisolated struct Program: Identifiable, Codable {
     let isDeleted: Bool
     let deletedAt: Date?
     let createdAt: Date
+    /// Capacity snapshot carried by the program detail (`GET /programs/{id}`);
+    /// `nil` in list responses, which don't compute it.
+    var participantCount: Int? = nil
+    var isFull: Bool? = nil
+    /// Straight-line distance (km) from the caller's location, set by the list
+    /// (`GET /programs?lat=&lng=`) when the device location is available;
+    /// `nil` otherwise, in which case the card shows the start date instead.
+    var distanceKm: Double? = nil
 
     enum CodingKeys: String, CodingKey {
         case id = "program_id"
@@ -35,6 +43,9 @@ nonisolated struct Program: Identifiable, Codable {
         case isDeleted = "is_deleted"
         case deletedAt = "deleted_at"
         case createdAt = "created_at"
+        case participantCount = "participant_count"
+        case isFull = "is_full"
+        case distanceKm = "distance_km"
     }
 }
 
@@ -153,6 +164,24 @@ nonisolated struct ProgramParticipation: Identifiable, Codable {
         case userId = "user_id"
         case status = "participation_status"
         case joinedAt = "joined_at"
+    }
+}
+
+/// Capacity snapshot for the program detail screen's Join counter, returned by
+/// `GET`/`POST /programs/{id}/participations`. `joined` reflects the caller.
+nonisolated struct ProgramParticipationSummary: Codable {
+    let programId: Int
+    let participantCount: Int
+    let maxVolunteers: Int
+    let isFull: Bool
+    let joined: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case programId = "program_id"
+        case participantCount = "participant_count"
+        case maxVolunteers = "max_volunteers"
+        case isFull = "is_full"
+        case joined
     }
 }
 

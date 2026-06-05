@@ -37,14 +37,42 @@ CREATED_AT = datetime(2026, 6, 1, 0, 0, 0, tzinfo=UTC)
 
 
 def _rows() -> list[Base]:
-    location = Location(
-        location_id=1,
-        city="Sydney",
-        state_region="NSW",
-        country="Australia",
-        latitude=-33.8688,
-        longitude=151.2093,
-    )
+    # Distinct Sydney-area spots so each program sits at its own coordinates and
+    # the list can show a meaningful per-card distance (not all the same point).
+    locations = [
+        Location(
+            location_id=1,
+            city="Sydney",
+            state_region="NSW",
+            country="Australia",
+            latitude=-33.8688,
+            longitude=151.2093,
+        ),
+        Location(
+            location_id=2,
+            city="Bondi Beach",
+            state_region="NSW",
+            country="Australia",
+            latitude=-33.8908,
+            longitude=151.2743,
+        ),
+        Location(
+            location_id=3,
+            city="Newtown",
+            state_region="NSW",
+            country="Australia",
+            latitude=-33.8983,
+            longitude=151.1784,
+        ),
+        Location(
+            location_id=4,
+            city="Chatswood",
+            state_region="NSW",
+            country="Australia",
+            latitude=-33.7969,
+            longitude=151.1803,
+        ),
+    ]
     user = User(
         user_id=1,
         email="jane.doe@example.com",
@@ -105,7 +133,7 @@ def _rows() -> list[Base]:
             program_id=2,
             creator_user_id=1,
             category_id=1,
-            location_id=1,
+            location_id=2,
             program_name="Bondi Beach Cleanup",
             description=(
                 "Help keep Bondi Beach clean by joining our monthly cleanup crew."
@@ -125,7 +153,7 @@ def _rows() -> list[Base]:
             program_id=3,
             creator_user_id=1,
             category_id=3,
-            location_id=1,
+            location_id=3,
             program_name="After-School Reading Club",
             description=(
                 "Help local primary students build confidence by reading "
@@ -146,7 +174,7 @@ def _rows() -> list[Base]:
             program_id=4,
             creator_user_id=1,
             category_id=6,
-            location_id=1,
+            location_id=4,
             program_name="Senior Tech Support Drop-In",
             description=(
                 "Spend an afternoon helping seniors get comfortable with their "
@@ -209,7 +237,7 @@ def _rows() -> list[Base]:
 
     # Dependency order: parents before children.
     return [
-        location,
+        *locations,
         *categories,
         *keywords,
         user,

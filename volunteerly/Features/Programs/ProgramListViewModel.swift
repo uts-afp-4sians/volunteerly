@@ -1,3 +1,4 @@
+import CoreLocation
 import Foundation
 import Observation
 
@@ -54,9 +55,18 @@ final class ProgramListViewModel {
     }
 
     private let httpClient: HTTPClient
+    private let locationProvider: LocationProvider
 
-    init(httpClient: HTTPClient = LiveHTTPClient.shared) {
+    /// The caller's coordinate, resolved once on first load and sent to the API
+    /// so each card can show its distance. `nil` until/unless location is granted.
+    private var userCoordinate: CLLocationCoordinate2D?
+
+    init(
+        httpClient: HTTPClient = LiveHTTPClient.shared,
+        locationProvider: LocationProvider = .shared
+    ) {
         self.httpClient = httpClient
+        self.locationProvider = locationProvider
     }
 
     /// Builds `/programs` with the current filters as query items. Repeated
@@ -72,6 +82,10 @@ final class ProgramListViewModel {
         items += selectedTeamSizes.map { .init(name: "team_size", value: $0.rawValue) }
         items += selectedFrequencies.map { .init(name: "commitment_frequency", value: $0.rawValue) }
         items += selectedDurations.map { .init(name: "commitment_duration", value: $0.rawValue) }
+        if let coordinate = userCoordinate {
+            items.append(.init(name: "lat", value: String(coordinate.latitude)))
+            items.append(.init(name: "lng", value: String(coordinate.longitude)))
+        }
 
         guard !items.isEmpty else { return "/programs" }
         var components = URLComponents()
@@ -82,6 +96,12 @@ final class ProgramListViewModel {
     func load() async {
         isLoading = true
         errorMessage = nil
+
+        // Resolve the device location once so the list can carry per-card
+        // distances. Best-effort: if it's nil, the cards fall back to dates.
+        if userCoordinate == nil {
+            userCoordinate = await locationProvider.currentCoordinate()
+        }
 
         do {
             async let programs: [Program] = httpClient.get(programsPath)

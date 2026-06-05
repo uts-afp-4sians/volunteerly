@@ -184,7 +184,7 @@
           "programs"
         ],
         "summary": "List Programs",
-        "description": "List non-deleted programs, optionally narrowed by query-string filters.\nRepeated params (``team_size``, ``commitment_frequency``,\n``commitment_duration``) are OR-ed within a group and AND-ed across groups.",
+        "description": "List non-deleted programs, optionally narrowed by query-string filters.\nRepeated params (``team_size``, ``commitment_frequency``,\n``commitment_duration``) are OR-ed within a group and AND-ed across groups.\nWhen ``lat``/``lng`` are supplied, each program carries ``distance_km`` \u2014\nthe straight-line distance from the caller to its location.",
         "operationId": "list_programs_programs_get",
         "parameters": [
           {
@@ -247,6 +247,34 @@
                 "$ref": "#/components/schemas/CommitmentDuration"
               }
             }
+          },
+          {
+            "name": "lat",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "Caller latitude for distance",
+              "title": "Lat",
+              "nullable": true,
+              "type": "number",
+              "maximum": 90,
+              "minimum": -90
+            },
+            "description": "Caller latitude for distance"
+          },
+          {
+            "name": "lng",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "Caller longitude for distance",
+              "title": "Lng",
+              "nullable": true,
+              "type": "number",
+              "maximum": 180,
+              "minimum": -180
+            },
+            "description": "Caller longitude for distance"
           }
         ],
         "responses": {
@@ -395,6 +423,182 @@
                 }
               }
             }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/programs/{program_id}/similar": {
+      "get": {
+        "tags": [
+          "programs"
+        ],
+        "summary": "Get Similar Program",
+        "description": "One \"nearby\" program to suggest on the detail screen.\n\nPicked server-side so the client never pulls whole tables: each strategy is a\nbounded ``LIMIT 1`` query. Prefers the geographically nearest program (when\ncoordinates exist), then the same city, region, category, and finally any\nother program. ``distance_km`` is set only for the coordinate-based match.",
+        "operationId": "get_similar_program_programs__program_id__similar_get",
+        "parameters": [
+          {
+            "name": "program_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Program Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimilarProgramRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/programs/{program_id}/participations": {
+      "get": {
+        "tags": [
+          "programs"
+        ],
+        "summary": "Get Participation Summary",
+        "description": "Capacity snapshot for the Join counter, including whether the caller has\nalready joined.",
+        "operationId": "get_participation_summary_programs__program_id__participations_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "program_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Program Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProgramParticipationSummary"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "programs"
+        ],
+        "summary": "Join Program",
+        "description": "Join the program as the authenticated user, returning the refreshed\ncapacity snapshot. Rejects joins when the program isn't open, is at\ncapacity, or the caller has already joined.",
+        "operationId": "join_program_programs__program_id__participations_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "program_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Program Id"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProgramParticipationSummary"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "programs"
+        ],
+        "summary": "Leave Program",
+        "description": "Withdraw the authenticated user's participation, freeing their slot.",
+        "operationId": "leave_program_programs__program_id__participations_delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "program_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Program Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
           },
           "422": {
             "description": "Validation Error",
@@ -1110,6 +1314,40 @@
         "title": "ProgramKeywordRead",
         "description": "Wire shape matching iOS `ProgramKeyword`."
       },
+      "ProgramParticipationSummary": {
+        "properties": {
+          "program_id": {
+            "type": "integer",
+            "title": "Program Id"
+          },
+          "participant_count": {
+            "type": "integer",
+            "title": "Participant Count"
+          },
+          "max_volunteers": {
+            "type": "integer",
+            "title": "Max Volunteers"
+          },
+          "is_full": {
+            "type": "boolean",
+            "title": "Is Full"
+          },
+          "joined": {
+            "type": "boolean",
+            "title": "Joined"
+          }
+        },
+        "type": "object",
+        "required": [
+          "program_id",
+          "participant_count",
+          "max_volunteers",
+          "is_full",
+          "joined"
+        ],
+        "title": "ProgramParticipationSummary",
+        "description": "Capacity snapshot for a program from the caller's perspective, used by the\niOS detail screen to render the Join counter and gate the Join button."
+      },
       "ProgramRead": {
         "properties": {
           "program_id": {
@@ -1184,6 +1422,21 @@
           "created_at": {
             "type": "string",
             "title": "Created At"
+          },
+          "participant_count": {
+            "title": "Participant Count",
+            "nullable": true,
+            "type": "integer"
+          },
+          "is_full": {
+            "title": "Is Full",
+            "nullable": true,
+            "type": "boolean"
+          },
+          "distance_km": {
+            "title": "Distance Km",
+            "nullable": true,
+            "type": "number"
           }
         },
         "type": "object",
@@ -1279,6 +1532,24 @@
         ],
         "title": "ServiceStatus",
         "description": "Individual service health status."
+      },
+      "SimilarProgramRead": {
+        "properties": {
+          "program": {
+            "$ref": "#/components/schemas/ProgramRead"
+          },
+          "distance_km": {
+            "title": "Distance Km",
+            "nullable": true,
+            "type": "number"
+          }
+        },
+        "type": "object",
+        "required": [
+          "program"
+        ],
+        "title": "SimilarProgramRead",
+        "description": "A single \"nearby\" suggestion for the program detail screen, picked\nserver-side with a bounded ``LIMIT 1`` query. ``distance_km`` is the\nstraight-line distance from the source program when both have coordinates,\nelse ``None`` (the match was made by city/region/category)."
       },
       "TeamSize": {
         "type": "string",

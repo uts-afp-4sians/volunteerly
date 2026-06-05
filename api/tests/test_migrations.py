@@ -29,8 +29,9 @@ def _migrate_fresh_db() -> str:
     """
     db_path = Path(tempfile.mkdtemp()) / "migration-check.db"
     db_url = f"sqlite:///{db_path}"
+    upgrade = "from alembic.config import main; main(['upgrade', 'head'])"
     subprocess.run(
-        [sys.executable, "-c", "from alembic.config import main; main(['upgrade', 'head'])"],
+        [sys.executable, "-c", upgrade],
         cwd=API_DIR,
         env={**os.environ, "DATABASE_URL": db_url, "PROJECT_ENV": "staging"},
         check=True,

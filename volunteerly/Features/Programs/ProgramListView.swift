@@ -141,7 +141,7 @@ struct ProgramListView: View {
             LazyVStack(spacing: 21) {
                 ForEach(viewModel.filteredPrograms) { program in
                     NavigationLink(value: program.id) {
-                        ProgramCard(program: program)
+                        ProgramCard(program: program, distanceKm: program.distanceKm)
                     }
                     .buttonStyle(.plain)
                 }
