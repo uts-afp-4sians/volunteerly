@@ -23,7 +23,7 @@ struct FilterSheet: View {
         }
         .scrollBounceBehavior(.basedOnSize)
         .background(Color(.systemBackground))
-        .presentationDragIndicator(.visible)
+        .presentationDragIndicator(.hidden)
     }
 
     // MARK: - Sections
@@ -160,6 +160,6 @@ struct FilterChip: View {
                 viewModel: ProgramListViewModel(httpClient: MockHTTPClient.shared),
                 onConfirm: {}
             )
-            .presentationDetents([.fraction(0.7), .large])
+            .presentationDetents([.fraction(0.7)])
         }
 }

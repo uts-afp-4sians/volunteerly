@@ -50,7 +50,7 @@ struct ProgramListView: View {
                 showFilters = false
                 Task { await viewModel.load() }
             }
-            .presentationDetents([.fraction(0.7), .large])
+            .presentationDetents([.fraction(0.7)])
         }
     }
 

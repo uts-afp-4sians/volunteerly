@@ -111,6 +111,6 @@ struct RepeatSelectionView: View {
         .sheet(isPresented: .constant(true)) {
             RepeatSelectionView(selectedRepeat: .constant("Every Week"))
                 .presentationDetents([.height(420)])
-                .presentationDragIndicator(.visible)
+                .presentationDragIndicator(.hidden)
         }
 }

@@ -153,11 +153,11 @@ struct PostProgramView: View {
             case .startDate:
                 DateSelectionView(title: "Starts", date: $startDate, isAllDay: $isAllDay)
                     .presentationDetents([.fraction(0.75), .large])
-                    .presentationDragIndicator(.visible)
+                    .presentationDragIndicator(.hidden)
             case .endDate:
                 DateSelectionView(title: "Ends", date: $endDate, isAllDay: $isAllDay, minimumDate: startDate)
                     .presentationDetents([.fraction(0.75), .large])
-                    .presentationDragIndicator(.visible)
+                    .presentationDragIndicator(.hidden)
             case .location:
                 navSheet(detents: [.fraction(0.85), .large]) {
                     RegionSelectionView(selectedRegion: $selectedRegion)
@@ -167,7 +167,7 @@ struct PostProgramView: View {
                 // (Figma 226:607), so it isn't wrapped in navSheet.
                 RepeatSelectionView(selectedRepeat: $selectedRepeat)
                     .presentationDetents([.height(420)])
-                    .presentationDragIndicator(.visible)
+                    .presentationDragIndicator(.hidden)
             }
         }
     }
