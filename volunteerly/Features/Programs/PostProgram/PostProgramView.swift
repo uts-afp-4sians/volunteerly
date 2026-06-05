@@ -163,9 +163,11 @@ struct PostProgramView: View {
                     RegionSelectionView(selectedRegion: $selectedRegion)
                 }
             case .repeatSelection:
-                navSheet(detents: [.fraction(0.45)]) {
-                    RepeatSelectionView(selectedRepeat: $selectedRepeat)
-                }
+                // The repeat sheet carries its own "Repeat / Done" header
+                // (Figma 226:607), so it isn't wrapped in navSheet.
+                RepeatSelectionView(selectedRepeat: $selectedRepeat)
+                    .presentationDetents([.height(420)])
+                    .presentationDragIndicator(.visible)
             }
         }
     }
@@ -331,81 +333,85 @@ struct PostProgramView: View {
     private var dateSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             requiredLabel("Date")
-            
-            VStack(spacing: 12) {
-                // Starts row
-                Button {
+
+            // Figma "Section - Repeated Event Toggle" (node 224:293): a 12pt-radius
+            // card whose rows are separated by edge-to-edge dividers. Each row pads
+            // 16h / 12v; date & time read as filled chips, Repeat as a value + chevron.
+            VStack(spacing: 0) {
+                dateTimeRow(label: "Starts", date: startDate) {
                     activeSheet = .startDate
-                } label: {
-                    HStack {
-                        Text("Starts")
-                            .font(.bodyText)
-                            .foregroundStyle(Theme.textPrimary)
-                        Spacer()
-                        Text(formatDateOnly(startDate))
-                            .font(.system(size: 14, weight: .medium))
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .background(Color(.systemGray5), in: RoundedRectangle(cornerRadius: 6))
-                        Text(formatTimeOnly(startDate))
-                            .font(.system(size: 14, weight: .medium))
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .background(Color(.systemGray5), in: RoundedRectangle(cornerRadius: 6))
-                    }
                 }
-                .buttonStyle(.plain)
-                
+
                 Divider()
-                
-                // Ends row
-                Button {
+
+                dateTimeRow(label: "Ends", date: endDate) {
                     activeSheet = .endDate
-                } label: {
-                    HStack {
-                        Text("Ends")
-                            .font(.bodyText)
-                            .foregroundStyle(Theme.textPrimary)
-                        Spacer()
-                        Text(formatDateOnly(endDate))
-                            .font(.system(size: 14, weight: .medium))
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .background(Color(.systemGray5), in: RoundedRectangle(cornerRadius: 6))
-                        Text(formatTimeOnly(endDate))
-                            .font(.system(size: 14, weight: .medium))
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .background(Color(.systemGray5), in: RoundedRectangle(cornerRadius: 6))
-                    }
                 }
-                .buttonStyle(.plain)
-                
+
                 Divider()
-                
-                // Repeat row
-                Button {
-                    activeSheet = .repeatSelection
-                } label: {
-                    HStack {
-                        Text("Repeat")
-                            .font(.bodyText)
-                            .foregroundStyle(Theme.textPrimary)
-                        Spacer()
-                        Text(selectedRepeat)
-                            .font(.bodyText)
-                            .foregroundStyle(.secondary)
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                .buttonStyle(.plain)
+
+                repeatRow
             }
-            .padding(16)
             .background(Color(.systemGray6))
-            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .clipShape(RoundedRectangle(cornerRadius: 12))
         }
+    }
+
+    /// A "Starts"/"Ends" row: label on the left, date and time chips on the right.
+    private func dateTimeRow(
+        label: String,
+        date: Date,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            HStack(spacing: 0) {
+                Text(label)
+                    .font(.bodyText)
+                    .foregroundStyle(Theme.textPrimary)
+                Spacer(minLength: 12)
+                HStack(spacing: 8) {
+                    dateChip(formatDateOnly(date))
+                    dateChip(formatTimeOnly(date))
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// A filled grey chip carrying a date or time string (Figma "Button", r8).
+    private func dateChip(_ text: String) -> some View {
+        Text(text)
+            .font(.system(size: 14, weight: .semibold))
+            .foregroundStyle(Theme.textPrimary)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(Color(.systemGray5), in: RoundedRectangle(cornerRadius: 8))
+    }
+
+    private var repeatRow: some View {
+        Button {
+            activeSheet = .repeatSelection
+        } label: {
+            HStack(spacing: 0) {
+                Text("Repeat")
+                    .font(.bodyText)
+                    .foregroundStyle(Theme.textPrimary)
+                Spacer(minLength: 12)
+                HStack(spacing: 4) {
+                    Text(selectedRepeat)
+                        .font(.buttonLabel)
+                        .foregroundStyle(Theme.textPrimary)
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(Theme.textPrimary)
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+        }
+        .buttonStyle(.plain)
     }
 
     private var volunteersSliderSection: some View {
