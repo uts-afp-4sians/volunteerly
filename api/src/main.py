@@ -159,9 +159,13 @@ def readiness_check() -> dict[str, str]:
 
 # Feature routers. Paths are root-level to match the iOS HTTPClient contract
 # (e.g. GET /programs, GET /users/{id}) — see Core/Networking/MockData.swift.
+# Import every ORM model so Base.metadata is complete before any flush. Some
+# tables (e.g. `locations`) have no router and would otherwise be missing,
+# breaking FK resolution for related inserts like UserProfile.
 from src.auth.router import router as auth_router  # noqa: E402
 from src.categories.router import router as categories_router  # noqa: E402
 from src.forum.router import router as forum_router  # noqa: E402
+from src.lib import all_models  # noqa: E402, F401
 from src.programs.router import router as programs_router  # noqa: E402
 from src.users.router import router as users_router  # noqa: E402
 
