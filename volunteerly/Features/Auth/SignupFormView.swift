@@ -2,6 +2,8 @@ import SwiftUI
 import PhotosUI
 
 struct SignupFormView: View {
+    let basics: SignupBasics
+
     @Environment(\.dismiss) private var dismiss
     @Environment(AppRouter.self) private var router
 
@@ -269,7 +271,7 @@ struct SignupFormView: View {
         hasStartedFinalising = true
         Task {
             try? await Task.sleep(nanoseconds: 1_800_000_000)
-            // TODO: submit signup payload here once /auth/signup is wired
+            // TODO: submit signup payload (basics + interests + profile) once /auth/signup is wired
             router.route = .main
         }
     }
@@ -306,6 +308,13 @@ struct SignupFormView: View {
 }
 
 #Preview {
-    NavigationStack { SignupFormView() }
-        .environment(AppRouter())
+    NavigationStack {
+        SignupFormView(basics: SignupBasics(
+            firstName: "Ada",
+            lastName: "Lovelace",
+            email: "ada@example.com",
+            password: "password"
+        ))
+    }
+    .environment(AppRouter())
 }
