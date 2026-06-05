@@ -13,9 +13,8 @@ import SwiftUI
 struct SearchBar: View {
     @Binding var text: String
     var placeholder: String = "Search"
-    /// Invoked when the trailing mic button is tapped (voice search). Optional —
-    /// the mic is hidden when `nil`.
-    var onMicTap: (() -> Void)?
+    /// Whether to show the trailing mic for voice search. Hidden when `false`.
+    var showsMic: Bool
 
     private let backgroundColor = Color(red: 0.959, green: 0.959, blue: 0.959) // #F5F5F5
     private let cornerRadius: CGFloat = 20
@@ -23,11 +22,11 @@ struct SearchBar: View {
     init(
         text: Binding<String>,
         placeholder: String = "Search",
-        onMicTap: (() -> Void)? = nil
+        showsMic: Bool = true
     ) {
         self._text = text
         self.placeholder = placeholder
-        self.onMicTap = onMicTap
+        self.showsMic = showsMic
     }
 
     var body: some View {
@@ -42,13 +41,9 @@ struct SearchBar: View {
                 .textFieldStyle(.plain)
                 .submitLabel(.search)
 
-            if let onMicTap {
-                Button(action: onMicTap) {
-                    Image(systemName: "mic")
-                        .font(.bodyText)
-                        .foregroundStyle(Theme.textSecondary)
-                }
-                .buttonStyle(.plain)
+            if showsMic {
+                MicButton(text: $text, tint: Theme.textSecondary)
+                    .font(.bodyText)
             }
         }
         .padding(8)
@@ -63,9 +58,9 @@ struct SearchBar: View {
 
         var body: some View {
             VStack(spacing: 24) {
-                SearchBar(text: $empty, onMicTap: {})
-                SearchBar(text: $filled, onMicTap: {})
-                SearchBar(text: $empty) // without mic
+                SearchBar(text: $empty)
+                SearchBar(text: $filled)
+                SearchBar(text: $empty, showsMic: false) // without mic
             }
             .padding()
             .background(Color.pageBackground)
