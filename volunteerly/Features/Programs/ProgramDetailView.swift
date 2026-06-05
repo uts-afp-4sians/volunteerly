@@ -75,19 +75,9 @@ struct ProgramDetailView: View {
             .clipped()
             .clipShape(UnevenRoundedRectangle(bottomLeadingRadius: 8, bottomTrailingRadius: 8, style: .continuous))
             .overlay(alignment: .bottom) {
-                pageDots
-                    .padding(.bottom, 18)
+                PageDots(count: 3, selection: 0)
+                    .padding(.bottom, 21)
             }
-    }
-
-    private var pageDots: some View {
-        HStack(spacing: 17) {
-            ForEach(0..<3) { index in
-                Circle()
-                    .fill(.white.opacity(index == 0 ? 0.9 : 0.5))
-                    .frame(width: 9, height: 9)
-            }
-        }
     }
 
     private var topControls: some View {
