@@ -1,9 +1,6 @@
 import SwiftUI
-import PhotosUI
 
 struct SignupView: View {
-    @Environment(AppRouter.self) private var router
-
     @State private var firstName = ""
     @State private var lastName = ""
     @State private var dateOfBirth = Date()
@@ -12,15 +9,39 @@ struct SignupView: View {
     @State private var password = ""
     @State private var showPassword = false
     @State private var location = ""
-    @State private var profileItem: PhotosPickerItem?
-    @State private var profileImageData: Data?
-    @State private var isSubmitting = false
-    @State private var errorMessage: String?
 
     @FocusState private var passwordFocused: Bool
+    @FocusState private var locationFocused: Bool
 
     private let totalSteps = 4
     private let currentStep = 1
+
+    private static let citySuggestions: [String] = [
+        "Sydney", "Melbourne", "Brisbane", "Perth", "Adelaide",
+        "Gold Coast", "Canberra", "Newcastle", "Wollongong", "Hobart",
+        "Darwin", "Geelong", "Cairns", "Townsville",
+        "Auckland", "Wellington", "Christchurch",
+        "London", "Manchester", "Edinburgh", "Dublin",
+        "New York", "Los Angeles", "San Francisco", "Chicago",
+        "Toronto", "Vancouver", "Montreal",
+        "Paris", "Lyon", "Marseille",
+        "Berlin", "Munich", "Hamburg",
+        "Madrid", "Barcelona", "Lisbon",
+        "Rome", "Milan",
+        "Amsterdam", "Brussels", "Zurich", "Vienna",
+        "Singapore", "Hong Kong", "Tokyo", "Seoul",
+    ]
+
+    private var locationMatches: [String] {
+        let query = location.trimmingCharacters(in: .whitespaces)
+        guard !query.isEmpty else { return [] }
+        let lower = query.lowercased()
+        let matches = Self.citySuggestions.filter { $0.lowercased().hasPrefix(lower) }
+        if matches.count == 1, matches[0].caseInsensitiveCompare(query) == .orderedSame {
+            return []
+        }
+        return Array(matches.prefix(5))
+    }
 
     var body: some View {
         ScrollView {
@@ -32,14 +53,6 @@ struct SignupView: View {
                 emailField
                 passwordField
                 locationField
-                optionalDivider
-                profilePictureSection
-                if let errorMessage {
-                    Text(errorMessage)
-                        .font(.footnote)
-                        .foregroundStyle(.red)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
                 Spacer().frame(height: 8)
                 continueButton
             }
@@ -190,127 +203,72 @@ struct SignupView: View {
 
     private var locationField: some View {
         labeled("Location *") {
-            pillField(icon: "location") {
-                TextField("City", text: $location)
-                    .textContentType(.addressCity)
-            }
-        }
-    }
+            VStack(alignment: .leading, spacing: 8) {
+                pillField(icon: "location") {
+                    TextField("City", text: $location)
+                        .textContentType(.addressCity)
+                        .autocorrectionDisabled()
+                        .focused($locationFocused)
+                }
 
-    private var optionalDivider: some View {
-        HStack(spacing: 12) {
-            line
-            Text("Optional")
-                .font(.footnote)
-                .foregroundStyle(Theme.textSecondary)
-            line
-        }
-        .padding(.vertical, 4)
-    }
+                if locationFocused && !locationMatches.isEmpty {
+                    VStack(spacing: 0) {
+                        ForEach(Array(locationMatches.enumerated()), id: \.element) { index, city in
+                            Button {
+                                location = city
+                                locationFocused = false
+                            } label: {
+                                HStack(spacing: 12) {
+                                    Image(systemName: "mappin.circle")
+                                        .foregroundStyle(Theme.textSecondary)
+                                    Text(city)
+                                        .font(.body)
+                                        .foregroundStyle(Theme.textPrimary)
+                                    Spacer(minLength: 0)
+                                }
+                                .padding(.horizontal, 18)
+                                .padding(.vertical, 12)
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
 
-    private var line: some View {
-        Rectangle()
-            .fill(Theme.border)
-            .frame(height: 1)
-    }
-
-    private var profilePictureSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Profile picture")
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(Theme.textPrimary)
-            PhotosPicker(selection: $profileItem, matching: .images) {
-                HStack(spacing: 14) {
-                    profileThumb
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(profileImageData == nil ? "Add a photo" : "Change photo")
-                            .font(.body.weight(.medium))
-                            .foregroundStyle(Theme.textPrimary)
-                        Text("JPG or PNG, square works best")
-                            .font(.footnote)
-                            .foregroundStyle(Theme.textSecondary)
+                            if index < locationMatches.count - 1 {
+                                Rectangle()
+                                    .fill(Theme.border)
+                                    .frame(height: 1)
+                                    .padding(.horizontal, 18)
+                            }
+                        }
                     }
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .foregroundStyle(Theme.textSecondary)
-                }
-                .padding(.horizontal, 18)
-                .padding(.vertical, 14)
-                .background(Theme.card)
-                .clipShape(RoundedRectangle(cornerRadius: 20))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 20)
-                        .stroke(Theme.border, lineWidth: 1)
-                )
-            }
-            .onChange(of: profileItem) { _, newItem in
-                Task {
-                    profileImageData = try? await newItem?.loadTransferable(type: Data.self)
+                    .background(Theme.card)
+                    .clipShape(RoundedRectangle(cornerRadius: 20))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 20)
+                            .stroke(Theme.border, lineWidth: 1)
+                    )
                 }
             }
-        }
-    }
-
-    @ViewBuilder
-    private var profileThumb: some View {
-        if let data = profileImageData, let uiImage = UIImage(data: data) {
-            Image(uiImage: uiImage)
-                .resizable()
-                .scaledToFill()
-                .frame(width: 44, height: 44)
-                .clipShape(Circle())
-        } else {
-            ZStack {
-                Circle()
-                    .fill(Theme.background)
-                    .overlay(Circle().stroke(Theme.border, lineWidth: 1))
-                Image(systemName: "camera")
-                    .foregroundStyle(Theme.textSecondary)
-            }
-            .frame(width: 44, height: 44)
         }
     }
 
     // MARK: Continue
 
     private var continueButton: some View {
-        Button {
-            Task { await submit() }
-        } label: {
-            ZStack {
-                if isSubmitting {
-                    ProgressView().tint(.white)
-                } else {
-                    Text("Continue").font(.headline)
-                }
-            }
-            .foregroundStyle(.white)
-            .frame(maxWidth: .infinity)
-            .frame(height: 54)
-            .background(canContinue ? Theme.forest : Theme.forest.opacity(0.4))
-            .clipShape(RoundedRectangle(cornerRadius: 24))
+        NavigationLink(value: AuthRoute.signupForm(SignupBasics(
+            firstName: firstName,
+            lastName: lastName,
+            email: email,
+            password: password
+        ))) {
+            Text("Continue")
+                .font(.headline)
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity)
+                .frame(height: 54)
+                .background(canContinue ? Theme.forest : Theme.forest.opacity(0.4))
+                .clipShape(RoundedRectangle(cornerRadius: 24))
         }
-        .disabled(!canContinue || isSubmitting)
-    }
-
-    // MARK: Actions
-
-    private func submit() async {
-        errorMessage = nil
-        isSubmitting = true
-        defer { isSubmitting = false }
-
-        do {
-            try await AuthService.shared.register(
-                email: email,
-                password: password,
-                firstName: firstName,
-                lastName: lastName
-            )
-            router.route = .main
-        } catch {
-            errorMessage = error.localizedDescription
-        }
+        .disabled(!canContinue)
     }
 
     private var canContinue: Bool {
