@@ -75,19 +75,9 @@ struct ProgramDetailView: View {
             .clipped()
             .clipShape(UnevenRoundedRectangle(bottomLeadingRadius: 8, bottomTrailingRadius: 8, style: .continuous))
             .overlay(alignment: .bottom) {
-                pageDots
-                    .padding(.bottom, 18)
+                PageDots(count: 3, selection: 0)
+                    .padding(.bottom, 21)
             }
-    }
-
-    private var pageDots: some View {
-        HStack(spacing: 17) {
-            ForEach(0..<3) { index in
-                Circle()
-                    .fill(.white.opacity(index == 0 ? 0.9 : 0.5))
-                    .frame(width: 9, height: 9)
-            }
-        }
     }
 
     private var topControls: some View {
@@ -97,7 +87,7 @@ struct ProgramDetailView: View {
             Spacer()
 
             HStack(spacing: 17) {
-                circleButton(systemName: "square.and.arrow.up") {}
+                shareButton
                 circleButton(systemName: viewModel.isBookmarked ? "bookmark.fill" : "bookmark") {
                     viewModel.toggleBookmark()
                 }
@@ -105,15 +95,39 @@ struct ProgramDetailView: View {
         }
     }
 
+    /// Share the program via the system share sheet. Disabled until the program
+    /// has loaded so there's something to share.
+    @ViewBuilder
+    private var shareButton: some View {
+        if let program = viewModel.program {
+            ShareLink(item: shareMessage(for: program)) {
+                circleIcon(systemName: "square.and.arrow.up")
+            }
+            .buttonStyle(.plain)
+        } else {
+            circleButton(systemName: "square.and.arrow.up") {}
+                .disabled(true)
+                .opacity(0.5)
+        }
+    }
+
+    private func shareMessage(for program: Program) -> String {
+        "Check out \"\(program.name)\" on Volunteerly\n\n\(program.description)"
+    }
+
     private func circleButton(systemName: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Image(systemName: systemName)
-                .font(.bodyStrong)
-                .foregroundStyle(Theme.textPrimary)
-                .frame(width: 32, height: 32)
-                .background(Color(.systemGray6), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            circleIcon(systemName: systemName)
         }
         .buttonStyle(.plain)
+    }
+
+    private func circleIcon(systemName: String) -> some View {
+        Image(systemName: systemName)
+            .font(.bodyStrong)
+            .foregroundStyle(Theme.textPrimary)
+            .frame(width: 32, height: 32)
+            .background(Color(.systemGray6), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
 
     // MARK: - Content

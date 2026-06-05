@@ -11,14 +11,10 @@ struct VolunteerlyHeader: View {
             tabRouter?.goHome()
         } label: {
             HStack(spacing: 10) {
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .fill(Color(.systemGray6))
+                Image(.logo)
+                    .resizable()
+                    .scaledToFit()
                     .frame(width: 30, height: 30)
-                    .overlay(
-                        Image(systemName: "hands.and.sparkles.fill")
-                            .font(.system(size: 14))
-                            .foregroundStyle(Color.accentColor)
-                    )
                 Text("Volunteerly")
                     .font(.bodyText)
                     .foregroundStyle(Color.textPrimary)

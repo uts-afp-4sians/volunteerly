@@ -21,6 +21,8 @@ extension Font {
     static let actionButtonLabel = Font.system(size: 20, weight: .regular)
     /// Labels and filler content — SF Pro Regular Italic 14.
     static let labelItalic = Font.system(size: 14, weight: .regular).italic()
+    /// Glyph inside an `IconButton` (e.g. `+`, `>`) — SF Pro Regular 36.
+    static let iconButtonGlyph = Font.system(size: 36, weight: .regular)
 }
 
 extension Text {
