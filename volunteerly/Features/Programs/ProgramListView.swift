@@ -16,8 +16,7 @@ struct ProgramListView: View {
                     VolunteerlyHeader()
                         .padding(.horizontal, horizontalPadding)
                     title
-                    searchBar
-                    additionalFilters
+                    searchRow
                     categoryRow
                     content
                 }
@@ -46,6 +45,13 @@ struct ProgramListView: View {
             .padding(.trailing, 20)
             .padding(.bottom, 20)
         }
+        .sheet(isPresented: $showFilters) {
+            FilterSheet(viewModel: viewModel) {
+                showFilters = false
+                Task { await viewModel.load() }
+            }
+            .presentationDetents([.fraction(0.7), .large])
+        }
     }
 
     // MARK: - Sections
@@ -58,6 +64,14 @@ struct ProgramListView: View {
             .padding(.horizontal, horizontalPadding)
     }
 
+    private var searchRow: some View {
+        HStack(spacing: 16) {
+            searchBar
+            filterButton
+        }
+        .padding(.horizontal, horizontalPadding)
+    }
+
     private var searchBar: some View {
         HStack(spacing: 12) {
             Image(systemName: "magnifyingglass")
@@ -65,44 +79,31 @@ struct ProgramListView: View {
             TextField("Search", text: $viewModel.searchQuery)
                 .textFieldStyle(.plain)
                 .submitLabel(.search)
+                .onSubmit { Task { await viewModel.load() } }
             MicButton(text: $viewModel.searchQuery)
         }
         .padding(.horizontal, 16)
         .frame(height: 42)
         .background(Color(.systemGray6), in: Capsule())
-        .padding(.horizontal, horizontalPadding)
     }
 
-    @ViewBuilder
-    private var additionalFilters: some View {
-        additionalFiltersButton
-            .overlay(alignment: .top) {
-                if showFilters {
-                    AdditionalFiltersPanel(
-                        maxDistance: $viewModel.maxDistance,
-                        memberCount: $viewModel.memberCount,
-                        distanceRange: viewModel.distanceRange,
-                        memberRange: viewModel.memberRange,
-                        onToggle: { withAnimation(.snappy) { showFilters = false } }
-                    )
-                    .shadow(color: .black.opacity(0.12), radius: 12, y: 4)
-                    .transition(.opacity.combined(with: .move(edge: .top)))
-                }
-            }
-            .padding(.horizontal, horizontalPadding)
-            .zIndex(1)
-    }
-
-    private var additionalFiltersButton: some View {
+    private var filterButton: some View {
         Button {
-            withAnimation(.snappy) { showFilters = true }
+            showFilters = true
         } label: {
-            Text("Additional filters")
-                .font(.system(size: 14))
+            Image(systemName: "line.3.horizontal.decrease")
+                .font(.system(size: 16, weight: .bold))
                 .foregroundStyle(.primary)
-                .frame(maxWidth: .infinity)
-                .frame(height: 39)
-                .background(Color(.systemGray6), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .frame(height: 42)
+                .overlay(alignment: .topTrailing) {
+                    if viewModel.hasActiveFilters {
+                        Circle()
+                            .fill(Color.accentColor)
+                            .frame(width: 8, height: 8)
+                            .offset(x: 5, y: -3)
+                    }
+                }
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }
@@ -116,6 +117,7 @@ struct ProgramListView: View {
                         isSelected: viewModel.selectedCategoryId == category.id
                     ) {
                         viewModel.toggleCategory(category.id)
+                        Task { await viewModel.load() }
                     }
                 }
             }

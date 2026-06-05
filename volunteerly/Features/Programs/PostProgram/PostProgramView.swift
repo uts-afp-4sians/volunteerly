@@ -23,6 +23,8 @@ struct PostProgramView: View {
     @State private var selectedCategoryId: Int = 1
     @State private var description: String = ""
     @State private var maxVolunteers: Int = 7 // Default to 7 like mockup
+    @State private var commitmentFrequency: CommitmentFrequency? = nil
+    @State private var commitmentDuration: CommitmentDuration? = nil
 
     // Categories loaded from the backend.
     @State private var categories: [ProgramCategory] = []
@@ -81,7 +83,11 @@ struct PostProgramView: View {
                     
                     // 6. Volunteers Needed
                     volunteersSliderSection
-                    
+
+                    // 7. Commitment (optional)
+                    commitmentFrequencyField
+                    commitmentDurationField
+
                     // Submit button
                     Button {
                         Task { await submit() }
@@ -218,7 +224,9 @@ struct PostProgramView: View {
                 description: description,
                 startDatetime: startDate,
                 endDatetime: endDate,
-                maxVolunteers: maxVolunteers
+                maxVolunteers: maxVolunteers,
+                commitmentFrequency: commitmentFrequency,
+                commitmentDuration: commitmentDuration
             )
             let _: Program = try await httpClient.post("/programs", body: request)
             onCreated()
@@ -444,6 +452,44 @@ struct PostProgramView: View {
             .font(.labelItalic)
             .foregroundStyle(Color.textPrimary)
             .fixedSize()
+    }
+
+    private func optionalLabel(_ text: String) -> some View {
+        Text(text)
+            .font(.system(size: 14, weight: .semibold))
+            .foregroundStyle(Theme.textPrimary)
+    }
+
+    private var commitmentFrequencyField: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            optionalLabel("Commitment frequency")
+            FlowLayout(spacing: 12) {
+                ForEach(CommitmentFrequency.allCases) { frequency in
+                    FilterChip(
+                        title: frequency.label,
+                        isSelected: commitmentFrequency == frequency
+                    ) {
+                        commitmentFrequency = (commitmentFrequency == frequency) ? nil : frequency
+                    }
+                }
+            }
+        }
+    }
+
+    private var commitmentDurationField: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            optionalLabel("Commitment duration(month)")
+            FlowLayout(spacing: 12) {
+                ForEach(CommitmentDuration.allCases) { duration in
+                    FilterChip(
+                        title: duration.label,
+                        isSelected: commitmentDuration == duration
+                    ) {
+                        commitmentDuration = (commitmentDuration == duration) ? nil : duration
+                    }
+                }
+            }
+        }
     }
 }
 

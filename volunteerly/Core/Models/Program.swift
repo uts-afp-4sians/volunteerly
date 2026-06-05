@@ -11,6 +11,8 @@ nonisolated struct Program: Identifiable, Codable {
     let startDatetime: Date
     let endDatetime: Date
     let maxVolunteers: Int
+    let commitmentFrequency: CommitmentFrequency?
+    let commitmentDuration: CommitmentDuration?
     let status: ProgramStatus
     let isDeleted: Bool
     let deletedAt: Date?
@@ -27,6 +29,8 @@ nonisolated struct Program: Identifiable, Codable {
         case startDatetime = "start_datetime"
         case endDatetime = "end_datetime"
         case maxVolunteers = "max_volunteers"
+        case commitmentFrequency = "commitment_frequency"
+        case commitmentDuration = "commitment_duration"
         case status
         case isDeleted = "is_deleted"
         case deletedAt = "deleted_at"
@@ -43,6 +47,8 @@ nonisolated struct ProgramCreateRequest: Encodable {
     let startDatetime: Date
     let endDatetime: Date
     let maxVolunteers: Int
+    var commitmentFrequency: CommitmentFrequency? = nil
+    var commitmentDuration: CommitmentDuration? = nil
     var bannerImageURL: String? = nil
     var locationId: Int? = nil
 
@@ -53,6 +59,8 @@ nonisolated struct ProgramCreateRequest: Encodable {
         case startDatetime = "start_datetime"
         case endDatetime = "end_datetime"
         case maxVolunteers = "max_volunteers"
+        case commitmentFrequency = "commitment_frequency"
+        case commitmentDuration = "commitment_duration"
         case bannerImageURL = "banner_image_url"
         case locationId = "location_id"
     }
@@ -64,6 +72,72 @@ nonisolated enum ProgramStatus: String, Codable {
     case full
     case closed
     case cancelled
+}
+
+/// How often a program expects volunteers to show up. Wire values match the
+/// API `CommitmentFrequency` enum.
+nonisolated enum CommitmentFrequency: String, Codable, CaseIterable, Identifiable {
+    case weekly
+    case monthly
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .weekly:  "Weekly"
+        case .monthly: "Monthly"
+        }
+    }
+}
+
+/// Expected length of commitment, as filter buckets (months). Wire values match
+/// the API `CommitmentDuration` enum.
+nonisolated enum CommitmentDuration: String, Codable, CaseIterable, Identifiable {
+    case under2 = "under_2"
+    case threeToSix = "three_to_six"
+    case sevenToNine = "seven_to_nine"
+    case continuous
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .under2:      "<2"
+        case .threeToSix:  "3 to 6"
+        case .sevenToNine: "7 to 9"
+        case .continuous:  "Continuous"
+        }
+    }
+}
+
+/// Team-size preference buckets. Not stored on a program — derived from
+/// `maxVolunteers`. Wire values match the API `TeamSize` query enum.
+nonisolated enum TeamSize: String, Codable, CaseIterable, Identifiable {
+    case small   // 2-3
+    case medium  // 4-6
+    case large   // 7-10
+    case open    // 11+
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .small:  "2-3"
+        case .medium: "4-6"
+        case .large:  "7-10"
+        case .open:   "Open"
+        }
+    }
+
+    /// Whether a program with `maxVolunteers` capacity falls in this bucket.
+    func matches(maxVolunteers: Int) -> Bool {
+        switch self {
+        case .small:  (2...3).contains(maxVolunteers)
+        case .medium: (4...6).contains(maxVolunteers)
+        case .large:  (7...10).contains(maxVolunteers)
+        case .open:   maxVolunteers >= 11
+        }
+    }
 }
 
 nonisolated struct ProgramParticipation: Identifiable, Codable {
