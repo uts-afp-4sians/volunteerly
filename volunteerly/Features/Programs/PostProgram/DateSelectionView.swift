@@ -1,103 +1,88 @@
 import SwiftUI
 
+/// Date/time picker bottom sheet matching the Figma calendar design.
+///
+/// The Figma frame is the native SwiftUI `DatePicker` in `.graphical` style:
+/// the bold month label with a disclosure chevron, the `‹ ›` month arrows, the
+/// weekday header row and the circular selected-day are all stock system UI.
+/// We keep it native (rather than hand-rolling a calendar) so it tracks iOS
+/// behaviour, and style the selection + Confirm button to match the mock.
 struct DateSelectionView: View {
-    @Binding var startDate: Date
-    @Binding var endDate: Date
+    let title: String
+    @Binding var date: Date
     @Binding var isAllDay: Bool
-    @Environment(\.dismiss) var dismiss
+    /// Lower bound for selection (used by the "Ends" sheet to stay >= start).
+    var minimumDate: Date? = nil
+    @Environment(\.dismiss) private var dismiss
 
-    var durationText: String {
-        if isAllDay {
-            let days = Calendar.current.dateComponents([.day], from: startDate, to: endDate).day ?? 0
-            return days <= 0 ? "1 day" : "\(days + 1) days"
-        } else {
-            let minutes = Int(endDate.timeIntervalSince(startDate) / 60)
-            if minutes < 60 {
-                return "\(minutes) minutes"
-            } else {
-                let hours = Double(minutes) / 60.0
-                return String(format: "%.1f hours", hours)
-            }
-        }
+    private var components: DatePickerComponents {
+        isAllDay ? [.date] : [.date, .hourAndMinute]
     }
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 24) {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Duration")
-                        .font(.bodyStrong)
+        VStack(spacing: 0) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    Text(title)
+                        .font(.sectionHeader)
                         .foregroundStyle(Theme.textPrimary)
-                    Text(durationText)
-                        .font(.pageTitle)
-                        .foregroundStyle(Color.brand)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(20)
-                .background(Color.white)
-                .clipShape(RoundedRectangle(cornerRadius: 16))
-                .shadow(color: .black.opacity(0.04), radius: 6, x: 0, y: 3)
+                        .padding(.top, 8)
 
-                VStack(spacing: 20) {
                     HStack {
                         Text("All-Day Event")
                             .font(.bodyText)
+                            .foregroundStyle(Theme.textPrimary)
                         Spacer()
                         Toggle(isOn: $isAllDay)
                     }
-                    
-                    Divider()
 
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Starts")
-                            .font(.buttonLabel)
-                            .foregroundStyle(.secondary)
-                        DatePicker(
-                            "",
-                            selection: $startDate,
-                            displayedComponents: isAllDay ? [.date] : [.date, .hourAndMinute]
-                        )
-                        .labelsHidden()
-                        .tint(Color.brand)
+                    Group {
+                        if let minimumDate {
+                            DatePicker(
+                                "",
+                                selection: $date,
+                                in: minimumDate...,
+                                displayedComponents: components
+                            )
+                        } else {
+                            DatePicker(
+                                "",
+                                selection: $date,
+                                displayedComponents: components
+                            )
+                        }
                     }
-                    
-                    Divider()
-
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Ends")
-                            .font(.buttonLabel)
-                            .foregroundStyle(.secondary)
-                        DatePicker(
-                            "",
-                            selection: $endDate,
-                            in: startDate...,
-                            displayedComponents: isAllDay ? [.date] : [.date, .hourAndMinute]
-                        )
-                        .labelsHidden()
-                        .tint(Color.brand)
-                    }
+                    .datePickerStyle(.graphical)
+                    .labelsHidden()
+                    // Figma shows a black filled selection circle; textPrimary is
+                    // the design token closest to that (not a hardcoded hex).
+                    .tint(Theme.textPrimary)
                 }
-                .padding(20)
-                .background(Color.white)
-                .clipShape(RoundedRectangle(cornerRadius: 16))
-                .shadow(color: .black.opacity(0.04), radius: 6, x: 0, y: 3)
-
-                Button {
-                    dismiss()
-                } label: {
-                    Text("Done")
-                        .font(.bodyStrong)
-                        .foregroundStyle(Color.onBrand)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 48)
-                        .background(Color.brand, in: RoundedRectangle(cornerRadius: 12))
-                }
-                .buttonStyle(.plain)
+                .padding(.horizontal, 20)
             }
-            .padding(20)
+
+            Button {
+                dismiss()
+            } label: {
+                Text("Confirm")
+                    .font(.bodyText)
+                    .foregroundStyle(Theme.textPrimary)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 50)
+                    .background(Color(.systemGray6), in: RoundedRectangle(cornerRadius: 8))
+            }
+            .buttonStyle(.plain)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
         }
-        .background(Color.pageBackground)
-        .navigationTitle("Select Date & Time")
-        .navigationBarTitleDisplayMode(.inline)
+        .background(Color.white)
     }
+}
+
+#Preview {
+    DateSelectionView(
+        title: "Starts",
+        date: .constant(Date()),
+        isAllDay: .constant(false)
+    )
 }

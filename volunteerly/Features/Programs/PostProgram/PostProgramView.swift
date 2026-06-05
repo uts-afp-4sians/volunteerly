@@ -25,9 +25,10 @@ struct PostProgramView: View {
     
     enum SheetType: Identifiable {
         case location
-        case date
+        case startDate
+        case endDate
         case repeatSelection
-        
+
         var id: Self { self }
     }
 
@@ -116,17 +117,37 @@ struct PostProgramView: View {
             Text("Your program '\(name)' has been successfully posted.")
         }
         .sheet(item: $activeSheet) { type in
-            NavigationStack {
-                Group {
-                    switch type {
-                    case .location:
-                        RegionSelectionView(selectedRegion: $selectedRegion)
-                    case .date:
-                        DateSelectionView(startDate: $startDate, endDate: $endDate, isAllDay: $isAllDay)
-                    case .repeatSelection:
-                        RepeatSelectionView(selectedRepeat: $selectedRepeat)
-                    }
+            switch type {
+            case .startDate:
+                DateSelectionView(title: "Starts", date: $startDate, isAllDay: $isAllDay)
+                    .presentationDetents([.fraction(0.75), .large])
+                    .presentationDragIndicator(.visible)
+            case .endDate:
+                DateSelectionView(title: "Ends", date: $endDate, isAllDay: $isAllDay, minimumDate: startDate)
+                    .presentationDetents([.fraction(0.75), .large])
+                    .presentationDragIndicator(.visible)
+            case .location:
+                navSheet(detents: [.fraction(0.85), .large]) {
+                    RegionSelectionView(selectedRegion: $selectedRegion)
                 }
+            case .repeatSelection:
+                navSheet(detents: [.fraction(0.45)]) {
+                    RepeatSelectionView(selectedRepeat: $selectedRepeat)
+                }
+            }
+        }
+    }
+
+    /// Wraps a sheet in a navigation stack with a trailing "Close" button.
+    /// The date sheet skips this — it matches the Figma chrome-less calendar
+    /// (drag handle + Confirm) instead.
+    @ViewBuilder
+    private func navSheet<Content: View>(
+        detents: Set<PresentationDetent>,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        NavigationStack {
+            content()
                 .toolbar {
                     ToolbarItem(placement: .topBarTrailing) {
                         Button("Close") {
@@ -134,21 +155,9 @@ struct PostProgramView: View {
                         }
                     }
                 }
-            }
-            .presentationDetents(detents(for: type))
-            .presentationDragIndicator(.visible)
         }
-    }
-
-    private func detents(for type: SheetType) -> Set<PresentationDetent> {
-        switch type {
-        case .location:
-            return [.fraction(0.85), .large]
-        case .date:
-            return [.fraction(0.65), .large]
-        case .repeatSelection:
-            return [.fraction(0.45)]
-        }
+        .presentationDetents(detents)
+        .presentationDragIndicator(.visible)
     }
 
     // MARK: - Subviews
@@ -250,7 +259,7 @@ struct PostProgramView: View {
             VStack(spacing: 12) {
                 // Starts row
                 Button {
-                    activeSheet = .date
+                    activeSheet = .startDate
                 } label: {
                     HStack {
                         Text("Starts")
@@ -275,7 +284,7 @@ struct PostProgramView: View {
                 
                 // Ends row
                 Button {
-                    activeSheet = .date
+                    activeSheet = .endDate
                 } label: {
                     HStack {
                         Text("Ends")
