@@ -1,12 +1,15 @@
 import SwiftUI
 
-/// Circular profile avatar with two states from Figma `group-4-prototype`:
-/// - **default** — light-gray circle with a person silhouette (node 226:264)
-/// - **uploaded** — the supplied image fills the whole circle (node 226:263)
+/// Circular profile avatar with three states from Figma `group-4-prototype`:
+/// - **default** — light-gray circle with a person silhouette (node 226:263)
+/// - **uploaded** — the supplied image fills the whole circle (node 226:264)
+/// - **upload prompt** — light-gray circle with a centred camera icon that
+///   invites the user to add a photo (node 226:786)
 struct Avatar: View {
     /// What to render inside the circle.
     enum Source: Equatable {
         case placeholder
+        case uploadPrompt
         case remote(URL?)
         case image(Image)
     }
@@ -37,6 +40,8 @@ struct Avatar: View {
         switch source {
         case .placeholder:
             placeholder
+        case .uploadPrompt:
+            uploadPrompt
         case .image(let image):
             image
                 .resizable()
@@ -66,17 +71,37 @@ struct Avatar: View {
                     .offset(y: size * 0.13)
             }
     }
+
+    /// Light-gray fill with a centred camera icon prompting the user to upload
+    /// a photo. Per Figma: circle `#F5F5F5`, camera `#DDDDDD`, SF Pro Bold 30px
+    /// on the 136pt reference circle (≈ 22% of the diameter), so it scales with
+    /// `size`.
+    private var uploadPrompt: some View {
+        Circle()
+            .fill(Color(red: 245 / 255, green: 245 / 255, blue: 245 / 255))
+            .overlay {
+                Image(systemName: "camera.fill")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .foregroundStyle(Color(red: 221 / 255, green: 221 / 255, blue: 221 / 255))
+                    .frame(width: size * 0.26)
+            }
+    }
 }
 
 #Preview {
-    HStack(spacing: 40) {
+    HStack(spacing: 24) {
         VStack {
-            Avatar(source: .placeholder)
+            Avatar(source: .placeholder, size: 100)
             Text("default")
         }
         VStack {
-            Avatar(source: .image(Image(systemName: "photo.fill")))
+            Avatar(source: .image(Image(systemName: "photo.fill")), size: 100)
             Text("uploaded")
+        }
+        VStack {
+            Avatar(source: .uploadPrompt, size: 100)
+            Text("upload prompt")
         }
     }
     .padding()
