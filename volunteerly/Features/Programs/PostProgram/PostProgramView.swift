@@ -405,12 +405,28 @@ struct PostProgramView: View {
             requiredLabel("Volunteers Needed")
             
             VStack(spacing: 8) {
-                // Value indicator above the slider
-                Text("\(Int(maxVolunteers))")
-                    .font(.bodyStrong)
-                    .foregroundStyle(Color.secondaryBlue)
-                    .frame(maxWidth: .infinity, alignment: .center)
-                
+                // Endpoint labels (1, 10) plus the current value, all on one row
+                // above the track. The current value tracks the knob centre using
+                // the same geometry as `Slider` (knobWidth = 49).
+                GeometryReader { geo in
+                    let knobWidth: CGFloat = 49
+                    let lower = 1.0, upper = 10.0
+                    let value = Double(maxVolunteers)
+                    let usable = max(geo.size.width - knobWidth, 1)
+                    let fraction = min(max((value - lower) / (upper - lower), 0), 1)
+                    let knobCenterX = fraction * usable + knobWidth / 2
+
+                    ZStack(alignment: .topLeading) {
+                        sliderNumber("1")
+                            .position(x: knobWidth / 2, y: geo.size.height / 2)
+                        sliderNumber("10")
+                            .position(x: geo.size.width - knobWidth / 2, y: geo.size.height / 2)
+                        sliderNumber("\(maxVolunteers)")
+                            .position(x: knobCenterX, y: geo.size.height / 2)
+                    }
+                }
+                .frame(height: 20)
+
                 Slider(
                     value: Binding(
                         get: { Double(maxVolunteers) },
@@ -418,22 +434,16 @@ struct PostProgramView: View {
                     ),
                     range: 1...10
                 )
-                
-                HStack {
-                    Text("1")
-                        .font(.system(size: 12, weight: .semibold))
-                        .italic()
-                        .foregroundStyle(Theme.textSecondary)
-                    Spacer()
-                    Text("10")
-                        .font(.system(size: 12, weight: .semibold))
-                        .italic()
-                        .foregroundStyle(Theme.textSecondary)
-                }
-                .padding(.horizontal, 8)
             }
             .padding(.vertical, 12)
         }
+    }
+
+    private func sliderNumber(_ text: String) -> some View {
+        Text(text)
+            .font(.labelItalic)
+            .foregroundStyle(Color.textPrimary)
+            .fixedSize()
     }
 }
 
