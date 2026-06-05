@@ -9,6 +9,7 @@ keys) and safe to re-run.
 
 from datetime import UTC, datetime
 
+from src.auth.security import hash_password
 from src.categories.model import Keyword, ProgramCategory
 from src.common.enums import ParticipationStatus, ProgramStatus
 from src.forum.model import ForumComment, ForumPost
@@ -42,6 +43,8 @@ def _rows() -> list[Base]:
     user = User(
         user_id=1,
         email="jane.doe@example.com",
+        # Demo credential: jane.doe@example.com / "password123".
+        password_hash=hash_password("password123"),
         is_deleted=False,
         deleted_at=None,
         created_at=CREATED_AT,

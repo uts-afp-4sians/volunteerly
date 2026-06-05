@@ -159,11 +159,13 @@ def readiness_check() -> dict[str, str]:
 
 # Feature routers. Paths are root-level to match the iOS HTTPClient contract
 # (e.g. GET /programs, GET /users/{id}) — see Core/Networking/MockData.swift.
+from src.auth.router import router as auth_router  # noqa: E402
 from src.categories.router import router as categories_router  # noqa: E402
 from src.forum.router import router as forum_router  # noqa: E402
 from src.programs.router import router as programs_router  # noqa: E402
 from src.users.router import router as users_router  # noqa: E402
 
+app.include_router(auth_router)
 app.include_router(programs_router)
 app.include_router(forum_router)
 app.include_router(users_router)

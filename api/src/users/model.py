@@ -20,6 +20,9 @@ class User(Base):
 
     user_id: Mapped[int] = mapped_column(Integer, primary_key=True)
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
+    # bcrypt hash. Nullable so non-password identities (future OAuth/SSO) and
+    # legacy rows remain valid; never serialized in any response schema.
+    password_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False)
     deleted_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
@@ -34,9 +37,7 @@ class UserProfile(Base):
 
     __tablename__ = "user_profiles"
 
-    user_id: Mapped[int] = mapped_column(
-        ForeignKey("users.user_id"), primary_key=True
-    )
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.user_id"), primary_key=True)
     first_name: Mapped[str] = mapped_column(String(255))
     last_name: Mapped[str] = mapped_column(String(255))
     # iOS decodes this as a full ISO8601 datetime, so store it as a datetime.
@@ -56,9 +57,7 @@ class UserInterest(Base):
 
     __tablename__ = "user_interests"
 
-    user_id: Mapped[int] = mapped_column(
-        ForeignKey("users.user_id"), primary_key=True
-    )
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.user_id"), primary_key=True)
     keyword_id: Mapped[int] = mapped_column(
         ForeignKey("keywords.keyword_id"), primary_key=True
     )

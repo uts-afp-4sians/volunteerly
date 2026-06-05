@@ -13,5 +13,6 @@ filter:
   paths:
     - /health
   tags:
+    - auth
     - programs
     - categories

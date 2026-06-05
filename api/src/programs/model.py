@@ -87,9 +87,7 @@ class ProgramBookmark(Base):
 
     __tablename__ = "program_bookmarks"
 
-    user_id: Mapped[int] = mapped_column(
-        ForeignKey("users.user_id"), primary_key=True
-    )
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.user_id"), primary_key=True)
     program_id: Mapped[int] = mapped_column(
         ForeignKey("programs.program_id"), primary_key=True
     )

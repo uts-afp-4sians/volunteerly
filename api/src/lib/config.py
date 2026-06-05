@@ -26,6 +26,15 @@ class Settings(BaseSettings):
     # CORS
     CORS_ORIGINS: list[str] = ["http://localhost:3000"]
 
+    # Auth / JWT
+    # The default is a throwaway dev secret. Production MUST override JWT_SECRET
+    # with a long random value (e.g. `openssl rand -hex 32`) via the environment.
+    JWT_SECRET: str = "dev-insecure-change-me-0000000000-not-for-production"  # noqa: S105
+    JWT_ALGORITHM: str = "HS256"
+    # Access-token lifetime. iOS persists the token in UserDefaults and only
+    # clears it on logout, so a week-long window matches the client's session.
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7
+
 
 @lru_cache
 def get_settings() -> Settings:

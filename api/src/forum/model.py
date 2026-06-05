@@ -15,9 +15,7 @@ class ForumPost(Base):
     program_id: Mapped[int] = mapped_column(
         ForeignKey("programs.program_id"), index=True
     )
-    author_user_id: Mapped[int] = mapped_column(
-        ForeignKey("users.user_id"), index=True
-    )
+    author_user_id: Mapped[int] = mapped_column(ForeignKey("users.user_id"), index=True)
     title: Mapped[str] = mapped_column(String(255))
     body: Mapped[str] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(
@@ -31,12 +29,8 @@ class ForumComment(Base):
     __tablename__ = "forum_comments"
 
     comment_id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    post_id: Mapped[int] = mapped_column(
-        ForeignKey("forum_posts.post_id"), index=True
-    )
-    author_user_id: Mapped[int] = mapped_column(
-        ForeignKey("users.user_id"), index=True
-    )
+    post_id: Mapped[int] = mapped_column(ForeignKey("forum_posts.post_id"), index=True)
+    author_user_id: Mapped[int] = mapped_column(ForeignKey("users.user_id"), index=True)
     body: Mapped[str] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
