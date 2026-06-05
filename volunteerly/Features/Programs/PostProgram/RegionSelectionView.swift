@@ -37,7 +37,7 @@ struct RegionSelectionView: View {
             ZStack {
                 if let coordinate = locationManager.currentCoordinate {
                     Map(position: $position) {
-                        Marker(locationManager.currentLocationName ?? "Current Location", coordinate: coordinate)
+                        Marker(locationManager.currentLocationName ?? "Current Location", coordinate: coordinate.clLocationCoordinate2D)
                     }
                     .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                 } else {
@@ -96,7 +96,7 @@ struct RegionSelectionView: View {
         .onChange(of: locationManager.currentCoordinate) { _, newCoordinate in
             if let coord = newCoordinate {
                 position = .region(MKCoordinateRegion(
-                    center: coord,
+                    center: coord.clLocationCoordinate2D,
                     span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
                 ))
             }
@@ -110,7 +110,7 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
     
     @Published var authorizationStatus: CLAuthorizationStatus = .notDetermined
     @Published var currentLocationName: String? = nil
-    @Published var currentCoordinate: CLLocationCoordinate2D? = nil
+    @Published var currentCoordinate: Coordinate? = nil
     @Published var isLocating = false
     @Published var errorMessage: String? = nil
     
@@ -154,7 +154,7 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
         
         Task { @MainActor [weak self] in
             guard let self = self else { return }
-            self.currentCoordinate = coordinate
+            self.currentCoordinate = Coordinate(coordinate)
             
             // MapKit's MKReverseGeocodingRequest to replace deprecated CLGeocoder
             guard let request = MKReverseGeocodingRequest(location: location) else {
@@ -190,8 +190,21 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
     }
 }
 
-extension CLLocationCoordinate2D: Equatable {
-    public static func == (lhs: CLLocationCoordinate2D, rhs: CLLocationCoordinate2D) -> Bool {
-        lhs.latitude == rhs.latitude && lhs.longitude == rhs.longitude
+/// Equatable value wrapper for a coordinate.
+///
+/// We deliberately avoid conforming `CLLocationCoordinate2D` to `Equatable`
+/// ourselves: it's an imported type and the framework may add its own
+/// conformance in the future, which would conflict with ours.
+struct Coordinate: Equatable {
+    let latitude: Double
+    let longitude: Double
+
+    init(_ coordinate: CLLocationCoordinate2D) {
+        latitude = coordinate.latitude
+        longitude = coordinate.longitude
+    }
+
+    var clLocationCoordinate2D: CLLocationCoordinate2D {
+        CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
     }
 }
