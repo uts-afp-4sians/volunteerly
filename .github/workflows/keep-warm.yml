@@ -4,13 +4,24 @@ name: keep-warm
 # of inactivity. Free services cold-boot on the next request, which can exceed
 # Render's edge timeout and return a 504. A periodic ping keeps it awake.
 #
+# Active window: 09:00-20:00 Australia/Sydney only (idle outside those hours is
+# fine and saves free-tier instance hours).
+#
+# GitHub cron is UTC-only with no DST support, and Sydney shifts between AEST
+# (UTC+10) and AEDT (UTC+11). So we schedule a UTC window wide enough to cover
+# 09:00-20:00 Sydney under BOTH offsets, then a guard step does the real
+# Australia/Sydney time check (DST-aware) and skips the ping outside the window.
+#
+#   09:00 Sydney = 22:00 UTC (AEDT) .. 23:00 UTC (AEST)
+#   20:00 Sydney = 09:00 UTC (AEDT) .. 10:00 UTC (AEST)
+#   union -> UTC hours 22,23,00..10
+#
 # Note: GitHub's cron is best-effort and often runs late (5-20+ min) under load,
 # so we ping every 10 min to stay safely under the ~15 min idle window.
-# This consumes Render free-tier instance hours faster.
 
 on:
   schedule:
-    - cron: "*/10 * * * *"
+    - cron: "*/10 0-10,22,23 * * *"
   workflow_dispatch: {}
 
 # Don't pile up runs if a previous one is still going.
@@ -23,7 +34,23 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+      - name: Skip outside 09:00-20:00 Sydney time
+        id: window
+        run: |
+          # DST-aware: the runner resolves Australia/Sydney to the correct offset.
+          hour=$(TZ="Australia/Sydney" date +%H)
+          now=$(TZ="Australia/Sydney" date +"%Y-%m-%d %H:%M %Z")
+          echo "Sydney time: $now (hour=$hour)"
+          # 10#$hour forces base-10 so leading-zero hours like 08 don't error.
+          if [ "$((10#$hour))" -ge 9 ] && [ "$((10#$hour))" -lt 20 ]; then
+            echo "active=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "active=false" >> "$GITHUB_OUTPUT"
+            echo "Outside active window — skipping ping."
+          fi
+
       - name: Ping health endpoint
+        if: steps.window.outputs.active == 'true'
         run: |
           URL="https://volunteerly-bl7n.onrender.com/health/live"
           # Generous timeout so a cold start (container boot) still gets a hit
