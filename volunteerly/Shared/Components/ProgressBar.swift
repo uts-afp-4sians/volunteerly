@@ -5,13 +5,14 @@ import SwiftUI
 /// - Height: 11
 /// - Corner Radius: 8
 /// - Background: `#E9E9EB`
-/// - Progress Fill: `Color.secondaryBlue` (#5F799D)
+/// - Progress Fill: `#7E924E`
 struct ProgressBar: View {
     let progress: Double  // 0...1
 
     private let height: CGFloat = 11
     private let cornerRadius: CGFloat = 8
     private let trackColor = Color(red: 0.914, green: 0.914, blue: 0.918) // #E9E9EB
+    private let fillColor = Color(red: 0x7E / 255, green: 0x92 / 255, blue: 0x4E / 255) // #7E924E
 
     var body: some View {
         GeometryReader { geo in
@@ -20,7 +21,7 @@ struct ProgressBar: View {
                     .fill(trackColor)
                 
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .fill(Color.secondaryBlue)
+                    .fill(fillColor)
                     .frame(width: max(0, min(1, progress)) * geo.size.width)
             }
         }

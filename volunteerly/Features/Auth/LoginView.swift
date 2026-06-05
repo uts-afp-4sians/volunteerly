@@ -8,6 +8,8 @@ struct LoginView: View {
     @State private var isSubmitting = false
     @State private var errorMessage: String?
 
+    private static let activeButtonColor = Color(red: 0x7E / 255, green: 0x92 / 255, blue: 0x4E / 255)
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 28) {
@@ -55,9 +57,11 @@ struct LoginView: View {
             }
             HStack {
                 Spacer()
-                Button("Forgot password?") {}
-                    .font(.subheadline)
-                    .foregroundStyle(Theme.forest)
+                NavigationLink(value: AuthRoute.resetPassword) {
+                    Text("Forgot password?")
+                        .font(.subheadline)
+                        .foregroundStyle(Theme.forest)
+                }
             }
             if let errorMessage {
                 Text(errorMessage)
@@ -81,7 +85,7 @@ struct LoginView: View {
             .foregroundStyle(.white)
             .frame(maxWidth: .infinity)
             .frame(height: 54)
-            .background(Theme.gold)
+            .background(Self.activeButtonColor)
             .clipShape(RoundedRectangle(cornerRadius: 24))
         }
         .disabled(isSubmitting || email.isEmpty || password.isEmpty)

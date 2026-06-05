@@ -17,7 +17,9 @@ struct SignupView: View {
     @State private var isSubmitting = false
     @State private var errorMessage: String?
 
-    private let totalSteps = 6
+    @FocusState private var passwordFocused: Bool
+
+    private let totalSteps = 4
     private let currentStep = 1
 
     var body: some View {
@@ -151,18 +153,25 @@ struct SignupView: View {
             HStack(spacing: 12) {
                 Image(systemName: "lock")
                     .foregroundStyle(Theme.textSecondary)
-                Group {
-                    if showPassword {
-                        TextField("Password (min 6 characters)", text: $password)
-                    } else {
-                        SecureField("Password (min 6 characters)", text: $password)
-                    }
+                if showPassword {
+                    TextField("Password (min 6 characters)", text: $password)
+                        .textContentType(.password)
+                        .autocorrectionDisabled()
+                        .textInputAutocapitalization(.never)
+                        .focused($passwordFocused)
+                } else {
+                    SecureField("Password (min 6 characters)", text: $password)
+                        .textContentType(.password)
+                        .autocorrectionDisabled()
+                        .textInputAutocapitalization(.never)
+                        .focused($passwordFocused)
                 }
-                .textContentType(.newPassword)
-                .autocorrectionDisabled()
-                .textInputAutocapitalization(.never)
                 Button {
+                    let wasFocused = passwordFocused
                     showPassword.toggle()
+                    if wasFocused {
+                        DispatchQueue.main.async { passwordFocused = true }
+                    }
                 } label: {
                     Image(systemName: showPassword ? "eye.slash" : "eye")
                         .foregroundStyle(Theme.textSecondary)
