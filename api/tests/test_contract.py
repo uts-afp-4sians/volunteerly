@@ -56,6 +56,30 @@ def test_datetimes_are_iso8601_with_timezone(client: TestClient) -> None:
     assert program["deleted_at"] is None
 
 
+LOCATION_KEYS = {
+    "location_id",
+    "city",
+    "state_region",
+    "country",
+    "latitude",
+    "longitude",
+}
+
+
+def test_get_location(client: TestClient) -> None:
+    res = client.get("/locations/1")
+    assert res.status_code == 200
+    body = res.json()
+    assert set(body.keys()) == LOCATION_KEYS
+    assert body["city"] == "Sydney"
+    assert body["state_region"] == "NSW"
+    assert body["country"] == "Australia"
+
+
+def test_get_location_not_found(client: TestClient) -> None:
+    assert client.get("/locations/999").status_code == 404
+
+
 def test_list_categories(client: TestClient) -> None:
     res = client.get("/categories")
     assert res.status_code == 200

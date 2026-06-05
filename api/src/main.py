@@ -166,6 +166,7 @@ from src.auth.router import router as auth_router  # noqa: E402
 from src.categories.router import router as categories_router  # noqa: E402
 from src.forum.router import router as forum_router  # noqa: E402
 from src.lib import all_models  # noqa: E402, F401
+from src.locations.router import router as locations_router  # noqa: E402
 from src.programs.router import router as programs_router  # noqa: E402
 from src.users.router import router as users_router  # noqa: E402
 
@@ -174,3 +175,4 @@ app.include_router(programs_router)
 app.include_router(forum_router)
 app.include_router(users_router)
 app.include_router(categories_router)
+app.include_router(locations_router)

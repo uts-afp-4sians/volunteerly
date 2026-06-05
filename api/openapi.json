@@ -571,6 +571,73 @@
           }
         }
       }
+    },
+    "/locations": {
+      "get": {
+        "tags": [
+          "locations"
+        ],
+        "summary": "List Locations",
+        "operationId": "list_locations_locations_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/LocationRead"
+                  },
+                  "type": "array",
+                  "title": "Response List Locations Locations Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/locations/{location_id}": {
+      "get": {
+        "tags": [
+          "locations"
+        ],
+        "summary": "Get Location",
+        "operationId": "get_location_locations__location_id__get",
+        "parameters": [
+          {
+            "name": "location_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Location Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LocationRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -734,6 +801,45 @@
         ],
         "title": "KeywordRead",
         "description": "Wire shape matching iOS `Keyword`."
+      },
+      "LocationRead": {
+        "properties": {
+          "location_id": {
+            "type": "integer",
+            "title": "Location Id"
+          },
+          "city": {
+            "type": "string",
+            "title": "City"
+          },
+          "state_region": {
+            "title": "State Region",
+            "nullable": true,
+            "type": "string"
+          },
+          "country": {
+            "type": "string",
+            "title": "Country"
+          },
+          "latitude": {
+            "title": "Latitude",
+            "nullable": true,
+            "type": "number"
+          },
+          "longitude": {
+            "title": "Longitude",
+            "nullable": true,
+            "type": "number"
+          }
+        },
+        "type": "object",
+        "required": [
+          "location_id",
+          "city",
+          "country"
+        ],
+        "title": "LocationRead",
+        "description": "Wire shape matching iOS `Location`."
       },
       "LoginRequest": {
         "properties": {
