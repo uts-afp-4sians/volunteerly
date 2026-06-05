@@ -11,7 +11,8 @@ struct MyProgramsView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                header
+                VolunteerlyHeader()
+                    .padding(.horizontal, horizontalPadding)
                 title
                 searchRow
                 tabBar
@@ -34,23 +35,6 @@ struct MyProgramsView: View {
     }
 
     // MARK: - Sections
-
-    private var header: some View {
-        HStack(spacing: 10) {
-            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                .fill(Color(.systemGray6))
-                .frame(width: 30, height: 30)
-                .overlay(
-                    Image(systemName: "hands.and.sparkles.fill")
-                        .font(.system(size: 14))
-                        .foregroundStyle(Color.accentColor)
-                )
-            Text("Volunteerly")
-                .font(.bodyText)
-                .foregroundStyle(Color.textPrimary)
-        }
-        .padding(.horizontal, horizontalPadding)
-    }
 
     private var title: some View {
         Text("My Volunteer Programs")

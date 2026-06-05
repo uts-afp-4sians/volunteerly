@@ -20,21 +20,54 @@ struct AdditionalFiltersPanel: View {
             }
             .buttonStyle(.plain)
 
-            filterRow(title: "Distance from program", value: $maxDistance, range: distanceRange)
-            filterRow(title: "Number of members", value: $memberCount, range: memberRange)
+            filterRow(
+                title: "Distance from program",
+                value: $maxDistance,
+                range: distanceRange,
+                valueLabel: distanceLabel(for: maxDistance)
+            )
+            filterRow(
+                title: "Number of members",
+                value: $memberCount,
+                range: memberRange,
+                valueLabel: memberLabel(for: memberCount)
+            )
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 16)
         .background(Color(.systemGray6), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
 
-    private func filterRow(title: String, value: Binding<Double>, range: ClosedRange<Double>) -> some View {
+    private func filterRow(
+        title: String,
+        value: Binding<Double>,
+        range: ClosedRange<Double>,
+        valueLabel: String
+    ) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Slider(value: value, range: range)
-            Text(title)
-                .font(.system(size: 16))
-                .foregroundStyle(.primary)
+            HStack {
+                Text(title)
+                    .font(.system(size: 16))
+                    .foregroundStyle(.primary)
+                Spacer(minLength: 8)
+                Text(valueLabel)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(Color.secondaryBlue)
+                    .monospacedDigit()
+            }
         }
+    }
+
+    /// "Any" once the slider reaches the top of its range (no distance cap),
+    /// otherwise the selected distance in km.
+    private func distanceLabel(for value: Double) -> String {
+        value >= distanceRange.upperBound ? "Any" : "\(Int(value.rounded())) km"
+    }
+
+    /// "Any" at the top of the range (no member cap), otherwise the cap as a count.
+    private func memberLabel(for value: Double) -> String {
+        value >= memberRange.upperBound ? "Any" : "\(Int(value.rounded()))"
     }
 }
 

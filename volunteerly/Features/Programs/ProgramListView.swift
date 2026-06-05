@@ -13,7 +13,8 @@ struct ProgramListView: View {
         ZStack(alignment: .bottomTrailing) {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    header
+                    VolunteerlyHeader()
+                        .padding(.horizontal, horizontalPadding)
                     title
                     searchBar
                     additionalFilters
@@ -49,23 +50,6 @@ struct ProgramListView: View {
 
     // MARK: - Sections
 
-    private var header: some View {
-        HStack(spacing: 10) {
-            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                .fill(Color(.systemGray6))
-                .frame(width: 30, height: 30)
-                .overlay(
-                    Image(systemName: "hands.and.sparkles.fill")
-                        .font(.system(size: 14))
-                        .foregroundStyle(Color.accentColor)
-                )
-            Text("Volunteerly")
-                .font(.system(size: 16))
-                .foregroundStyle(.primary)
-        }
-        .padding(.horizontal, horizontalPadding)
-    }
-
     private var title: some View {
         Text("Find New\nOpportunities")
             .font(.system(size: 36, weight: .bold))
@@ -81,8 +65,7 @@ struct ProgramListView: View {
             TextField("Search", text: $viewModel.searchQuery)
                 .textFieldStyle(.plain)
                 .submitLabel(.search)
-            Image(systemName: "mic.fill")
-                .foregroundStyle(.secondary)
+            MicButton(text: $viewModel.searchQuery)
         }
         .padding(.horizontal, 16)
         .frame(height: 42)
