@@ -1,6 +1,6 @@
 from collections.abc import Generator
 
-from sqlalchemy import MetaData, create_engine
+from sqlalchemy import MetaData, create_engine, make_url
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 from src.lib.config import settings
@@ -25,13 +25,27 @@ class Base(DeclarativeBase):
 # (sqlite+libsql) has no async dialect; FastAPI runs sync routes in a threadpool.
 #   * local dev / tests → sqlite:// (stdlib pysqlite)
 #   * production        → sqlite+libsql:// (Turso)
+db_url = make_url(settings.DATABASE_URL)
 connect_args: dict[str, object] = {}
-if settings.DATABASE_URL.startswith(("sqlite://", "sqlite+pysqlite")):
+
+if db_url.drivername == "sqlite+libsql" and db_url.host:
+    # Remote Turso. The sqlalchemy-libsql 0.2.0 dialect does NOT forward the
+    # URL's `authToken` query param to libsql_experimental.connect(), so Turso
+    # receives an empty token and rejects the connection (401). Pass it
+    # explicitly as `auth_token` and strip it from the URL so the dialect builds
+    # a clean https:// URL. (`secure=true` stays, selecting https.)
+    auth_token = db_url.query.get("authToken")
+    if auth_token:
+        connect_args["auth_token"] = auth_token
+        db_url = db_url.set(
+            query={k: v for k, v in db_url.query.items() if k != "authToken"}
+        )
+elif db_url.get_backend_name() == "sqlite":
     # Allow pooled SQLite connections to cross FastAPI's threadpool boundaries.
     connect_args["check_same_thread"] = False
 
 engine = create_engine(
-    settings.DATABASE_URL,
+    db_url,
     echo=settings.PROJECT_ENV == "local",
     pool_pre_ping=True,
     connect_args=connect_args,
