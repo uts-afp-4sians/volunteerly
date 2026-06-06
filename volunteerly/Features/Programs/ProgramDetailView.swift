@@ -8,10 +8,12 @@ struct ProgramDetailView: View {
     @State private var showJoinedConfirmation = false
     @Environment(\.dismiss) private var dismiss
 
+    private let httpClient: HTTPClient
     private let horizontalPadding: CGFloat = 20
 
     init(programId: Int, httpClient: HTTPClient = LiveHTTPClient.shared) {
         self.programId = programId
+        self.httpClient = httpClient
         _viewModel = State(
             initialValue: ProgramDetailViewModel(programId: programId, httpClient: httpClient)
         )
@@ -143,7 +145,9 @@ struct ProgramDetailView: View {
                 descriptionSection(program)
                 membersSection
                 locationSection
-                if !viewModel.isJoined, let similar = viewModel.similarProgram {
+                if viewModel.isJoined {
+                    MemberBoardSection(programId: programId, httpClient: httpClient)
+                } else if let similar = viewModel.similarProgram {
                     similarSection(similar)
                 }
                 joinBar(program)

@@ -41,6 +41,21 @@ enum MockData {
         locationId: 1
     )
 
+    /// A few extra members so the Member board and forum thread show varied
+    /// authors (and the Author A-Z / Z-A sort chips have something to do).
+    static let memberProfiles: [UserProfile] = [
+        userProfile,
+        UserProfile(userId: 2, firstName: "Marcus", lastName: "Lee",
+                    dateOfBirth: nil, profileImageURL: "https://i.pravatar.cc/150?img=12",
+                    occupation: "Teacher", goalText: nil, locationId: 1),
+        UserProfile(userId: 3, firstName: "Aisha", lastName: "Khan",
+                    dateOfBirth: nil, profileImageURL: "https://i.pravatar.cc/150?img=5",
+                    occupation: "Nurse", goalText: nil, locationId: 1),
+        UserProfile(userId: 4, firstName: "Tom", lastName: "Becker",
+                    dateOfBirth: nil, profileImageURL: "https://i.pravatar.cc/150?img=15",
+                    occupation: "Designer", goalText: nil, locationId: 1)
+    ]
+
     // MARK: Category & Keywords
     static let category = ProgramCategory(id: 1, name: "Environment")
 
@@ -227,33 +242,57 @@ enum MockData {
     }
 
     // MARK: Forum
+    /// Stagger the timestamps so the date sort chips produce a visible reorder.
+    private static func forumDate(_ daysAgo: Int) -> Date {
+        Date(timeIntervalSinceNow: TimeInterval(-daysAgo * 86_400))
+    }
+
     static let forumPosts: [ForumPost] = [
-        ForumPost(
-            id: 1,
-            programId: 1,
-            authorUserId: 1,
-            title: "What should I bring?",
-            body: "Hi everyone, should I bring my own gloves and tools?",
-            createdAt: .now
-        ),
-        ForumPost(
-            id: 2,
-            programId: 1,
-            authorUserId: 1,
-            title: "Parking nearby?",
-            body: "Is there parking available near the park entrance?",
-            createdAt: .now
-        )
+        ForumPost(id: 1, programId: 1, authorUserId: 1,
+                  title: "What should I bring?",
+                  body: "Hi everyone, should I bring my own gloves and tools?",
+                  createdAt: forumDate(1)),
+        ForumPost(id: 2, programId: 1, authorUserId: 3,
+                  title: "Parking nearby?",
+                  body: "Is there parking available near the park entrance?",
+                  createdAt: forumDate(2)),
+        ForumPost(id: 3, programId: 1, authorUserId: 2,
+                  title: "Dress code?",
+                  body: "What should we wear — is there a recommended outfit for the day?",
+                  createdAt: forumDate(3)),
+        ForumPost(id: 4, programId: 1, authorUserId: 4,
+                  title: "Carpool?",
+                  body: "Anyone coming from the north shore keen to share a ride?",
+                  createdAt: forumDate(4)),
+        ForumPost(id: 5, programId: 1, authorUserId: 3,
+                  title: "Lunch provided?",
+                  body: "Will food be provided or should we pack our own?",
+                  createdAt: forumDate(5)),
+        ForumPost(id: 6, programId: 1, authorUserId: 2,
+                  title: "Kids welcome?",
+                  body: "Can I bring my two kids along to help out?",
+                  createdAt: forumDate(6))
     ]
 
+    /// A threaded conversation for post 1: top-level comments, indented
+    /// replies (`parentCommentId`), and a few likes — exercising the full
+    /// forum thread design.
     static let forumComments: [ForumComment] = [
-        ForumComment(
-            id: 1,
-            postId: 1,
-            authorUserId: 1,
-            body: "Yes, please bring gloves! Tools will be provided.",
-            createdAt: .now
-        )
+        ForumComment(id: 1, postId: 1, authorUserId: 2,
+                     body: "Yes, please bring gloves! Tools will be provided on site.",
+                     createdAt: forumDate(1), parentCommentId: nil, likeCount: 0, likedByMe: false),
+        ForumComment(id: 2, postId: 1, authorUserId: 3,
+                     body: "Great, thanks for confirming.",
+                     createdAt: forumDate(1), parentCommentId: 1, likeCount: 2, likedByMe: true),
+        ForumComment(id: 3, postId: 1, authorUserId: 4,
+                     body: "Are gardening gloves fine, or do we need heavy-duty ones?",
+                     createdAt: forumDate(1), parentCommentId: 1, likeCount: 1, likedByMe: false),
+        ForumComment(id: 4, postId: 1, authorUserId: 1,
+                     body: "Sturdy gardening gloves are perfect.",
+                     createdAt: forumDate(1), parentCommentId: 3, likeCount: 3, likedByMe: false),
+        ForumComment(id: 5, postId: 1, authorUserId: 3,
+                     body: "Also bring a refillable water bottle — it gets warm by midday.",
+                     createdAt: forumDate(1), parentCommentId: nil, likeCount: 4, likedByMe: true)
     ]
 
     // MARK: - Registered Handlers for MockHTTPClient
@@ -271,7 +310,6 @@ enum MockData {
             "/users/1":             user,
             "/users/1/profile":     userProfile,
             "/programs/1/posts":    forumPosts,
-            "/programs/1/posts/1/comments": forumComments,
             "/categories":          categories,
             "/keywords":            keywords,
             "/users/1/interests":   userInterests,
@@ -284,6 +322,19 @@ enum MockData {
         }
         for location in locations {
             client.handlers["/locations/\(location.id)"] = location
+        }
+        // Member profiles drive forum author names + avatars.
+        for profile in memberProfiles {
+            client.handlers["/users/\(profile.userId)/profile"] = profile
+        }
+        // Every board question resolves to the same seeded thread.
+        for post in forumPosts {
+            client.handlers["/programs/1/posts/\(post.id)/comments"] = forumComments
+        }
+        // Like endpoints just need to decode as a ForumComment so the mobile's
+        // optimistic toggle isn't reverted in previews/mock runs.
+        for comment in forumComments {
+            client.handlers["/programs/1/posts/1/comments/\(comment.id)/like"] = comment
         }
     }
 }
