@@ -4,7 +4,7 @@ Used by Alembic autogeneration, the test database setup, and the seed script.
 """
 
 from src.categories.model import Keyword, ProgramCategory
-from src.forum.model import ForumComment, ForumPost
+from src.forum.model import ForumComment, ForumCommentLike, ForumPost
 from src.locations.model import Location
 from src.programs.model import (
     Program,
@@ -16,6 +16,7 @@ from src.users.model import User, UserInterest, UserProfile
 
 __all__ = [
     "ForumComment",
+    "ForumCommentLike",
     "ForumPost",
     "Keyword",
     "Location",

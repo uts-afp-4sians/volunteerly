@@ -17,7 +17,7 @@ from src.common.enums import (
     ParticipationStatus,
     ProgramStatus,
 )
-from src.forum.model import ForumComment, ForumPost
+from src.forum.model import ForumComment, ForumCommentLike, ForumPost
 from src.lib.database import Base, engine, session_factory
 from src.locations.model import Location
 from src.programs.model import (
@@ -92,6 +92,38 @@ def _rows() -> list[Base]:
         goal_text="I want to give back to my community.",
         location_id=1,
     )
+    # A few extra members so the Member board / forum thread show varied
+    # authors and the Author A-Z / Z-A sort chips have something to do.
+    # Mirrors `MockData.memberProfiles` in the iOS app.
+    members = [
+        (2, "Marcus", "Lee", "https://i.pravatar.cc/150?img=12", "Teacher"),
+        (3, "Aisha", "Khan", "https://i.pravatar.cc/150?img=5", "Nurse"),
+        (4, "Tom", "Becker", "https://i.pravatar.cc/150?img=15", "Designer"),
+    ]
+    member_users = [
+        User(
+            user_id=uid,
+            email=f"{first.lower()}.{last.lower()}@example.com",
+            password_hash=hash_password("password123"),
+            is_deleted=False,
+            deleted_at=None,
+            created_at=CREATED_AT,
+        )
+        for uid, first, last, _img, _occ in members
+    ]
+    member_profiles = [
+        UserProfile(
+            user_id=uid,
+            first_name=first,
+            last_name=last,
+            date_of_birth=None,
+            profile_image_url=img,
+            occupation=occ,
+            goal_text=None,
+            location_id=1,
+        )
+        for uid, first, last, img, occ in members
+    ]
     categories = [
         ProgramCategory(category_id=1, category_name="Environment"),
         ProgramCategory(category_id=2, category_name="Community"),
@@ -207,6 +239,8 @@ def _rows() -> list[Base]:
         participation_status=ParticipationStatus.APPROVED,
         joined_at=CREATED_AT,
     )
+    # Member board questions for program 1, authored across members. Mirrors
+    # `MockData.forumPosts` in the iOS app.
     forum_posts = [
         ForumPost(
             post_id=1,
@@ -219,20 +253,101 @@ def _rows() -> list[Base]:
         ForumPost(
             post_id=2,
             program_id=1,
-            author_user_id=1,
+            author_user_id=3,
             title="Parking nearby?",
             body="Is there parking available near the park entrance?",
             created_at=CREATED_AT,
         ),
+        ForumPost(
+            post_id=3,
+            program_id=1,
+            author_user_id=2,
+            title="Dress code?",
+            body="What should we wear — is there a recommended outfit for the day?",
+            created_at=CREATED_AT,
+        ),
+        ForumPost(
+            post_id=4,
+            program_id=1,
+            author_user_id=4,
+            title="Carpool?",
+            body="Anyone coming from the north shore keen to share a ride?",
+            created_at=CREATED_AT,
+        ),
+        ForumPost(
+            post_id=5,
+            program_id=1,
+            author_user_id=3,
+            title="Lunch provided?",
+            body="Will food be provided or should we pack our own?",
+            created_at=CREATED_AT,
+        ),
+        ForumPost(
+            post_id=6,
+            program_id=1,
+            author_user_id=2,
+            title="Kids welcome?",
+            body="Can I bring my two kids along to help out?",
+            created_at=CREATED_AT,
+        ),
     ]
+    # A threaded conversation on post 1: top-level comments and indented
+    # replies via ``parent_comment_id``. Mirrors `MockData.forumComments`.
     forum_comments = [
         ForumComment(
             comment_id=1,
             post_id=1,
-            author_user_id=1,
-            body="Yes, please bring gloves! Tools will be provided.",
+            author_user_id=2,
+            parent_comment_id=None,
+            body="Yes, please bring gloves! Tools will be provided on site.",
             created_at=CREATED_AT,
         ),
+        ForumComment(
+            comment_id=2,
+            post_id=1,
+            author_user_id=3,
+            parent_comment_id=1,
+            body="Great, thanks for confirming.",
+            created_at=CREATED_AT,
+        ),
+        ForumComment(
+            comment_id=3,
+            post_id=1,
+            author_user_id=4,
+            parent_comment_id=1,
+            body="Are gardening gloves fine, or do we need heavy-duty ones?",
+            created_at=CREATED_AT,
+        ),
+        ForumComment(
+            comment_id=4,
+            post_id=1,
+            author_user_id=1,
+            parent_comment_id=3,
+            body="Sturdy gardening gloves are perfect.",
+            created_at=CREATED_AT,
+        ),
+        ForumComment(
+            comment_id=5,
+            post_id=1,
+            author_user_id=3,
+            parent_comment_id=None,
+            body="Also bring a refillable water bottle — it gets warm by midday.",
+            created_at=CREATED_AT,
+        ),
+    ]
+    # Likes spread across members so counts and ``liked_by_me`` (user 1) vary.
+    # Mirrors the like tallies in `MockData.forumComments`.
+    forum_likes = [
+        ForumCommentLike(comment_id=2, user_id=1, created_at=CREATED_AT),
+        ForumCommentLike(comment_id=2, user_id=3, created_at=CREATED_AT),
+        ForumCommentLike(comment_id=3, user_id=4, created_at=CREATED_AT),
+        ForumCommentLike(comment_id=4, user_id=2, created_at=CREATED_AT),
+        ForumCommentLike(comment_id=4, user_id=3, created_at=CREATED_AT),
+        ForumCommentLike(comment_id=4, user_id=4, created_at=CREATED_AT),
+        ForumCommentLike(comment_id=5, user_id=1, created_at=CREATED_AT),
+        ForumCommentLike(comment_id=5, user_id=2, created_at=CREATED_AT),
+        ForumCommentLike(comment_id=5, user_id=3, created_at=CREATED_AT),
+        ForumCommentLike(comment_id=5, user_id=4, created_at=CREATED_AT),
     ]
 
     # Dependency order: parents before children.
@@ -242,12 +357,15 @@ def _rows() -> list[Base]:
         *keywords,
         user,
         user_profile,
+        *member_users,
+        *member_profiles,
         *programs,
         *user_interests,
         *program_keywords,
         participation,
         *forum_posts,
         *forum_comments,
+        *forum_likes,
     ]
 
 

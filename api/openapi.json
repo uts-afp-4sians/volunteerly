@@ -657,6 +657,62 @@
             }
           }
         }
+      },
+      "post": {
+        "tags": [
+          "forum"
+        ],
+        "summary": "Create Program Post",
+        "description": "Open a new question on the program's Member board.",
+        "operationId": "create_program_post_programs__program_id__posts_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "program_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Program Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForumPostCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForumPostRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/programs/{program_id}/posts/{post_id}/comments": {
@@ -666,6 +722,11 @@
         ],
         "summary": "List Post Comments",
         "operationId": "list_post_comments_programs__program_id__posts__post_id__comments_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "program_id",
@@ -697,6 +758,201 @@
                     "$ref": "#/components/schemas/ForumCommentRead"
                   },
                   "title": "Response List Post Comments Programs  Program Id  Posts  Post Id  Comments Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "forum"
+        ],
+        "summary": "Create Post Comment",
+        "description": "Add a comment, or a reply when ``parent_comment_id`` is supplied.",
+        "operationId": "create_post_comment_programs__program_id__posts__post_id__comments_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "program_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Program Id"
+            }
+          },
+          {
+            "name": "post_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Post Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForumCommentCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForumCommentRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/programs/{program_id}/posts/{post_id}/comments/{comment_id}/like": {
+      "post": {
+        "tags": [
+          "forum"
+        ],
+        "summary": "Like Comment",
+        "description": "Like a comment (idempotent \u2014 re-liking is a no-op). Returns the comment\nwith its refreshed like state.",
+        "operationId": "like_comment_programs__program_id__posts__post_id__comments__comment_id__like_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "program_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Program Id"
+            }
+          },
+          {
+            "name": "post_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Post Id"
+            }
+          },
+          {
+            "name": "comment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Comment Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForumCommentRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "forum"
+        ],
+        "summary": "Unlike Comment",
+        "description": "Remove the caller's like (idempotent). Returns the comment with its\nrefreshed like state.",
+        "operationId": "unlike_comment_programs__program_id__posts__post_id__comments__comment_id__like_delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "program_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Program Id"
+            }
+          },
+          {
+            "name": "post_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Post Id"
+            }
+          },
+          {
+            "name": "comment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Comment Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForumCommentRead"
                 }
               }
             }
@@ -1002,6 +1258,26 @@
         "title": "CommitmentFrequency",
         "description": "How often a program expects volunteers to show up (wire values match iOS)."
       },
+      "ForumCommentCreate": {
+        "properties": {
+          "body": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Body"
+          },
+          "parent_comment_id": {
+            "title": "Parent Comment Id",
+            "nullable": true,
+            "type": "integer"
+          }
+        },
+        "type": "object",
+        "required": [
+          "body"
+        ],
+        "title": "ForumCommentCreate",
+        "description": "Payload to add a comment, or a reply when ``parent_comment_id`` is set."
+      },
       "ForumCommentRead": {
         "properties": {
           "comment_id": {
@@ -1023,6 +1299,21 @@
           "created_at": {
             "type": "string",
             "title": "Created At"
+          },
+          "parent_comment_id": {
+            "title": "Parent Comment Id",
+            "nullable": true,
+            "type": "integer"
+          },
+          "like_count": {
+            "type": "integer",
+            "title": "Like Count",
+            "default": 0
+          },
+          "liked_by_me": {
+            "type": "boolean",
+            "title": "Liked By Me",
+            "default": false
           }
         },
         "type": "object",
@@ -1034,7 +1325,29 @@
           "created_at"
         ],
         "title": "ForumCommentRead",
-        "description": "Wire shape matching iOS `ForumComment`."
+        "description": "Wire shape matching iOS `ForumComment`.\n\n``parent_comment_id`` carries the reply threading; ``like_count`` and\n``liked_by_me`` are computed per request (not stored on the row), so they\ndefault here and the router fills them in."
+      },
+      "ForumPostCreate": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "body": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Body"
+          }
+        },
+        "type": "object",
+        "required": [
+          "title",
+          "body"
+        ],
+        "title": "ForumPostCreate",
+        "description": "Payload to open a new question on a program's Member board."
       },
       "ForumPostRead": {
         "properties": {
