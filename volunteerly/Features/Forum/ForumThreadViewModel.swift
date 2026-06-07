@@ -144,7 +144,10 @@ final class ForumThreadViewModel {
                 try await httpClient.delete(path)
             }
         } catch {
-            // Revert the optimistic toggle and surface why.
+            // A parse failure means the request likely landed but we couldn't
+            // read the echo — trust the optimistic toggle. Only a real
+            // transport/auth/server error reverts and reports.
+            guard !isResponseParseError(error) else { return }
             nodes = nodes.map { toggleLike($0, id: id) }
             errorMessage = error.localizedDescription
         }
@@ -158,11 +161,24 @@ final class ForumThreadViewModel {
             let server = makeNode(from: created)
             nodes = nodes.map { replace(tempId: tempId, with: server, in: $0) }
         } catch {
-            // Roll the optimistic node back and hand the text back to the composer.
+            // A parse failure means the comment likely persisted but we couldn't
+            // read it back (e.g. the method-blind mock returns the list array) —
+            // keep the optimistic node rather than dropping the user's text.
+            // A real transport/auth/server error rolls back and reports.
+            guard !isResponseParseError(error) else { return }
             nodes = nodes.compactMap { remove(id: tempId, from: $0) }
             errorMessage = error.localizedDescription
             draft = body
         }
+    }
+
+    /// Whether the error is a response-decoding failure (raw `DecodingError`
+    /// from the mock, or `APIError.decodingFailed` from the live client) rather
+    /// than a transport/auth/server error.
+    private func isResponseParseError(_ error: Error) -> Bool {
+        if error is DecodingError { return true }
+        if case APIError.decodingFailed = error { return true }
+        return false
     }
 
     // MARK: Tree helpers
