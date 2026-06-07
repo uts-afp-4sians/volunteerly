@@ -31,6 +31,18 @@ struct ForumThreadView: View {
         .scrollDismissesKeyboard(.interactively)
         .toolbar(.hidden, for: .navigationBar)
         .safeAreaInset(edge: .bottom) { composer }
+        .alert(
+            "Couldn't post",
+            isPresented: Binding(
+                get: { viewModel.errorMessage != nil && !viewModel.isLoading },
+                set: { if !$0 { viewModel.clearError() } }
+            ),
+            presenting: viewModel.errorMessage
+        ) { _ in
+            Button("OK", role: .cancel) { viewModel.clearError() }
+        } message: { message in
+            Text(message)
+        }
         .task {
             if viewModel.nodes.isEmpty {
                 await viewModel.load()

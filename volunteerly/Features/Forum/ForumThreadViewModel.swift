@@ -68,6 +68,10 @@ final class ForumThreadViewModel {
         isLoading = false
     }
 
+    func clearError() {
+        errorMessage = nil
+    }
+
     // MARK: Interactions
 
     /// Toggle the like on a comment anywhere in the tree. Applies the change
@@ -140,8 +144,9 @@ final class ForumThreadViewModel {
                 try await httpClient.delete(path)
             }
         } catch {
-            // Revert the optimistic toggle.
+            // Revert the optimistic toggle and surface why.
             nodes = nodes.map { toggleLike($0, id: id) }
+            errorMessage = error.localizedDescription
         }
     }
 
