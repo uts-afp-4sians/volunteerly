@@ -28,4 +28,8 @@ struct SignupBasics: Hashable {
     let password: String
 }
 
-#Preview { AuthFlowView() }
+#Preview {
+    AuthFlowView()
+        .environment(AppRouter())
+        .environment(UserProfileStore())
+}

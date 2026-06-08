@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct ProgramListView: View {
+    @Environment(UserProfileStore.self) private var profileStore
+
     @State private var viewModel: ProgramListViewModel
     @State private var showFilters = false
     private let horizontalPadding: CGFloat = 20
@@ -31,9 +33,14 @@ struct ProgramListView: View {
                 if viewModel.programs.isEmpty {
                     await viewModel.load()
                 }
+                viewModel.applyUserInterests(profileStore.interests.map(\.name))
             }
             .refreshable {
                 await viewModel.load()
+                viewModel.applyUserInterests(profileStore.interests.map(\.name))
+            }
+            .onChange(of: profileStore.interests) { _, _ in
+                viewModel.applyUserInterests(profileStore.interests.map(\.name))
             }
 
             // Floating Action Button (FAB)
@@ -183,4 +190,5 @@ struct FABButtonStyle: ButtonStyle {
                 ProgramDetailView(programId: id, httpClient: MockHTTPClient.shared)
             }
     }
+    .environment(UserProfileStore())
 }

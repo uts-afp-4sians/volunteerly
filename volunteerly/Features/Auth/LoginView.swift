@@ -184,4 +184,5 @@ struct LoginView: View {
 #Preview {
     AuthFlowView()
         .environment(AppRouter())
+        .environment(UserProfileStore())
 }

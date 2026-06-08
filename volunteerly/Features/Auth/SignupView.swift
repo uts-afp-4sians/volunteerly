@@ -318,4 +318,5 @@ private extension Theme {
 #Preview {
     AuthFlowView()
         .environment(AppRouter())
+        .environment(UserProfileStore())
 }
