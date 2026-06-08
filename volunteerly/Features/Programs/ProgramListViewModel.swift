@@ -11,6 +11,23 @@ final class ProgramListViewModel {
     var searchQuery = ""
     var selectedCategoryId: Int?
 
+    /// Category ids the user said they care about during signup. Programs
+    /// matching these surface above unmatched programs in `filteredPrograms`.
+    var preferredCategoryIds: Set<Int> = []
+
+    /// Translates the signup-form interest names to the category names that
+    /// actually exist in the catalog.
+    private static let interestToCategoryName: [String: String] = [
+        "Animal Care": "Animals",
+        "Arts & Creativity": "Arts",
+        "Community Building": "Community",
+        "Education": "Education",
+        "Aged Care": "Seniors",
+        "Elder Care": "Seniors",
+        "Environment": "Environment",
+        "Food": "Food",
+    ]
+
     // MARK: - Additional filters
 
     /// Bounds for the "Additional filters" sliders.
@@ -25,7 +42,7 @@ final class ProgramListViewModel {
     var memberCount: Double = 100
 
     var filteredPrograms: [Program] {
-        programs.filter { program in
+        let matched = programs.filter { program in
             let matchesCategory = selectedCategoryId == nil || program.categoryId == selectedCategoryId
             let matchesSearch = searchQuery.isEmpty
                 || program.name.localizedCaseInsensitiveContains(searchQuery)
@@ -33,6 +50,15 @@ final class ProgramListViewModel {
             let matchesMembers = memberCount >= memberRange.upperBound
                 || Double(program.maxVolunteers) <= memberCount
             return matchesCategory && matchesSearch && matchesMembers
+        }
+        // Sort interest-matching programs to the top, preserving original
+        // order within each bucket. Skip when the user manually picked a chip.
+        guard selectedCategoryId == nil, !preferredCategoryIds.isEmpty else { return matched }
+        return matched.sorted { lhs, rhs in
+            let lhsPreferred = preferredCategoryIds.contains(lhs.categoryId)
+            let rhsPreferred = preferredCategoryIds.contains(rhs.categoryId)
+            if lhsPreferred == rhsPreferred { return false }
+            return lhsPreferred && !rhsPreferred
         }
     }
 
@@ -60,5 +86,20 @@ final class ProgramListViewModel {
 
     func toggleCategory(_ id: Int) {
         selectedCategoryId = (selectedCategoryId == id) ? nil : id
+    }
+
+    /// Resolve the user's chosen interest names against the loaded categories
+    /// and remember their ids so `filteredPrograms` can surface them first.
+    func applyUserInterests(_ interestNames: [String]) {
+        guard !categories.isEmpty else {
+            preferredCategoryIds = []
+            return
+        }
+        let categoryNames = Set(interestNames.map {
+            Self.interestToCategoryName[$0] ?? $0
+        })
+        preferredCategoryIds = Set(
+            categories.filter { categoryNames.contains($0.name) }.map(\.id)
+        )
     }
 }

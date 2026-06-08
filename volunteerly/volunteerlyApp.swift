@@ -10,6 +10,7 @@ import SwiftUI
 @main
 struct volunteerlyApp: App {
     @State private var router = AppRouter()
+    @State private var profileStore = UserProfileStore()
 
     init() {
         MockData.registerAll(in: MockHTTPClient.shared)
@@ -20,7 +21,7 @@ struct volunteerlyApp: App {
 
     var body: some Scene {
         WindowGroup {
-            Group {
+            ZStack {
                 switch router.route {
                 case .splash:     SplashView()
                 case .auth:       AuthFlowView()
@@ -28,8 +29,10 @@ struct volunteerlyApp: App {
                 case .main:       MainTabView()
                 }
             }
+            .transition(.opacity)
+            .animation(.easeInOut(duration: 0.35), value: router.route)
             .environment(router)
+            .environment(profileStore)
         }
     }
 }
-
