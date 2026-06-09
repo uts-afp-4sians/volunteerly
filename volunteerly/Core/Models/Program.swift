@@ -114,8 +114,8 @@ nonisolated enum CommitmentDuration: String, Codable, CaseIterable, Identifiable
     var label: String {
         switch self {
         case .under2:      "<2"
-        case .threeToSix:  "3 to 6"
-        case .sevenToNine: "7 to 9"
+        case .threeToSix:  "3-6"
+        case .sevenToNine: "7-9"
         case .continuous:  "Continuous"
         }
     }

@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The "Confirm details" filter bottom sheet for the Program List screen.
+/// The filter bottom sheet for the Program List screen.
 /// Edits the view model's filter state directly (it's an `@Observable` reference);
 /// `onConfirm` re-fetches with the new query string and dismisses.
 struct FilterSheet: View {
@@ -9,16 +9,17 @@ struct FilterSheet: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 28) {
+            VStack(alignment: .leading, spacing: 30) {
+                grabber
                 distanceSection
                 teamSizeSection
                 frequencySection
                 durationSection
                 confirmButton
-                    .padding(.top, 4)
+                    .padding(.top, 8)
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 24)
+            .padding(.horizontal, 24)
+            .padding(.top, 12)
             .padding(.bottom, 32)
         }
         .scrollBounceBehavior(.basedOnSize)
@@ -28,10 +29,19 @@ struct FilterSheet: View {
 
     // MARK: - Sections
 
+    /// Slate-blue drag handle drawn in place of the system indicator.
+    private var grabber: some View {
+        Capsule()
+            .fill(Color.secondaryBlue)
+            .frame(width: 120, height: 6)
+            .frame(maxWidth: .infinity)
+            .padding(.bottom, 2)
+    }
+
     private var distanceSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Text("Distance").font(.bodyText)
+                Text("Distance").font(.sectionHeader)
                 Spacer()
                 Text("\(Int(viewModel.maxDistance.rounded()))km")
                     .font(.labelItalic)
@@ -73,7 +83,7 @@ struct FilterSheet: View {
     }
 
     private var durationSection: some View {
-        section("Commitment duration(month)") {
+        section("Commitment duration (months)") {
             FlowLayout(spacing: 12) {
                 ForEach(CommitmentDuration.allCases) { duration in
                     FilterChip(
@@ -88,15 +98,7 @@ struct FilterSheet: View {
     }
 
     private var confirmButton: some View {
-        Button(action: onConfirm) {
-            Text("Confirm details")
-                .font(.buttonLabel)
-                .foregroundStyle(.primary)
-                .frame(maxWidth: .infinity)
-                .frame(height: 54)
-                .background(Color(.systemGray6), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        }
-        .buttonStyle(.plain)
+        PrimaryActionButton("Confirm", action: onConfirm)
     }
 
     // MARK: - Helpers
@@ -106,8 +108,8 @@ struct FilterSheet: View {
         _ title: String,
         @ViewBuilder content: () -> Content
     ) -> some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text(title).font(.bodyText)
+        VStack(alignment: .leading, spacing: 16) {
+            Text(title).font(.sectionHeader)
             content()
         }
     }
@@ -137,10 +139,10 @@ struct FilterChip: View {
     var body: some View {
         Button(action: action) {
             Text(title)
-                .font(.system(size: 15))
+                .font(.bodyText)
                 .foregroundStyle(isSelected ? Color.accentColor : .primary)
-                .padding(.horizontal, 20)
-                .frame(height: 44)
+                .padding(.horizontal, 24)
+                .frame(height: 50)
                 .background(
                     Capsule().fill(isSelected ? Color.accentColor.opacity(0.18) : Color(.systemGray6))
                 )
@@ -160,6 +162,6 @@ struct FilterChip: View {
                 viewModel: ProgramListViewModel(httpClient: MockHTTPClient.shared),
                 onConfirm: {}
             )
-            .presentationDetents([.fraction(0.7)])
+            .presentationDetents([.fraction(0.8)])
         }
 }
