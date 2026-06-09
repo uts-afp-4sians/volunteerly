@@ -1,5 +1,4 @@
 import SwiftUI
-import PhotosUI
 import MapKit
 
 struct SignupFormView: View {
@@ -20,16 +19,11 @@ struct SignupFormView: View {
     @State private var mapCameraPosition: MapCameraPosition = .automatic
     @State private var isGeocodingCity = false
 
-    // Step 3 — Interests. The catalogue is loaded from the backend `/interests`
-    // endpoint (the DB-flagged interest keywords); emoji are mapped client-side
-    // by name via `UserProfileStore.emoji(for:)`.
+    // Step 3 — Interests. Catalogue loads from `/interests`; falls back to the
+    // hardcoded list when the backend is unavailable or returns an empty set.
     @State private var selectedInterests: Set<String> = []
-    @State private var customInterests: [(emoji: String, name: String)] = []
-    @State private var showAddInterestAlert = false
-    @State private var newInterestName = ""
     @State private var interestCatalog: [Keyword] = []
     @State private var isLoadingInterests = false
-    @State private var interestsLoadFailed = false
 
     private let profileService = ProfileService.shared
 
@@ -37,14 +31,10 @@ struct SignupFormView: View {
     @State private var email = ""
     @State private var password = ""
 
-    // Step 5 — Make your own profile
-    @State private var profileItem: PhotosPickerItem?
-    @State private var profileImageData: Data?
-    @State private var displayName = ""
+    // Step 5 — Goals
     @State private var expectations = ""
     @State private var occupation = ""
     @State private var keySkills = ""
-    @State private var instagram = ""
 
     // Step 6 — Finalising
     @State private var hasStartedFinalising = false
@@ -93,12 +83,7 @@ struct SignupFormView: View {
     // MARK: Header
 
     private var progressHeader: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            ProgressBar(progress: Double(step) / Double(totalSteps))
-            Text("Step \(step) of \(totalSteps)")
-                .font(.footnote)
-                .foregroundStyle(Theme.textSecondary)
-        }
+        ProgressBar(progress: Double(step) / Double(totalSteps))
     }
 
     // MARK: Step switch
@@ -109,7 +94,7 @@ struct SignupFormView: View {
         case 2: locationStep
         case 3: interestsStep
         case 4: emailPasswordStep
-        case 5: makeProfileStep
+        case 5: goalsStep
         case 6: finalisingStep
         default: comingSoonStep
         }
@@ -205,17 +190,20 @@ struct SignupFormView: View {
 
     private var interestsStep: some View {
         VStack(alignment: .leading, spacing: 24) {
-            Text("What are your interests?")
-                .font(.largeTitle.bold())
-                .foregroundStyle(Theme.textPrimary)
+            VStack(alignment: .leading, spacing: 8) {
+                Text("What are your interests?")
+                    .font(.pageTitle)
+                    .foregroundStyle(Theme.textPrimary)
+                Text("Pick at least two of the following")
+                    .font(.labelItalic)
+                    .foregroundStyle(Theme.textSecondary)
+            }
 
             if isLoadingInterests {
                 ProgressView()
                     .tint(Theme.forest)
                     .frame(maxWidth: .infinity)
                     .padding(.top, 32)
-            } else if interestsLoadFailed {
-                interestsErrorView
             } else {
                 FlowLayout(spacing: 10, lineSpacing: 12) {
                     ForEach(interestCatalog) { keyword in
@@ -223,50 +211,29 @@ struct SignupFormView: View {
                                      name: keyword.name)
                     }
                 }
-                ForEach(customInterests, id: \.name) { interest in
-                    interestChip(emoji: interest.emoji, name: interest.name)
-                }
-                addMoreChip
             }
         }
         .task { await loadInterests() }
-        .alert("Add an interest", isPresented: $showAddInterestAlert) {
-            TextField("Interest name", text: $newInterestName)
-                .textInputAutocapitalization(.words)
-            Button("Cancel", role: .cancel) { newInterestName = "" }
-            Button("Add") { commitNewInterest() }
-        } message: {
-            Text("Tell us about something else you care about.")
-        }
     }
 
-    private var interestsErrorView: some View {
-        VStack(spacing: 12) {
-            Text("Couldn't load interests.")
-                .font(.body)
-                .foregroundStyle(Theme.textSecondary)
-            Button("Try again") {
-                Task { await loadInterests(force: true) }
-            }
-            .font(.body.weight(.semibold))
-            .foregroundStyle(Theme.forest)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.top, 32)
-    }
-
-    /// Fetch the interest catalogue from the backend once. Re-fetches when
-    /// `force` is set (the retry button), since a successful load leaves the
-    /// catalogue populated and subsequent appearances are no-ops.
+    /// Loads the interest catalogue from the backend.
+    /// Falls back to the hardcoded catalog when the backend is unavailable or
+    /// returns an empty set, so the signup step is never blocked by a server issue.
     private func loadInterests(force: Bool = false) async {
         guard force || interestCatalog.isEmpty else { return }
         isLoadingInterests = true
-        interestsLoadFailed = false
         defer { isLoadingInterests = false }
         do {
-            interestCatalog = try await profileService.fetchInterestCatalog()
+            let fetched = try await profileService.fetchInterestCatalog()
+            interestCatalog = fetched.isEmpty ? fallbackCatalog : fetched
         } catch {
-            interestsLoadFailed = true
+            interestCatalog = fallbackCatalog
+        }
+    }
+
+    private var fallbackCatalog: [Keyword] {
+        UserProfileStore.interestCatalog.enumerated().map { idx, entry in
+            Keyword(id: -(idx + 1), categoryId: 0, name: entry.name)
         }
     }
 
@@ -286,54 +253,13 @@ struct SignupFormView: View {
                 Text(name)
                     .font(.body)
             }
-            .foregroundStyle(Theme.textPrimary)
+            .foregroundStyle(selected ? .white : Theme.textPrimary)
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
-            .background(selected ? Theme.forest.opacity(0.15) : Color(.systemGray6))
-            .overlay(
-                Capsule()
-                    .stroke(selected ? Theme.forest : Color.clear, lineWidth: 1.5)
-            )
+            .background(selected ? Theme.forest : Color(.systemGray6))
             .clipShape(Capsule())
         }
         .buttonStyle(.plain)
-    }
-
-    private var addMoreChip: some View {
-        Button {
-            showAddInterestAlert = true
-        } label: {
-            HStack(spacing: 6) {
-                Image(systemName: "plus")
-                Text("Add more")
-                    .font(.body)
-            }
-            .foregroundStyle(Theme.forest)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
-            .background(Theme.forest.opacity(0.08))
-            .overlay(
-                Capsule()
-                    .stroke(Theme.forest, style: StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
-            )
-            .clipShape(Capsule())
-        }
-        .buttonStyle(.plain)
-    }
-
-    private func commitNewInterest() {
-        let trimmed = newInterestName.trimmingCharacters(in: .whitespacesAndNewlines)
-        newInterestName = ""
-        guard !trimmed.isEmpty else { return }
-        let allNames = interestCatalog.map(\.name) + customInterests.map(\.name)
-        guard !allNames.contains(where: { $0.caseInsensitiveCompare(trimmed) == .orderedSame }) else {
-            selectedInterests.insert(trimmed)
-            return
-        }
-        withAnimation(.spring(response: 0.25, dampingFraction: 0.85)) {
-            customInterests.append((emoji: "✨", name: trimmed))
-            selectedInterests.insert(trimmed)
-        }
     }
 
     // MARK: Step 4 — Secure your account
@@ -390,81 +316,95 @@ struct SignupFormView: View {
             )
     }
 
-    // MARK: Step 5 — Make your own profile
+    // MARK: Step 5 — Goals
 
-    private var makeProfileStep: some View {
+    private var goalsStep: some View {
         VStack(alignment: .leading, spacing: 28) {
-            Text("Make your own Profile !")
-                .font(.largeTitle.bold())
+            Text("What are your\ncurrent goals?")
+                .font(.pageTitle)
                 .foregroundStyle(Theme.textPrimary)
 
-            profileUploadColumn
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(spacing: 3) {
+                    Text("What are you hoping to get out of this?")
+                        .font(.bodyText)
+                        .foregroundStyle(Theme.textPrimary)
+                    Text("*").requiredFieldStyle()
+                }
+                ZStack(alignment: .topLeading) {
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color(.systemGray6))
+                    if expectations.isEmpty {
+                        Text("e.g. Meet people who care about the\nsame social justice programs as I do")
+                            .font(.bodyText)
+                            .italic()
+                            .foregroundStyle(Theme.textSecondary)
+                            .padding(.horizontal, 14)
+                            .padding(.top, 14)
+                            .allowsHitTesting(false)
+                    }
+                    TextField("", text: $expectations, axis: .vertical)
+                        .font(.bodyText)
+                        .lineLimit(3...)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 14)
+                }
+                .frame(minHeight: 92)
+            }
 
-            VStack(alignment: .leading, spacing: 20) {
-                profileField(label: "Name",
-                             placeholder: "",
-                             text: $displayName)
-                profileField(label: "What do you expect from volunteering",
-                             placeholder: "",
-                             text: $expectations)
-                profileField(label: "Current occupation",
-                             placeholder: "",
-                             text: $occupation)
-                profileField(label: "Key skills",
-                             placeholder: "e.g. Writing, Social Media, Leadership...",
-                             text: $keySkills)
-                profileField(label: "Instagram(optional)",
-                             placeholder: "",
-                             text: $instagram)
+            optionalDivider
+
+            VStack(alignment: .leading, spacing: 24) {
+                goalsTextField(
+                    label: "What is your current role?",
+                    placeholder: "e.g. Uni student, barista, between jobs...",
+                    text: $occupation
+                )
+                goalsTextField(
+                    label: "What do you believe you can bring to a volunteer program team?",
+                    placeholder: "e.g. Showing up with good energy!!!",
+                    text: $keySkills
+                )
             }
         }
     }
 
-    private var profileUploadColumn: some View {
-        PhotosPicker(selection: $profileItem, matching: .images) {
-            VStack(spacing: 12) {
-                profileCircle
-                    .frame(width: 110, height: 110)
-                Text("Upload a profile picture")
-                    .font(.body)
-                    .foregroundStyle(Theme.textSecondary)
-            }
-            .frame(maxWidth: .infinity)
-        }
-        .onChange(of: profileItem) { _, newItem in
-            Task { profileImageData = try? await newItem?.loadTransferable(type: Data.self) }
-        }
-    }
-
-    @ViewBuilder
-    private var profileCircle: some View {
-        if let data = profileImageData, let uiImage = UIImage(data: data) {
-            Image(uiImage: uiImage)
-                .resizable()
-                .scaledToFill()
-                .clipShape(Circle())
-        } else {
-            ZStack {
-                Circle().fill(Color(.systemGray6))
-                Image(systemName: "plus")
-                    .font(.title.weight(.medium))
-                    .foregroundStyle(Theme.textPrimary)
-            }
+    private var optionalDivider: some View {
+        HStack(spacing: 12) {
+            Rectangle()
+                .fill(Theme.border)
+                .frame(height: 1)
+            Text("Optional")
+                .font(.labelItalic)
+                .foregroundStyle(Theme.textSecondary)
+                .fixedSize()
+            Rectangle()
+                .fill(Theme.border)
+                .frame(height: 1)
         }
     }
 
-    private func profileField(label: String, placeholder: String, text: Binding<String>) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+    private func goalsTextField(label: String, placeholder: String, text: Binding<String>) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
             Text(label)
-                .font(.body.weight(.semibold))
+                .font(.bodyText)
                 .foregroundStyle(Theme.textPrimary)
-            TextField(placeholder, text: text)
-                .textInputAutocapitalization(.sentences)
-                .autocorrectionDisabled()
-                .padding(.horizontal, 16)
-                .padding(.vertical, 16)
-                .background(Color(.systemGray6))
-                .clipShape(RoundedRectangle(cornerRadius: 12))
+            ZStack(alignment: .leading) {
+                if text.wrappedValue.isEmpty {
+                    Text(placeholder)
+                        .font(.bodyText)
+                        .italic()
+                        .foregroundStyle(Theme.textSecondary)
+                        .padding(.horizontal, 14)
+                        .allowsHitTesting(false)
+                }
+                TextField("", text: text)
+                    .font(.bodyText)
+                    .padding(.horizontal, 14)
+            }
+            .frame(height: 52)
+            .background(Color(.systemGray6))
+            .clipShape(RoundedRectangle(cornerRadius: 12))
         }
     }
 
@@ -562,13 +502,13 @@ struct SignupFormView: View {
         Button {
             withAnimation(.easeInOut(duration: 0.2)) { advance() }
         } label: {
-            Text("Next")
-                .font(.headline)
+            Text(step == 5 ? "Find your people!" : "Next")
+                .font(.buttonLabel)
                 .foregroundStyle(canAdvance ? .white : Theme.textSecondary)
                 .frame(maxWidth: .infinity)
                 .frame(height: 54)
                 .background(canAdvance ? Theme.forest : Theme.border)
-                .clipShape(RoundedRectangle(cornerRadius: 24))
+                .clipShape(RoundedRectangle(cornerRadius: 27))
         }
         .disabled(!canAdvance)
     }
@@ -576,9 +516,9 @@ struct SignupFormView: View {
     private var canAdvance: Bool {
         switch step {
         case 2: return !city.isEmpty
-        case 3: return !selectedInterests.isEmpty
+        case 3: return selectedInterests.count >= 2
         case 4: return !email.isEmpty && !password.isEmpty
-        case 5: return !displayName.isEmpty && !expectations.isEmpty && !occupation.isEmpty && !keySkills.isEmpty
+        case 5: return !expectations.isEmpty
         default: return false
         }
     }
@@ -595,7 +535,7 @@ struct SignupFormView: View {
         case 2:
             profileStore.city = city
         case 3:
-            let builtIn = interestCatalog
+            profileStore.interests = interestCatalog
                 .filter { selectedInterests.contains($0.name) }
                 .map {
                     UserProfileStore.Interest(
@@ -603,17 +543,10 @@ struct SignupFormView: View {
                         name: $0.name
                     )
                 }
-            let custom = customInterests
-                .filter { selectedInterests.contains($0.name) }
-                .map { UserProfileStore.Interest(emoji: $0.emoji, name: $0.name) }
-            profileStore.interests = builtIn + custom
         case 5:
-            profileStore.displayName = displayName
-            profileStore.instagram = instagram
             profileStore.personalGoal = expectations
             profileStore.occupation = occupation
             profileStore.keySkills = keySkills
-            profileStore.profileImageData = profileImageData
         default:
             break
         }
