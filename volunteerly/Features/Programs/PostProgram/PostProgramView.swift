@@ -29,6 +29,9 @@ struct PostProgramView: View {
     let maxPhotos = 3
     @State var photoItems: [PhotosPickerItem] = []
     @State var photoImages: [Image] = []
+    /// iOS home-screen-style "edit mode": long-pressing a thumbnail makes the
+    /// row jiggle and reveals a per-photo delete badge.
+    @State var photosEditing = false
 
     // UI State
     @State private var activeSheet: SheetType? = nil
@@ -85,6 +88,9 @@ struct PostProgramView: View {
         .background(Color.pageBackground)
         .onTapGesture {
             UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+            if photosEditing {
+                withAnimation(.easeInOut(duration: 0.2)) { photosEditing = false }
+            }
         }
         .task {
             if viewModel.categories.isEmpty { await viewModel.loadCategories() }
