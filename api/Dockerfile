@@ -14,17 +14,21 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-# uv (package manager)
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+# uv (package manager) lives only in the build stages below — never in the
+# runtime image. The container's CMD runs `fastapi` straight from the copied
+# venv, so shipping uv/uvx (~50 MB) into `runtime`/`prod` is pure dead weight
+# that slows image pulls (and Render free-tier cold starts).
 
 # ---- deps-local: resolve runtime deps without the Turso extra (no Rust) ----
 FROM base AS deps-local
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 COPY pyproject.toml uv.lock ./
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev --no-install-project
 
 # ---- deps-turso: same, plus the `turso` extra (compiles libsql via Rust) ----
 FROM base AS deps-turso
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 # libsql-experimental compiles a bundled C SQLite (sqlite3mc) via Rust, which
 # needs a full native toolchain: cc/build-essential, cmake, and clang/libclang.
 RUN apt-get update && apt-get install -y --no-install-recommends \
