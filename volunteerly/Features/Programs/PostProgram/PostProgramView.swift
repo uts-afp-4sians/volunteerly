@@ -36,7 +36,7 @@ struct PostProgramView: View {
     @State private var startDate: Date = Calendar.current.date(bySettingHour: 12, minute: 0, second: 0, of: Date()) ?? Date()
     @State private var endDate: Date = Calendar.current.date(bySettingHour: 13, minute: 0, second: 0, of: Date()) ?? Date().addingTimeInterval(3600)
     @State private var isAllDay: Bool = false
-    @State private var selectedRepeat: String = "Every Week" // Matches "Every Week" from mockup
+    @State private var selectedRepeat: String = "Never" // Default reoccurrence (Figma 329:1821)
     
     // UI State
     @State private var activeSheet: SheetType? = nil
@@ -163,10 +163,10 @@ struct PostProgramView: View {
                     RegionSelectionView(selectedRegion: $selectedRegion)
                 }
             case .repeatSelection:
-                // The repeat sheet carries its own "Repeat / Done" header
-                // (Figma 226:607), so it isn't wrapped in navSheet.
+                // The reoccurrence sheet carries its own title + custom blue
+                // drag handle (Figma 329:1821), so it isn't wrapped in navSheet.
                 RepeatSelectionView(selectedRepeat: $selectedRepeat)
-                    .presentationDetents([.height(420)])
+                    .presentationDetents([.height(520)])
                     .presentationDragIndicator(.hidden)
             }
         }
