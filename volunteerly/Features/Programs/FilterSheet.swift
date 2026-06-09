@@ -41,7 +41,7 @@ struct FilterSheet: View {
     private var distanceSection: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Text("Distance").font(.sectionHeader)
+                Text("Distance").font(.bodyStrong)
                 Spacer()
                 Text("\(Int(viewModel.maxDistance.rounded()))km")
                     .font(.labelItalic)
@@ -54,7 +54,7 @@ struct FilterSheet: View {
 
     private var teamSizeSection: some View {
         section("Team size preference") {
-            FlowLayout(spacing: 12) {
+            FlowLayout(spacing: 10) {
                 ForEach(TeamSize.allCases) { size in
                     FilterChip(
                         title: size.label,
@@ -69,7 +69,7 @@ struct FilterSheet: View {
 
     private var frequencySection: some View {
         section("Commitment frequency") {
-            FlowLayout(spacing: 12) {
+            FlowLayout(spacing: 10) {
                 ForEach(CommitmentFrequency.allCases) { frequency in
                     FilterChip(
                         title: frequency.label,
@@ -84,7 +84,7 @@ struct FilterSheet: View {
 
     private var durationSection: some View {
         section("Commitment duration (months)") {
-            FlowLayout(spacing: 12) {
+            FlowLayout(spacing: 10) {
                 ForEach(CommitmentDuration.allCases) { duration in
                     FilterChip(
                         title: duration.label,
@@ -109,7 +109,7 @@ struct FilterSheet: View {
         @ViewBuilder content: () -> Content
     ) -> some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text(title).font(.sectionHeader)
+            Text(title).font(.bodyStrong)
             content()
         }
     }
@@ -140,9 +140,11 @@ struct FilterChip: View {
         Button(action: action) {
             Text(title)
                 .font(.bodyText)
+                .lineLimit(1)
+                .fixedSize()
                 .foregroundStyle(isSelected ? Color.accentColor : .primary)
-                .padding(.horizontal, 24)
-                .frame(height: 50)
+                .padding(.horizontal, 16)
+                .frame(height: 48)
                 .background(
                     Capsule().fill(isSelected ? Color.accentColor.opacity(0.18) : Color(.systemGray6))
                 )
