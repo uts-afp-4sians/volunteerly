@@ -51,7 +51,7 @@ struct ProgramDetailView: View {
                     program: program,
                     goal: viewModel.category?.name,
                     teammateCount: program.maxVolunteers,
-                    onMeetTheTeam: { showJoinedConfirmation = false },
+                    onCheckTeamBoard: { showJoinedConfirmation = false },
                     onFindOtherOpportunities: {
                         showJoinedConfirmation = false
                         dismiss()

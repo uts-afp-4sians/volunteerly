@@ -2,56 +2,49 @@ import SwiftUI
 
 /// Confirmation screen shown after a user joins a program ("You're in!").
 /// Mirrors the Figma "C" frame: banner, celebratory heading, teammate avatars,
-/// a program summary card, and follow-up actions.
+/// a "Your first session" summary card, and follow-up actions.
 struct ProgramJoinedView: View {
     let program: Program
-    /// The cause/category the program works towards, shown as "[Goal]".
+    /// The cause/category the program works towards, shown as the second bold span.
     let goal: String?
     /// Total teammates; drives the avatar row and the "And N more!" line.
     let teammateCount: Int
 
-    var onMeetTheTeam: () -> Void = {}
+    var onCheckTeamBoard: () -> Void = {}
     var onFindOtherOpportunities: () -> Void = {}
-
-    @Environment(\.dismiss) private var dismiss
 
     /// Avatars shown inline before the "And N more!" line.
     private let visibleAvatars = 4
     private let horizontalPadding: CGFloat = 24
 
     var body: some View {
-        ZStack(alignment: .topLeading) {
+        ZStack {
             Color.pageBackground.ignoresSafeArea()
 
             ScrollView {
-                VStack(spacing: 24) {
+                VStack(spacing: 0) {
                     banner
-                    heading
-                    avatarRow
-                    moreLine
+                        .padding(.top, 16)
+
+                    VStack(spacing: 16) {
+                        heading
+                        bodyText
+                    }
+                    .padding(.top, 40)
+
+                    teammates
+                        .padding(.top, 32)
+
                     summaryCard
+                        .padding(.top, 56)
+
                     actions
+                        .padding(.top, 24)
                 }
                 .padding(.horizontal, horizontalPadding)
-                .padding(.top, 56)
                 .padding(.bottom, 32)
             }
-
-            closeButton
-                .padding(.leading, horizontalPadding)
-                .padding(.top, 8)
         }
-    }
-
-    // MARK: - Close
-
-    private var closeButton: some View {
-        Button { dismiss() } label: {
-            Text("X")
-                .font(.sectionHeader)
-                .foregroundStyle(.primary)
-        }
-        .buttonStyle(.plain)
     }
 
     // MARK: - Banner
@@ -62,44 +55,44 @@ struct ProgramJoinedView: View {
         } placeholder: {
             Rectangle().fill(Color(.systemGray5))
         }
-        .frame(height: 179)
+        .frame(height: 215)
         .frame(maxWidth: .infinity)
-        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 
     // MARK: - Heading
 
     private var heading: some View {
-        VStack(spacing: 16) {
-            Text("You're in!")
-                .font(.pageTitle)
-                .foregroundStyle(.primary)
-            Text("You've teamed up with **\(program.name)** working towards **\(goal ?? "your community")**")
-                .font(.bodyText)
-                .foregroundStyle(.primary)
-                .multilineTextAlignment(.center)
-        }
+        Text("You're in!")
+            .font(.pageTitle)
+            .foregroundStyle(Theme.textPrimary)
+    }
+
+    private var bodyText: some View {
+        Text("You've teamed up with **\(program.name)** working towards **\(goal ?? "your community")**")
+            .font(.bodyText)
+            .foregroundStyle(Theme.textPrimary)
+            .multilineTextAlignment(.center)
+            .fixedSize(horizontal: false, vertical: true)
     }
 
     // MARK: - Teammates
 
-    private var avatarRow: some View {
-        HStack(spacing: 21) {
-            ForEach(0..<min(visibleAvatars, max(teammateCount, 0)), id: \.self) { _ in
-                Circle()
-                    .fill(Color(.systemGray5))
-                    .frame(width: 55, height: 55)
-            }
-        }
-    }
-
     @ViewBuilder
-    private var moreLine: some View {
-        let remaining = teammateCount - visibleAvatars
-        if remaining > 0 {
-            Text("And \(remaining) more!")
-                .font(.bodyText)
-                .foregroundStyle(.primary)
+    private var teammates: some View {
+        VStack(spacing: 16) {
+            HStack(spacing: 21) {
+                ForEach(0..<min(visibleAvatars, max(teammateCount, 0)), id: \.self) { _ in
+                    Avatar(source: .placeholder, size: 55)
+                }
+            }
+
+            let remaining = teammateCount - visibleAvatars
+            if remaining > 0 {
+                Text("And \(remaining) more!")
+                    .font(.bodyText)
+                    .foregroundStyle(Theme.textPrimary)
+            }
         }
     }
 
@@ -107,18 +100,18 @@ struct ProgramJoinedView: View {
 
     private var summaryCard: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text(program.name)
-                .font(.bodyStrong)
-                .foregroundStyle(.primary)
+            Text("Your first session")
+                .font(Font.bodyStrong.italic())
+                .foregroundStyle(Theme.textPrimary)
             Text(dateRange)
-                .font(.bodyText)
-                .foregroundStyle(.primary)
+                .font(Font.bodyText.italic())
+                .foregroundStyle(Theme.textPrimary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(20)
         .overlay(
             RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .strokeBorder(Color.primary, lineWidth: 1)
+                .strokeBorder(Theme.textPrimary, lineWidth: 1)
         )
     }
 
@@ -135,23 +128,24 @@ struct ProgramJoinedView: View {
 
     private var actions: some View {
         VStack(spacing: 16) {
-            Button(action: onMeetTheTeam) {
+            Button(action: onCheckTeamBoard) {
                 HStack(spacing: 8) {
-                    Text("Meet the team")
+                    Text("Check the team board")
                     Image(systemName: "arrow.right")
                 }
                 .font(.bodyText)
-                .foregroundStyle(.primary)
+                .foregroundStyle(.white)
                 .frame(maxWidth: .infinity)
-                .frame(height: 42)
-                .background(Color(.systemGray6), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .frame(height: 61)
+                .background(Color.brand, in: Capsule())
             }
             .buttonStyle(.plain)
 
             Button(action: onFindOtherOpportunities) {
                 Text("or find other opportunities")
                     .font(.bodyText)
-                    .foregroundStyle(.primary)
+                    .underline()
+                    .foregroundStyle(Color.brand)
             }
             .buttonStyle(.plain)
         }
