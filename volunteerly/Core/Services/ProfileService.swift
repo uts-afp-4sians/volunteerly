@@ -34,6 +34,13 @@ final class ProfileService {
         try await client.get("/keywords")
     }
 
+    /// The profile-interest catalogue — the chips offered on the signup
+    /// interests step and the "My interests" picker. Backed by `/interests`,
+    /// the subset of keywords flagged `is_interest` in the DB.
+    func fetchInterestCatalog() async throws -> [Keyword] {
+        try await client.get("/interests")
+    }
+
     @discardableResult
     func replaceMyInterests(keywordIds: [Int]) async throws -> [UserInterestDetail] {
         try await client.put("/me/interests", body: UserInterestsUpdate(keywordIds: keywordIds))

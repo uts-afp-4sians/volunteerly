@@ -10,8 +10,15 @@ struct SignupFormView: View {
     @State private var step = 2
     private let totalSteps = 4
 
-    // Step 2 — Interests
+    // Step 2 — Interests. The catalogue is loaded from the backend `/interests`
+    // endpoint (the DB-flagged interest keywords); emoji are mapped client-side
+    // by name via `UserProfileStore.emoji(for:)`.
     @State private var selectedInterests: Set<String> = []
+    @State private var interestCatalog: [Keyword] = []
+    @State private var isLoadingInterests = false
+    @State private var interestsLoadFailed = false
+
+    private let profileService = ProfileService.shared
 
     // Step 3 — Make your own profile
     @State private var profileItem: PhotosPickerItem?
@@ -23,24 +30,6 @@ struct SignupFormView: View {
 
     // Step 4 — Finalising
     @State private var hasStartedFinalising = false
-
-    private let interests: [(emoji: String, name: String)] = [
-        ("🐶", "Animal Care"),
-        ("🎨", "Arts & Creativity"),
-        ("👥", "Community Building"),
-        ("📚", "Education"),
-        ("👴", "Aged Care"),
-        ("🌱", "Environment"),
-        ("🍳", "Food"),
-        ("⚽", "Sports"),
-        ("🌳", "Outdoors"),
-        ("👗", "Fashion"),
-        ("✊", "Social Justice"),
-        ("🎵", "Music"),
-        ("📷", "Photography"),
-        ("🛩", "Travel"),
-        ("💻", "Technology"),
-    ]
 
     var body: some View {
         VStack(alignment: .leading, spacing: 24) {
@@ -123,11 +112,52 @@ struct SignupFormView: View {
                 .font(.largeTitle.bold())
                 .foregroundStyle(Theme.textPrimary)
 
-            FlowLayout(spacing: 10, lineSpacing: 12) {
-                ForEach(interests, id: \.name) { interest in
-                    interestChip(emoji: interest.emoji, name: interest.name)
+            if isLoadingInterests {
+                ProgressView()
+                    .tint(Theme.forest)
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 32)
+            } else if interestsLoadFailed {
+                interestsErrorView
+            } else {
+                FlowLayout(spacing: 10, lineSpacing: 12) {
+                    ForEach(interestCatalog) { keyword in
+                        interestChip(emoji: UserProfileStore.emoji(for: keyword.name),
+                                     name: keyword.name)
+                    }
                 }
             }
+        }
+        .task { await loadInterests() }
+    }
+
+    private var interestsErrorView: some View {
+        VStack(spacing: 12) {
+            Text("Couldn't load interests.")
+                .font(.body)
+                .foregroundStyle(Theme.textSecondary)
+            Button("Try again") {
+                Task { await loadInterests(force: true) }
+            }
+            .font(.body.weight(.semibold))
+            .foregroundStyle(Theme.forest)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.top, 32)
+    }
+
+    /// Fetch the interest catalogue from the backend once. Re-fetches when
+    /// `force` is set (the retry button), since a successful load leaves the
+    /// catalogue populated and subsequent appearances are no-ops.
+    private func loadInterests(force: Bool = false) async {
+        guard force || interestCatalog.isEmpty else { return }
+        isLoadingInterests = true
+        interestsLoadFailed = false
+        defer { isLoadingInterests = false }
+        do {
+            interestCatalog = try await profileService.fetchInterestCatalog()
+        } catch {
+            interestsLoadFailed = true
         }
     }
 
