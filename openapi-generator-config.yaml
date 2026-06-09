@@ -16,3 +16,4 @@ filter:
     - auth
     - programs
     - categories
+    - uploads

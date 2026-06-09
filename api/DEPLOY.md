@@ -49,6 +49,43 @@ env var:
 fly secrets set DATABASE_URL='sqlite+libsql://volunteerly-<org>.turso.io/?authToken=<token>&secure=true'
 ```
 
+## 3a. Set the Cloudflare R2 image storage secrets
+
+Image uploads use Cloudflare R2 (`volunteerly-media` bucket, APAC region).
+Public URL: `https://pub-33ddcaa8fd164c628cabe79a0c47c85c.r2.dev`
+
+Create an R2 API token in the Cloudflare dashboard (R2 → Manage R2 API Tokens →
+Object Read & Write, scoped to `volunteerly-media`), then register the secrets
+via the Render API or dashboard:
+
+```bash
+SERVICE_ID="srv-d8h1p77lk1mc73du96fg"
+RENDER_API_KEY="<your-render-api-key>"   # Account Settings → API Keys
+
+curl -X PUT "https://api.render.com/v1/services/$SERVICE_ID/env-vars" \
+  -H "Authorization: Bearer $RENDER_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '[
+    {"key":"R2_ACCOUNT_ID",        "value":"<r2-account-id>"},
+    {"key":"R2_ACCESS_KEY_ID",     "value":"<r2-access-key-id>"},
+    {"key":"R2_SECRET_ACCESS_KEY", "value":"<r2-secret-access-key>"},
+    {"key":"R2_BUCKET",            "value":"volunteerly-media"},
+    {"key":"R2_PUBLIC_URL",        "value":"https://pub-33ddcaa8fd164c628cabe79a0c47c85c.r2.dev"}
+  ]'
+```
+
+Then trigger a redeploy: Render dashboard → Manual Deploy, or via API:
+
+```bash
+curl -X POST "https://api.render.com/v1/services/$SERVICE_ID/deploys" \
+  -H "Authorization: Bearer $RENDER_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"clearCache":"do_not_clear"}'
+```
+
+Use a **write-only** token (no list/delete permissions) to limit blast radius if
+the key is ever leaked.
+
 ## 4. Deploy
 
 ```bash

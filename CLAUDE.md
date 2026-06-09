@@ -47,6 +47,18 @@ aren't obvious from the code, not things the code already shows.
 ## Naming
 - The forum feature is `Forum*` in iOS code (`ForumPost`, `ForumComment`) even though the
   ERD calls it `BOARD_*`. Keep "Forum" in iOS and API code/UI; the JSON keys already match.
+- **Swift file names must not contain `+`.** Use a descriptive suffix instead:
+  `PostProgramViewSections.swift` not `PostProgramView+Sections.swift`.
+
+## R2 object storage
+- Bucket: `volunteerly-media` (Cloudflare account `<r2-account-id>`, APAC)
+- Public base URL: `https://pub-33ddcaa8fd164c628cabe79a0c47c85c.r2.dev`
+- Object key schema: `{kind}/{user_id}/{uuid4().hex}.webp`
+  - `profile_image/{user_id}/{32-char-hex}.webp`
+  - `program_banner/{user_id}/{program_id|0}/{32-char-hex}.webp`
+- Filenames use `uuid4().hex` (32 hex chars, no hyphens) — URL-safe with no special characters.
+- ContentType is locked to `image/webp`; iOS converts before upload via `CGImageDestination`.
+- Presign TTL: 300 s. Max upload size enforced client-side: 5 MB.
 
 <!-- OMA:START — managed by oh-my-agent. Do not edit this block manually. -->
 
