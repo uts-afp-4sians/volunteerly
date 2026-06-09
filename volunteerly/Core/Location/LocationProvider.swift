@@ -1,6 +1,14 @@
 import CoreLocation
 import Foundation
 
+/// One-shot location read, abstracted so view models can be tested with a
+/// stub that returns a fixed coordinate (or never resolves) instead of the
+/// real `CLLocationManager`.
+@MainActor
+protocol LocationProviding {
+    func currentCoordinate() async -> CLLocationCoordinate2D?
+}
+
 /// Thin async wrapper over `CLLocationManager` for one-shot location reads.
 ///
 /// The program list asks for the device's coordinate to show "1.5km"-style
@@ -8,7 +16,7 @@ import Foundation
 /// user denies it (or a fix can't be obtained) the call resolves to `nil` and
 /// callers fall back to a non-distance UI — no prompt is forced up front.
 @MainActor
-final class LocationProvider: NSObject, CLLocationManagerDelegate {
+final class LocationProvider: NSObject, LocationProviding, CLLocationManagerDelegate {
     static let shared = LocationProvider()
 
     private let manager = CLLocationManager()
