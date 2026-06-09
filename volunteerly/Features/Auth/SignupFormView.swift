@@ -1,5 +1,6 @@
 import SwiftUI
 import PhotosUI
+import MapKit
 
 struct SignupFormView: View {
     let basics: SignupBasics
@@ -12,9 +13,14 @@ struct SignupFormView: View {
     @Environment(UserProfileStore.self) private var profileStore
 
     @State private var step = 2
-    private let totalSteps = 5
+    private let totalSteps = 6
 
-    // Step 2 — Interests. The catalogue is loaded from the backend `/interests`
+    // Step 2 — Location
+    @State private var city = ""
+    @State private var mapCameraPosition: MapCameraPosition = .automatic
+    @State private var isGeocodingCity = false
+
+    // Step 3 — Interests. The catalogue is loaded from the backend `/interests`
     // endpoint (the DB-flagged interest keywords); emoji are mapped client-side
     // by name via `UserProfileStore.emoji(for:)`.
     @State private var selectedInterests: Set<String> = []
@@ -27,11 +33,11 @@ struct SignupFormView: View {
 
     private let profileService = ProfileService.shared
 
-    // Step 3 — Secure your account
+    // Step 4 — Secure your account
     @State private var email = ""
     @State private var password = ""
 
-    // Step 4 — Make your own profile
+    // Step 5 — Make your own profile
     @State private var profileItem: PhotosPickerItem?
     @State private var profileImageData: Data?
     @State private var displayName = ""
@@ -40,7 +46,7 @@ struct SignupFormView: View {
     @State private var keySkills = ""
     @State private var instagram = ""
 
-    // Step 4 — Finalising
+    // Step 6 — Finalising
     @State private var hasStartedFinalising = false
     @State private var finalisingError: String?
 
@@ -54,7 +60,7 @@ struct SignupFormView: View {
                     .padding(.bottom, 16)
             }
 
-            if step < 5 {
+            if step < 6 {
                 nextButton
             }
         }
@@ -66,7 +72,7 @@ struct SignupFormView: View {
         .navigationBarBackButtonHidden(true)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            if step < 5 {
+            if step < 6 {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button {
                         withAnimation(.easeInOut(duration: 0.2)) {
@@ -100,10 +106,11 @@ struct SignupFormView: View {
     @ViewBuilder
     private var stepContent: some View {
         switch step {
-        case 2: interestsStep
-        case 3: emailPasswordStep
-        case 4: makeProfileStep
-        case 5: finalisingStep
+        case 2: locationStep
+        case 3: interestsStep
+        case 4: emailPasswordStep
+        case 5: makeProfileStep
+        case 6: finalisingStep
         default: comingSoonStep
         }
     }
@@ -118,7 +125,83 @@ struct SignupFormView: View {
         }
     }
 
-    // MARK: Step 2 — Interests
+    // MARK: Step 2 — Location
+
+    private var locationStep: some View {
+        VStack(alignment: .leading, spacing: 24) {
+            Text("Where are you?")
+                .font(.largeTitle.bold())
+                .foregroundStyle(Theme.textPrimary)
+
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 3) {
+                    Text("City")
+                        .font(.body.weight(.semibold))
+                        .foregroundStyle(Theme.textPrimary)
+                    Text("*").requiredFieldStyle()
+                }
+                HStack(spacing: 10) {
+                    Image(systemName: "magnifyingglass")
+                        .foregroundStyle(Theme.textSecondary)
+                    TextField("Search", text: $city)
+                        .submitLabel(.search)
+                        .onSubmit { geocodeCity() }
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 14)
+                .background(Color(.systemGray6))
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+            }
+
+            VStack(spacing: 0) {
+                Map(position: $mapCameraPosition)
+                    .frame(height: 280)
+                    .disabled(true)
+
+                Button {
+                    geocodeCity()
+                } label: {
+                    HStack(spacing: 8) {
+                        if isGeocodingCity {
+                            ProgressView()
+                                .progressViewStyle(.circular)
+                                .tint(.white)
+                                .controlSize(.small)
+                        }
+                        Text(isGeocodingCity ? "Searching…" : "Select location")
+                            .font(.headline)
+                            .foregroundStyle(.white)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 54)
+                    .background(city.isEmpty ? Theme.border : Theme.forest)
+                }
+                .disabled(city.isEmpty || isGeocodingCity)
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+        }
+    }
+
+    private func geocodeCity() {
+        let name = city
+        guard !name.isEmpty else { return }
+        isGeocodingCity = true
+        CLGeocoder().geocodeAddressString(name) { placemarks, _ in
+            Task { @MainActor in
+                self.isGeocodingCity = false
+                if let coord = placemarks?.first?.location?.coordinate {
+                    withAnimation {
+                        self.mapCameraPosition = .region(MKCoordinateRegion(
+                            center: coord,
+                            span: MKCoordinateSpan(latitudeDelta: 0.1, longitudeDelta: 0.1)
+                        ))
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: Step 3 — Interests
 
     private var interestsStep: some View {
         VStack(alignment: .leading, spacing: 24) {
@@ -253,7 +336,7 @@ struct SignupFormView: View {
         }
     }
 
-    // MARK: Step 3 — Secure your account
+    // MARK: Step 4 — Secure your account
 
     private var emailPasswordStep: some View {
         VStack(alignment: .leading, spacing: 28) {
@@ -307,7 +390,7 @@ struct SignupFormView: View {
             )
     }
 
-    // MARK: Step 4 — Make your own profile
+    // MARK: Step 5 — Make your own profile
 
     private var makeProfileStep: some View {
         VStack(alignment: .leading, spacing: 28) {
@@ -385,7 +468,7 @@ struct SignupFormView: View {
         }
     }
 
-    // MARK: Step 5 — Finalising
+    // MARK: Step 6 — Finalising
 
     private var finalisingStep: some View {
         VStack(spacing: 24) {
@@ -453,8 +536,8 @@ struct SignupFormView: View {
         Task {
             let registration = Task {
                 try await AuthService.shared.register(
-                    email: email,
-                    password: password,
+                    email: basics.email,
+                    password: basics.password,
                     firstName: basics.firstName,
                     lastName: basics.lastName
                 )
@@ -492,9 +575,10 @@ struct SignupFormView: View {
 
     private var canAdvance: Bool {
         switch step {
-        case 2: return !selectedInterests.isEmpty
-        case 3: return !email.isEmpty && !password.isEmpty
-        case 4: return !displayName.isEmpty && !expectations.isEmpty && !occupation.isEmpty && !keySkills.isEmpty
+        case 2: return !city.isEmpty
+        case 3: return !selectedInterests.isEmpty
+        case 4: return !email.isEmpty && !password.isEmpty
+        case 5: return !displayName.isEmpty && !expectations.isEmpty && !occupation.isEmpty && !keySkills.isEmpty
         default: return false
         }
     }
@@ -503,12 +587,14 @@ struct SignupFormView: View {
         guard step < totalSteps else { return }
         commitCurrentStep()
         step += 1
-        if step == 5 { startFinalisingIfNeeded() }
+        if step == 6 { startFinalisingIfNeeded() }
     }
 
     private func commitCurrentStep() {
         switch step {
         case 2:
+            profileStore.city = city
+        case 3:
             let builtIn = interestCatalog
                 .filter { selectedInterests.contains($0.name) }
                 .map {
@@ -521,9 +607,7 @@ struct SignupFormView: View {
                 .filter { selectedInterests.contains($0.name) }
                 .map { UserProfileStore.Interest(emoji: $0.emoji, name: $0.name) }
             profileStore.interests = builtIn + custom
-        case 3:
-            break
-        case 4:
+        case 5:
             profileStore.displayName = displayName
             profileStore.instagram = instagram
             profileStore.personalGoal = expectations
