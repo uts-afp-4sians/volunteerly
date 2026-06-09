@@ -8,8 +8,6 @@ struct LoginView: View {
     @State private var isSubmitting = false
     @State private var errorMessage: String?
 
-    private static let activeButtonColor = Color(red: 0x7E / 255, green: 0x92 / 255, blue: 0x4E / 255)
-
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 28) {
@@ -18,11 +16,13 @@ struct LoginView: View {
                 submitButton
                 dividerRow
                 socialButtons
+                Spacer(minLength: 24)
                 signupPrompt
             }
             .padding(.horizontal, 24)
             .padding(.top, 56)
             .padding(.bottom, 32)
+            .frame(maxWidth: .infinity, minHeight: 0, alignment: .leading)
         }
         .background(Theme.background.ignoresSafeArea())
         .scrollDismissesKeyboard(.interactively)
@@ -33,10 +33,10 @@ struct LoginView: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Welcome back")
-                .font(.largeTitle.bold())
+                .font(.pageTitle)
                 .foregroundStyle(Theme.textPrimary)
-            Text("Log in to continue your journey.")
-                .font(.body)
+            Text("Log in to continue your volunteering journey")
+                .font(.bodyText.italic())
                 .foregroundStyle(Theme.textSecondary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -44,25 +44,24 @@ struct LoginView: View {
 
     private var form: some View {
         VStack(alignment: .leading, spacing: 16) {
-            field(title: "Email") {
-                TextField("you@example.com", text: $email)
+            field(placeholder: "Email", text: $email) {
+                TextField("", text: $email)
                     .textContentType(.emailAddress)
                     .keyboardType(.emailAddress)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
             }
-            field(title: "Password") {
-                SecureField("••••••••", text: $password)
+            field(placeholder: "Password", text: $password) {
+                SecureField("", text: $password)
                     .textContentType(.password)
             }
-            HStack {
-                Spacer()
-                NavigationLink(value: AuthRoute.resetPassword) {
-                    Text("Forgot password?")
-                        .font(.subheadline)
-                        .foregroundStyle(Theme.forest)
-                }
+            NavigationLink(value: AuthRoute.resetPassword) {
+                Text("Forgot Password?")
+                    .font(.bodyText)
+                    .underline()
+                    .foregroundStyle(Theme.forestLight)
             }
+            .frame(maxWidth: .infinity, alignment: .trailing)
             if let errorMessage {
                 Text(errorMessage)
                     .font(.footnote)
@@ -79,14 +78,14 @@ struct LoginView: View {
                 if isSubmitting {
                     ProgressView().tint(.white)
                 } else {
-                    Text("Log In").font(.headline)
+                    Text("Login").font(.bodyText)
                 }
             }
-            .foregroundStyle(.white)
+            .foregroundStyle(Theme.onBrand)
             .frame(maxWidth: .infinity)
-            .frame(height: 54)
-            .background(Self.activeButtonColor)
-            .clipShape(RoundedRectangle(cornerRadius: 24))
+            .frame(height: 56)
+            .background(Theme.forest)
+            .clipShape(Capsule())
         }
         .disabled(isSubmitting || email.isEmpty || password.isEmpty)
         .opacity((email.isEmpty || password.isEmpty) ? 0.6 : 1)
@@ -95,7 +94,7 @@ struct LoginView: View {
     private var dividerRow: some View {
         HStack(spacing: 12) {
             line
-            Text("or").font(.footnote).foregroundStyle(Theme.textSecondary)
+            Text("Or").font(.bodyText).foregroundStyle(Theme.textSecondary)
             line
         }
     }
@@ -107,63 +106,68 @@ struct LoginView: View {
     }
 
     private var socialButtons: some View {
-        VStack(spacing: 12) {
-            socialButton(title: "Continue with Apple", icon: "applelogo")
-            socialButton(title: "Continue with Google", icon: "globe")
-            socialButton(title: "Continue with Facebook", icon: "person.crop.circle")
+        VStack(spacing: 16) {
+            socialButton(title: "Continue with Apple")
+            socialButton(title: "Continue with Google")
+            socialButton(title: "Continue with Facebook")
         }
     }
 
-    private func socialButton(title: String, icon: String) -> some View {
+    private func socialButton(title: String) -> some View {
         Button(action: {}) {
-            HStack(spacing: 12) {
-                Image(systemName: icon)
-                Text(title).font(.headline.weight(.medium))
-            }
-            .foregroundStyle(Theme.textPrimary)
-            .frame(maxWidth: .infinity)
-            .frame(height: 54)
-            .background(Theme.card)
-            .overlay(
-                RoundedRectangle(cornerRadius: 24)
-                    .stroke(Theme.border, lineWidth: 1)
-            )
-            .clipShape(RoundedRectangle(cornerRadius: 24))
+            Text(title)
+                .font(.bodyText.italic())
+                .foregroundStyle(Theme.textPrimary)
+                .frame(maxWidth: .infinity)
+                .frame(height: 56)
+                .background(Theme.card)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14)
+                        .stroke(Theme.border, lineWidth: 1)
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 14))
         }
     }
 
     private var signupPrompt: some View {
         HStack(spacing: 4) {
             Text("Don't have an account?")
-                .foregroundStyle(Theme.textSecondary)
+                .foregroundStyle(Theme.textPrimary)
             NavigationLink(value: AuthRoute.signup) {
-                Text("Sign Up")
-                    .foregroundStyle(Theme.forest)
-                    .fontWeight(.semibold)
+                Text("Sign Up!")
+                    .underline()
+                    .foregroundStyle(Theme.forestLight)
             }
         }
-        .font(.subheadline)
+        .font(.bodyText.italic())
         .frame(maxWidth: .infinity, alignment: .center)
     }
 
     // MARK: Field helper
 
-    private func field<Content: View>(title: String, @ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(title)
-                .font(.subheadline.weight(.medium))
-                .foregroundStyle(Theme.textPrimary)
+    private func field<Content: View>(
+        placeholder: String,
+        text: Binding<String>,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        ZStack(alignment: .leading) {
+            if text.wrappedValue.isEmpty {
+                Text(placeholder)
+                    .font(.bodyText.italic())
+                    .foregroundStyle(Theme.textSecondary)
+            }
             content()
-                .font(.body)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 14)
-                .background(Theme.card)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Theme.border, lineWidth: 1)
-                )
-                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .font(.bodyText)
+                .foregroundStyle(Theme.textPrimary)
         }
+        .padding(.horizontal, 20)
+        .frame(height: 56)
+        .background(Theme.card)
+        .overlay(
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(Theme.border, lineWidth: 1)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 14))
     }
 
     // MARK: Actions
