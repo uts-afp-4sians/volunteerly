@@ -82,6 +82,23 @@ def _participant_count(program_id: int, db: Session) -> int:
     ).scalar_one()
 
 
+def _participant_counts(program_ids: list[int], db: Session) -> dict[int, int]:
+    """Active participant counts for many programs in a single grouped query
+    (avoids an N+1 when enriching a list). Programs with no active participations
+    are absent from the map — callers default those to 0."""
+    if not program_ids:
+        return {}
+    rows = db.execute(
+        select(ProgramParticipation.program_id, func.count())
+        .where(
+            ProgramParticipation.program_id.in_(program_ids),
+            ProgramParticipation.participation_status.in_(_ACTIVE_PARTICIPATION),
+        )
+        .group_by(ProgramParticipation.program_id)
+    ).all()
+    return {program_id: count for program_id, count in rows}
+
+
 def _active_participation(
     program_id: int, user_id: int, db: Session
 ) -> ProgramParticipation | None:
@@ -113,7 +130,7 @@ def list_programs(
     lng: float | None = Query(
         default=None, ge=-180, le=180, description="Caller longitude for distance"
     ),
-) -> list[Program] | list[ProgramRead]:
+) -> list[ProgramRead]:
     """List non-deleted programs, optionally narrowed by query-string filters.
     Repeated params (``team_size``, ``commitment_frequency``,
     ``commitment_duration``) are OR-ed within a group and AND-ed across groups.
@@ -147,24 +164,31 @@ def list_programs(
 
     programs = list(db.execute(stmt.order_by(Program.program_id)).scalars().all())
 
-    # Without caller coordinates there's nothing to measure against — return the
-    # ORM rows as before (``distance_km`` stays ``None``).
-    if lat is None or lng is None:
-        return programs
+    # The card shows how many volunteers have joined (the host included, as they
+    # hold an ordinary participation row), so carry the count on every list row.
+    # One grouped query keeps this O(1) rather than a count per program.
+    counts = _participant_counts([p.program_id for p in programs], db)
 
-    # One bulk lookup of the referenced locations (avoids an N+1 per program).
-    location_ids = {p.location_id for p in programs}
-    locations = {
-        loc.location_id: loc
-        for loc in db.execute(
-            select(Location).where(Location.location_id.in_(location_ids))
-        )
-        .scalars()
-        .all()
-    }
+    # Distance needs the caller's coordinates; without them ``distance_km`` stays
+    # ``None``. When present, one bulk location lookup avoids an N+1 per program.
+    locations: dict[int, Location] = {}
+    if lat is not None and lng is not None:
+        location_ids = {p.location_id for p in programs}
+        locations = {
+            loc.location_id: loc
+            for loc in db.execute(
+                select(Location).where(Location.location_id.in_(location_ids))
+            )
+            .scalars()
+            .all()
+        }
+
     reads: list[ProgramRead] = []
     for program in programs:
         read = ProgramRead.model_validate(program)
+        count = counts.get(program.program_id, 0)
+        read.participant_count = count
+        read.is_full = count >= program.max_volunteers
         loc = locations.get(program.location_id)
         if loc is not None and loc.latitude is not None and loc.longitude is not None:
             read.distance_km = _haversine_coords(lat, lng, loc.latitude, loc.longitude)

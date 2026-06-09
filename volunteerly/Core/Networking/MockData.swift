@@ -111,7 +111,8 @@ enum MockData {
             status: .open,
             isDeleted: false,
             deletedAt: nil,
-            createdAt: .now
+            createdAt: .now,
+            participantCount: 12
         ),
         Program(
             id: 2,
@@ -129,7 +130,8 @@ enum MockData {
             status: .open,
             isDeleted: false,
             deletedAt: nil,
-            createdAt: .now
+            createdAt: .now,
+            participantCount: 8
         ),
         Program(
             id: 3,
@@ -147,7 +149,8 @@ enum MockData {
             status: .open,
             isDeleted: false,
             deletedAt: nil,
-            createdAt: .now
+            createdAt: .now,
+            participantCount: 5
         ),
         Program(
             id: 4,
@@ -165,7 +168,8 @@ enum MockData {
             status: .full,
             isDeleted: false,
             deletedAt: nil,
-            createdAt: .now
+            createdAt: .now,
+            participantCount: 8
         ),
         Program(
             id: 5,
@@ -183,7 +187,8 @@ enum MockData {
             status: .closed,
             isDeleted: false,
             deletedAt: nil,
-            createdAt: .now
+            createdAt: .now,
+            participantCount: 22
         ),
         Program(
             id: 6,
@@ -201,7 +206,8 @@ enum MockData {
             status: .closed,
             isDeleted: false,
             deletedAt: nil,
-            createdAt: .now
+            createdAt: .now,
+            participantCount: 20
         ),
         Program(
             id: 7,
@@ -219,7 +225,8 @@ enum MockData {
             status: .draft,
             isDeleted: false,
             deletedAt: nil,
-            createdAt: .now
+            createdAt: .now,
+            participantCount: 1
         )
     ]
 

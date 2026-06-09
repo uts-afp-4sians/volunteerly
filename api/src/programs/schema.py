@@ -51,8 +51,9 @@ class ProgramRead(BaseModel):
     deleted_at: UTCDateTime | None = None
     created_at: UTCDateTime
     # Capacity state belongs to the program resource itself, so the detail fetch
-    # carries the Join counter without a second round-trip. Populated by
-    # ``GET /programs/{id}``; ``None`` in list responses (avoids an N+1 count).
+    # carries the Join counter without a second round-trip. Populated by both
+    # ``GET /programs/{id}`` and ``GET /programs`` (the list uses one grouped
+    # count, not an N+1); only the mock/ORM passthrough leaves it ``None``.
     participant_count: int | None = None
     is_full: bool | None = None
     # Straight-line distance (km) from the caller's coordinates to the program's

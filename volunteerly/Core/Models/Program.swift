@@ -17,8 +17,9 @@ nonisolated struct Program: Identifiable, Codable {
     let isDeleted: Bool
     let deletedAt: Date?
     let createdAt: Date
-    /// Capacity snapshot carried by the program detail (`GET /programs/{id}`);
-    /// `nil` in list responses, which don't compute it.
+    /// Number of volunteers who have joined (the host included). Carried by both
+    /// the program detail (`GET /programs/{id}`) and the list (`GET /programs`);
+    /// the card renders it. `nil` only when a caller omits it (e.g. mock seeds).
     var participantCount: Int? = nil
     var isFull: Bool? = nil
     /// Straight-line distance (km) from the caller's location, set by the list

@@ -113,6 +113,20 @@ def test_filters_combine_with_and(client: TestClient) -> None:
     assert _ids(client, query) == {1, 2}
 
 
+def test_list_carries_participant_count(client: TestClient) -> None:
+    # The card shows how many volunteers joined (host included), so the list
+    # must populate participant_count — not leave it null. Program 1 is seeded
+    # with four participants (host + three members); programs with no joins read
+    # 0, never null, and is_full mirrors the detail endpoint.
+    by_id = {p["program_id"]: p for p in client.get("/programs").json()}
+    assert by_id[1]["participant_count"] == 4
+    assert by_id[1]["is_full"] is False
+    assert all(p["participant_count"] is not None for p in by_id.values())
+    # The list count matches what the detail endpoint computes for the same row.
+    detail = client.get("/programs/1").json()
+    assert by_id[1]["participant_count"] == detail["participant_count"]
+
+
 def test_list_omits_distance_without_coords(client: TestClient) -> None:
     # No lat/lng → nothing to measure against, so distance_km stays null.
     body = client.get("/programs").json()

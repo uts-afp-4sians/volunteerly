@@ -39,7 +39,7 @@ struct ProgramCard: View {
                 Spacer(minLength: 8)
 
                 HStack(spacing: 12) {
-                    metric(systemImage: "person.2.fill", text: "\(program.maxVolunteers)")
+                    metric(systemImage: "person.2.fill", text: "\(program.participantCount ?? 0)")
                     metric(systemImage: "map.fill", text: distanceKm.map(Self.distanceText) ?? "-")
                 }
                 .fixedSize()
