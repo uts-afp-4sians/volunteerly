@@ -1,23 +1,30 @@
 import Foundation
 import Observation
 
-/// How the Member board orders its questions. Mirrors the four sort chips in
-/// the Figma `group-4-prototype` board design.
+/// How the Member board orders its questions. The board exposes these via a
+/// single chip that cycles through them. Mirrors the Figma `group-4-prototype`
+/// board design (Newest / Top / Oldest).
 enum BoardSort: String, CaseIterable, Identifiable {
-    case dateAscending
-    case dateDescending
-    case authorAZ
-    case authorZA
+    case newest
+    case top
+    case oldest
 
     var id: String { rawValue }
 
     var label: String {
         switch self {
-        case .dateAscending:  "Date created (ascending)"
-        case .dateDescending: "Date created (descending)"
-        case .authorAZ:       "Author (A-Z)"
-        case .authorZA:       "Author (Z-A)"
+        case .newest: "Newest"
+        case .top:    "Top"
+        case .oldest: "Oldest"
         }
+    }
+
+    /// The next order in the cycle, so one chip tap advances
+    /// Newest → Top → Oldest → Newest.
+    var next: BoardSort {
+        let all = Self.allCases
+        let index = all.firstIndex(of: self) ?? 0
+        return all[(index + 1) % all.count]
     }
 }
 
@@ -31,7 +38,7 @@ final class MemberBoardViewModel {
     private(set) var posts: [ForumPost] = []
     /// Display name per author id, resolved best-effort from user profiles.
     private(set) var authorNames: [Int: String] = [:]
-    var sort: BoardSort = .dateDescending
+    var sort: BoardSort = .newest
     private(set) var isLoading = false
     private(set) var errorMessage: String?
 
@@ -52,14 +59,15 @@ final class MemberBoardViewModel {
     /// Posts arranged by the selected sort chip.
     var sortedPosts: [ForumPost] {
         switch sort {
-        case .dateAscending:
-            posts.sorted { $0.createdAt < $1.createdAt }
-        case .dateDescending:
+        case .newest:
             posts.sorted { $0.createdAt > $1.createdAt }
-        case .authorAZ:
-            posts.sorted { authorName(for: $0).localizedCaseInsensitiveCompare(authorName(for: $1)) == .orderedAscending }
-        case .authorZA:
-            posts.sorted { authorName(for: $0).localizedCaseInsensitiveCompare(authorName(for: $1)) == .orderedDescending }
+        case .oldest:
+            posts.sorted { $0.createdAt < $1.createdAt }
+        case .top:
+            // The post payload carries no engagement signal yet, so rank by id
+            // descending as a stable proxy for the most prominent threads.
+            // TODO(oma-deferred): rank by reply/like count once the API exposes it.
+            posts.sorted { $0.id > $1.id }
         }
     }
 
@@ -76,6 +84,36 @@ final class MemberBoardViewModel {
         isLoading = false
     }
 
+    /// Open a new question on the board via `POST /programs/{id}/posts`. Returns
+    /// `true` when the post was created so the caller can dismiss the composer.
+    /// Empty title/body are rejected client-side before any request.
+    func createPost(title: String, body: String) async -> Bool {
+        let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedBody = body.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedTitle.isEmpty, !trimmedBody.isEmpty else { return false }
+
+        errorMessage = nil
+        do {
+            let created: ForumPost = try await httpClient.post(
+                "/programs/\(programId)/posts",
+                body: NewPostBody(title: trimmedTitle, body: trimmedBody)
+            )
+            posts.append(created)
+            await resolveAuthors(for: [created])
+            return true
+        } catch {
+            // The method-blind mock echoes the list array, so decoding a single
+            // post fails even though the write landed — reload to surface it.
+            // A real transport/auth/server error reports and keeps the composer.
+            guard isResponseParseError(error) else {
+                errorMessage = error.localizedDescription
+                return false
+            }
+            await load()
+            return true
+        }
+    }
+
     /// Look up the display name for every distinct author we haven't seen yet.
     /// A missing profile is non-fatal — the card text doesn't depend on it.
     private func resolveAuthors(for posts: [ForumPost]) async {
@@ -86,4 +124,19 @@ final class MemberBoardViewModel {
             }
         }
     }
+
+    /// Whether the error is a response-decoding failure (raw `DecodingError`
+    /// from the mock, or `APIError.decodingFailed` from the live client) rather
+    /// than a transport/auth/server error.
+    private func isResponseParseError(_ error: Error) -> Bool {
+        if error is DecodingError { return true }
+        if case APIError.decodingFailed = error { return true }
+        return false
+    }
+}
+
+/// Body for `POST /programs/{id}/posts` — opens a new Member board question.
+private struct NewPostBody: Encodable {
+    let title: String
+    let body: String
 }

@@ -1,19 +1,12 @@
 import SwiftUI
 
-/// Route value for the "more+" link — pushes the full Member board.
-private struct MemberBoardLink: Hashable {
-    let programId: Int
-}
-
 /// The Member board block shown at the bottom of a joined program's detail:
-/// a "Member board" header with a "more+" link, the sort chips, and a
+/// a "Member board" header with an "Add post" link, a single sort chip, and a
 /// two-column grid of question cards. Matches Figma `group-4-prototype` 2A.
 struct MemberBoardSection: View {
     @State private var viewModel: MemberBoardViewModel
+    @State private var showNewPost = false
     private let httpClient: HTTPClient
-
-    /// How many questions to preview inline before "more+" takes over.
-    private let previewLimit = 6
 
     init(programId: Int, httpClient: HTTPClient = LiveHTTPClient.shared) {
         self.httpClient = httpClient
@@ -23,7 +16,7 @@ struct MemberBoardSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             header
-            BoardSortChips(selection: $viewModel.sort)
+            BoardSortChip(selection: $viewModel.sort)
             content
         }
         .task {
@@ -31,11 +24,11 @@ struct MemberBoardSection: View {
                 await viewModel.load()
             }
         }
+        .sheet(isPresented: $showNewPost) {
+            NewPostView(viewModel: viewModel)
+        }
         .navigationDestination(for: ForumPost.self) { post in
             ForumThreadView(post: post, currentUserId: 1, httpClient: httpClient)
-        }
-        .navigationDestination(for: MemberBoardLink.self) { link in
-            MemberBoardFullView(programId: link.programId, httpClient: httpClient)
         }
     }
 
@@ -46,12 +39,17 @@ struct MemberBoardSection: View {
                 .bold()
                 .foregroundStyle(Theme.textPrimary)
             Spacer(minLength: 8)
-            NavigationLink(value: MemberBoardLink(programId: viewModel.programId)) {
-                Text("more+")
+            Button {
+                showNewPost = true
+            } label: {
+                Text("Add post")
                     .font(.bodyText)
-                    .foregroundStyle(Theme.textSecondary)
+                    .underline()
+                    .foregroundStyle(Theme.forest)
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Add post")
+            .accessibilityHint("Opens a form to ask a new question")
         }
     }
 
@@ -72,36 +70,36 @@ struct MemberBoardSection: View {
                 .foregroundStyle(Theme.textSecondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
         } else {
-            QuestionGrid(posts: Array(viewModel.sortedPosts.prefix(previewLimit)))
+            QuestionGrid(posts: viewModel.sortedPosts)
         }
     }
 }
 
-/// The single-select row of sort chips. Wraps to the next line on narrow
-/// widths via `FlowLayout`.
-struct BoardSortChips: View {
+/// A single chip that cycles the board order on each tap
+/// (Newest → Top → Oldest). Styled as a soft grey capsule with a chevron,
+/// matching the Figma `group-4-prototype` board.
+struct BoardSortChip: View {
     @Binding var selection: BoardSort
 
     var body: some View {
-        FlowLayout(spacing: 8) {
-            ForEach(BoardSort.allCases) { sort in
-                Button {
-                    withAnimation(.snappy) { selection = sort }
-                } label: {
-                    Text(sort.label)
-                        .font(.buttonLabel)
-                        .foregroundStyle(selection == sort ? Color.onBrand : Theme.textPrimary)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 8)
-                        .background(
-                            selection == sort ? Color.brand : Color(.systemGray6),
-                            in: Capsule()
-                        )
-                }
-                .buttonStyle(.plain)
-                .accessibilityAddTraits(selection == sort ? [.isSelected] : [])
+        Button {
+            withAnimation(.snappy) { selection = selection.next }
+        } label: {
+            HStack(spacing: 6) {
+                Text(selection.label)
+                    .font(.bodyText)
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 12, weight: .semibold))
             }
+            .foregroundStyle(Theme.textPrimary)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .background(Color(.systemGray6), in: Capsule())
         }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Sort order")
+        .accessibilityValue(selection.label)
+        .accessibilityHint("Double tap to change the order")
     }
 }
 
@@ -147,48 +145,6 @@ struct QuestionCard: View {
         .frame(maxWidth: .infinity, minHeight: 165, alignment: .topLeading)
         .padding(16)
         .background(Color(.systemGray6), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-    }
-}
-
-/// Full Member board reached via "more+": the same chips + grid, now showing
-/// every question and scrollable on its own screen.
-struct MemberBoardFullView: View {
-    @State private var viewModel: MemberBoardViewModel
-    @Environment(\.dismiss) private var dismiss
-    private let horizontalPadding: CGFloat = 20
-
-    init(programId: Int, httpClient: HTTPClient = LiveHTTPClient.shared) {
-        _viewModel = State(initialValue: MemberBoardViewModel(programId: programId, httpClient: httpClient))
-    }
-
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                Text("Member board")
-                    .font(.pageTitle)
-                    .foregroundStyle(Theme.textPrimary)
-                BoardSortChips(selection: $viewModel.sort)
-                if viewModel.posts.isEmpty {
-                    Text("No questions yet. Be the first to start a conversation.")
-                        .font(.bodyText)
-                        .foregroundStyle(Theme.textSecondary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.top, 8)
-                } else {
-                    QuestionGrid(posts: viewModel.sortedPosts)
-                }
-            }
-            .padding(.horizontal, horizontalPadding)
-            .padding(.top, 8)
-            .padding(.bottom, 32)
-        }
-        .navigationTitle("")
-        .navigationBarTitleDisplayMode(.inline)
-        .task {
-            if viewModel.posts.isEmpty {
-                await viewModel.load()
-            }
-        }
     }
 }
 
