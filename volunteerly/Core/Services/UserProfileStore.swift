@@ -8,6 +8,7 @@ import Observation
 @Observable
 final class UserProfileStore {
     var displayName: String = ""
+    var city: String = ""
     var instagram: String = ""
     var aboutMe: String = ""
     var personalGoal: String = ""
