@@ -42,63 +42,33 @@ struct RegionSelectionView: View {
 
     var body: some View {
         VStack(spacing: 16) {
-            // Search Bar matching the mockup
-            HStack(spacing: 12) {
-                Image(systemName: "magnifyingglass")
-                    .foregroundStyle(.secondary)
-                TextField("Search", text: $searchText)
-                    .textFieldStyle(.plain)
-                    .autocorrectionDisabled()
-                    .submitLabel(.search)
-                    .onSubmit { runSearch(query: searchText) }
-                if isSearching {
-                    ProgressView()
-                } else if !searchText.isEmpty {
-                    Button {
-                        clearSearch()
-                    } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .foregroundStyle(.secondary)
-                    }
-                }
-            }
-            .padding(.horizontal, 16)
-            .frame(height: 44)
-            .background(Color(.systemGray6), in: Capsule())
-            .padding(.horizontal, 20)
-            .padding(.top, 10)
+            dragHandle
+                .padding(.top, 12)
 
-            // Map Frame matching the mockup
-            ZStack(alignment: .top) {
-                if let coordinate = displayCoordinate {
-                    Map(position: $position) {
-                        Marker(displayName ?? "Current Location", coordinate: coordinate.clLocationCoordinate2D)
-                    }
-                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                    .onMapCameraChange { context in
-                        visibleRegion = context.region
-                    }
-                } else {
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .fill(Color(.systemGray6))
-                        .overlay(
-                            VStack(spacing: 12) {
-                                ProgressView()
-                                Text("Detecting your location...")
-                                    .font(.subheading)
-                                    .foregroundStyle(.secondary)
-                            }
-                        )
-                }
+            Text("Select Location")
+                .font(.system(size: 26, weight: .bold))
+                .foregroundStyle(Theme.textPrimary)
+                .padding(.bottom, 4)
 
-                // Search results overlay anchored to the top of the map.
-                if !searchResults.isEmpty {
-                    searchResultsList
+            searchBar
+
+            // Map frame with the green "Select location" button overlaid on
+            // its lower edge (Figma 329:1533).
+            mapFrame
+                .frame(maxWidth: .infinity)
+                .frame(height: 380)
+                .overlay(alignment: .top) {
+                    // Search results float over the top of the map.
+                    if !searchResults.isEmpty {
+                        searchResultsList
+                    }
                 }
-            }
-            .frame(maxWidth: .infinity)
-            .frame(height: 380)
-            .padding(.horizontal, 20)
+                .overlay(alignment: .bottom) {
+                    selectLocationButton
+                        .padding(.horizontal, 12)
+                        .padding(.bottom, 12)
+                }
+                .padding(.horizontal, 20)
 
             if let error = locationManager.errorMessage {
                 Text(error)
@@ -124,17 +94,15 @@ struct RegionSelectionView: View {
             } label: {
                 Text("Confirm")
                     .font(.bodyStrong)
-                    .foregroundStyle(Theme.textPrimary)
+                    .foregroundStyle(Color.onBrand)
                     .frame(maxWidth: .infinity)
                     .frame(height: 50)
-                    .background(Color(.systemGray6), in: Capsule())
+                    .background(Color.brand, in: Capsule())
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 20)
         }
         .background(Color.pageBackground)
-        .navigationTitle("Select Location")
-        .navigationBarTitleDisplayMode(.inline)
         .onAppear {
             locationManager.requestPermissionAndLocation()
         }
@@ -149,6 +117,86 @@ struct RegionSelectionView: View {
                 span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
             ))
         }
+    }
+
+    // MARK: - Chrome
+
+    /// Custom blue drag handle matching the other PostProgram sheets.
+    private var dragHandle: some View {
+        Capsule()
+            .fill(Color.secondaryBlue)
+            .frame(width: 56, height: 6)
+    }
+
+    /// Search field with a magnifying glass, a clear/spinner affordance while
+    /// typing, and a microphone glyph at rest (Figma 329:1533).
+    private var searchBar: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "magnifyingglass")
+                .foregroundStyle(.secondary)
+            TextField("Search", text: $searchText)
+                .textFieldStyle(.plain)
+                .autocorrectionDisabled()
+                .submitLabel(.search)
+                .onSubmit { runSearch(query: searchText) }
+            if isSearching {
+                ProgressView()
+            } else if !searchText.isEmpty {
+                Button {
+                    clearSearch()
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(.secondary)
+                }
+            } else {
+                Image(systemName: "mic.fill")
+                    .foregroundStyle(.secondary)
+                    .accessibilityHidden(true)
+            }
+        }
+        .padding(.horizontal, 16)
+        .frame(height: 44)
+        .background(Color(.systemGray6), in: Capsule())
+        .padding(.horizontal, 20)
+    }
+
+    /// The map (or a placeholder while the location resolves).
+    @ViewBuilder
+    private var mapFrame: some View {
+        if let coordinate = displayCoordinate {
+            Map(position: $position) {
+                Marker(displayName ?? "Current Location", coordinate: coordinate.clLocationCoordinate2D)
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .onMapCameraChange { context in
+                visibleRegion = context.region
+            }
+        } else {
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Color(.systemGray6))
+                .overlay(
+                    Image(systemName: "map")
+                        .font(.system(size: 40, weight: .regular))
+                        .foregroundStyle(Color(.systemGray3))
+                )
+        }
+    }
+
+    /// Green pill that commits the location currently centered on the map
+    /// without dismissing the sheet (Confirm finalises the choice).
+    private var selectLocationButton: some View {
+        Button {
+            selectMapCenter()
+        } label: {
+            Text("Select location")
+                .font(.bodyText)
+                .foregroundStyle(Color.onBrand)
+                .frame(maxWidth: .infinity)
+                .frame(height: 50)
+                .background(Color.brand, in: Capsule())
+        }
+        .disabled(displayCoordinate == nil)
+        .opacity(displayCoordinate == nil ? 0.5 : 1)
     }
 
     private var searchResultsList: some View {
@@ -243,6 +291,29 @@ struct RegionSelectionView: View {
         searchResults = []
         searchText = result.title
         locationManager.errorMessage = nil
+    }
+
+    /// Pick the point currently centered on the map and reverse-geocode a
+    /// human-readable name for it.
+    private func selectMapCenter() {
+        let center = visibleRegion.center
+        pickedCoordinate = Coordinate(center)
+        searchResults = []
+        locationManager.errorMessage = nil
+
+        let location = CLLocation(latitude: center.latitude, longitude: center.longitude)
+        Task {
+            guard let request = MKReverseGeocodingRequest(location: location),
+                  let items = try? await request.mapItems,
+                  let item = items.first else { return }
+            let name = item.address?.shortAddress
+                ?? item.addressRepresentations?.cityName
+                ?? item.name
+            if let name, !name.isEmpty {
+                pickedName = name
+                searchText = name
+            }
+        }
     }
 
     private func clearSearch() {
