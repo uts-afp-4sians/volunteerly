@@ -25,7 +25,7 @@ struct volunteerlyApp: App {
                 switch router.route {
                 case .splash:     SplashView()
                 case .auth:       AuthFlowView()
-                case .onboarding: OnboardingView()
+                case .onboarding: WelcomeView()
                 case .main:       MainTabView()
                 }
             }

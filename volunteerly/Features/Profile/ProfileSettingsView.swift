@@ -5,7 +5,10 @@ import PhotosUI
 struct ProfileRoute: Hashable {}
 
 struct ProfileSettingsView: View {
-    @Environment(AppRouter.self) private var router
+    // Optional — see WelcomeView: logout flips the root route to .auth, tearing
+    // this view down via an animated switch, during which a non-optional
+    // @Environment lookup for AppRouter would `fatalError`.
+    @Environment(AppRouter.self) private var router: AppRouter?
     @Environment(UserProfileStore.self) private var profileStore
 
     @State private var profileItem: PhotosPickerItem?
@@ -304,7 +307,7 @@ struct ProfileSettingsView: View {
     private func performLogout() {
         AuthService.shared.logout()
         withAnimation(.easeInOut(duration: 0.35)) {
-            router.route = .auth
+            router?.route = .auth
         }
     }
 
@@ -312,7 +315,7 @@ struct ProfileSettingsView: View {
         // TODO: call DELETE /me once the backend endpoint exists.
         AuthService.shared.logout()
         withAnimation(.easeInOut(duration: 0.35)) {
-            router.route = .auth
+            router?.route = .auth
         }
     }
 }

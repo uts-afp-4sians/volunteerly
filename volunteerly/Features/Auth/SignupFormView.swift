@@ -5,7 +5,10 @@ struct SignupFormView: View {
     let basics: SignupBasics
 
     @Environment(\.dismiss) private var dismiss
-    @Environment(AppRouter.self) private var router
+    // Optional — see WelcomeView: this pushed view is torn down by an animated
+    // route switch (.onboarding), during which a non-optional @Environment
+    // lookup for AppRouter would `fatalError`.
+    @Environment(AppRouter.self) private var router: AppRouter?
     @Environment(UserProfileStore.self) private var profileStore
 
     @State private var step = 2
@@ -404,7 +407,7 @@ struct SignupFormView: View {
 
             do {
                 _ = try await registration.value
-                withAnimation(.easeInOut(duration: 0.35)) { router.route = .main }
+                withAnimation(.easeInOut(duration: 0.35)) { router?.route = .onboarding }
             } catch {
                 finalisingError = error.localizedDescription
             }

@@ -28,9 +28,10 @@ struct VolunteerlyHeader: View {
 
             Spacer()
 
-            NavigationLink {
-                ProfileSettingsView()
-            } label: {
+            // Value-based navigation routes through the stack's
+            // `navigationDestination(for: ProfileRoute.self)` so the destination
+            // is built in the stack's environment (consistent with MyProgramsView).
+            NavigationLink(value: ProfileRoute()) {
                 Avatar(source: .placeholder, size: 32)
             }
             .buttonStyle(.plain)

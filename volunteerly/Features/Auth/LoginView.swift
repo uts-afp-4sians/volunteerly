@@ -1,7 +1,10 @@
 import SwiftUI
 
 struct LoginView: View {
-    @Environment(AppRouter.self) private var router
+    // Optional — see WelcomeView: an animated route switch can re-evaluate this
+    // view outside the `.environment(router)` scope, where a non-optional
+    // @Environment lookup would `fatalError`.
+    @Environment(AppRouter.self) private var router: AppRouter?
 
     @State private var email = ""
     @State private var password = ""
@@ -179,7 +182,7 @@ struct LoginView: View {
 
         do {
             try await AuthService.shared.login(email: email, password: password)
-            router.route = .main
+            router?.route = .main
         } catch {
             errorMessage = error.localizedDescription
         }

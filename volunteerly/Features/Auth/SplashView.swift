@@ -1,7 +1,10 @@
 import SwiftUI
 
 struct SplashView: View {
-    @Environment(AppRouter.self) var router
+    // Optional: an animated route switch can re-evaluate this view as it leaves
+    // the hierarchy, outside the `.environment(router)` scope; a non-optional
+    // lookup would `fatalError` there. See WelcomeView for the same rationale.
+    @Environment(AppRouter.self) var router: AppRouter?
 
     var body: some View {
         VStack(spacing: 16) {
@@ -18,7 +21,7 @@ struct SplashView: View {
         .background(Theme.background)
         .task {
             try? await Task.sleep(for: .seconds(2))
-            router.route = SessionManager.shared.hasSession ? .main : .auth
+            router?.route = SessionManager.shared.hasSession ? .main : .auth
         }
     }
 }
