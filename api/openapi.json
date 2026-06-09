@@ -1390,6 +1390,63 @@
           }
         }
       }
+    },
+    "/uploads/presign": {
+      "post": {
+        "tags": [
+          "uploads"
+        ],
+        "summary": "Presign",
+        "description": "Return a presigned PUT URL for uploading an image to Cloudflare R2.",
+        "operationId": "presign_uploads_presign_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/UploadKind"
+            }
+          },
+          {
+            "name": "program_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "title": "Program Id",
+              "nullable": true,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PresignResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1691,6 +1748,29 @@
         ],
         "title": "LoginRequest",
         "description": "Wire shape matching iOS `LoginRequest`."
+      },
+      "PresignResponse": {
+        "properties": {
+          "upload_url": {
+            "type": "string",
+            "title": "Upload Url"
+          },
+          "public_url": {
+            "type": "string",
+            "title": "Public Url"
+          },
+          "expires_in": {
+            "type": "integer",
+            "title": "Expires In"
+          }
+        },
+        "type": "object",
+        "required": [
+          "upload_url",
+          "public_url",
+          "expires_in"
+        ],
+        "title": "PresignResponse"
       },
       "ProgramCategoryRead": {
         "properties": {
@@ -2049,6 +2129,14 @@
         "title": "TeamSize",
         "description": "Team-size preference buckets used as a `GET /programs` filter. Not stored\non the program; mapped to ``max_volunteers`` ranges at query time (wire\nvalues match iOS TeamSize)."
       },
+      "UploadKind": {
+        "type": "string",
+        "enum": [
+          "profile_image",
+          "program_banner"
+        ],
+        "title": "UploadKind"
+      },
       "UserInterestDetail": {
         "properties": {
           "keyword_id": {
@@ -2179,6 +2267,12 @@
             "nullable": true,
             "type": "string",
             "maxLength": 255
+          },
+          "profile_image_url": {
+            "title": "Profile Image Url",
+            "nullable": true,
+            "type": "string",
+            "maxLength": 500
           },
           "occupation": {
             "title": "Occupation",

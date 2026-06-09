@@ -13,7 +13,17 @@ enum API {
     /// against the FastAPI dev server, swap to `http://localhost:8000`.
     static let defaultServerURL = URL(string: "https://volunteerly-bl7n.onrender.com")!
 
+    /// Builds the generated client with the session token from `SessionManager`
+    /// injected via `URLSessionConfiguration.httpAdditionalHeaders`.
     static func makeClient(serverURL: URL = defaultServerURL) -> Client {
-        Client(serverURL: serverURL, transport: URLSessionTransport())
+        let config = URLSessionConfiguration.default
+        if let token = SessionManager.shared.token {
+            config.httpAdditionalHeaders = ["Authorization": "Bearer \(token)"]
+        }
+        let session = URLSession(configuration: config)
+        return Client(
+            serverURL: serverURL,
+            transport: URLSessionTransport(configuration: .init(session: session))
+        )
     }
 }

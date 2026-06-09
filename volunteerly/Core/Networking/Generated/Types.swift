@@ -112,6 +112,13 @@ internal protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /interests`.
     /// - Remark: Generated from `#/paths//interests/get(list_interests_interests_get)`.
     func list_interests_interests_get(_ input: Operations.list_interests_interests_get.Input) async throws -> Operations.list_interests_interests_get.Output
+    /// Presign
+    ///
+    /// Return a presigned PUT URL for uploading an image to Cloudflare R2.
+    ///
+    /// - Remark: HTTP `POST /uploads/presign`.
+    /// - Remark: Generated from `#/paths//uploads/presign/post(presign_uploads_presign_post)`.
+    func presign_uploads_presign_post(_ input: Operations.presign_uploads_presign_post.Input) async throws -> Operations.presign_uploads_presign_post.Output
 }
 
 /// Convenience overloads for operation inputs.
@@ -307,6 +314,21 @@ extension APIProtocol {
     internal func list_interests_interests_get(headers: Operations.list_interests_interests_get.Input.Headers = .init()) async throws -> Operations.list_interests_interests_get.Output {
         try await list_interests_interests_get(Operations.list_interests_interests_get.Input(headers: headers))
     }
+    /// Presign
+    ///
+    /// Return a presigned PUT URL for uploading an image to Cloudflare R2.
+    ///
+    /// - Remark: HTTP `POST /uploads/presign`.
+    /// - Remark: Generated from `#/paths//uploads/presign/post(presign_uploads_presign_post)`.
+    internal func presign_uploads_presign_post(
+        query: Operations.presign_uploads_presign_post.Input.Query,
+        headers: Operations.presign_uploads_presign_post.Input.Headers = .init()
+    ) async throws -> Operations.presign_uploads_presign_post.Output {
+        try await presign_uploads_presign_post(Operations.presign_uploads_presign_post.Input(
+            query: query,
+            headers: headers
+        ))
+    }
 }
 
 /// Server URLs defined in the OpenAPI document.
@@ -482,6 +504,35 @@ internal enum Components {
             internal enum CodingKeys: String, CodingKey {
                 case email
                 case password
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/PresignResponse`.
+        internal struct PresignResponse: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/PresignResponse/upload_url`.
+            internal var upload_url: Swift.String
+            /// - Remark: Generated from `#/components/schemas/PresignResponse/public_url`.
+            internal var public_url: Swift.String
+            /// - Remark: Generated from `#/components/schemas/PresignResponse/expires_in`.
+            internal var expires_in: Swift.Int
+            /// Creates a new `PresignResponse`.
+            ///
+            /// - Parameters:
+            ///   - upload_url:
+            ///   - public_url:
+            ///   - expires_in:
+            internal init(
+                upload_url: Swift.String,
+                public_url: Swift.String,
+                expires_in: Swift.Int
+            ) {
+                self.upload_url = upload_url
+                self.public_url = public_url
+                self.expires_in = expires_in
+            }
+            internal enum CodingKeys: String, CodingKey {
+                case upload_url
+                case public_url
+                case expires_in
             }
         }
         /// Wire shape matching iOS `ProgramCategory`.
@@ -974,6 +1025,11 @@ internal enum Components {
             case medium = "medium"
             case large = "large"
             case open = "open"
+        }
+        /// - Remark: Generated from `#/components/schemas/UploadKind`.
+        internal enum UploadKind: String, Codable, Hashable, Sendable, CaseIterable {
+            case profile_image = "profile_image"
+            case program_banner = "program_banner"
         }
         /// Wire shape matching iOS `User`.
         ///
@@ -3452,6 +3508,194 @@ internal enum Operations {
                     default:
                         try throwUnexpectedResponseStatus(
                             expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        internal enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            internal init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            internal var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            internal static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Presign
+    ///
+    /// Return a presigned PUT URL for uploading an image to Cloudflare R2.
+    ///
+    /// - Remark: HTTP `POST /uploads/presign`.
+    /// - Remark: Generated from `#/paths//uploads/presign/post(presign_uploads_presign_post)`.
+    internal enum presign_uploads_presign_post {
+        internal static let id: Swift.String = "presign_uploads_presign_post"
+        internal struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/uploads/presign/POST/query`.
+            internal struct Query: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/uploads/presign/POST/query/kind`.
+                internal var kind: Components.Schemas.UploadKind
+                /// - Remark: Generated from `#/paths/uploads/presign/POST/query/program_id`.
+                internal var program_id: Swift.Int?
+                /// Creates a new `Query`.
+                ///
+                /// - Parameters:
+                ///   - kind:
+                ///   - program_id:
+                internal init(
+                    kind: Components.Schemas.UploadKind,
+                    program_id: Swift.Int? = nil
+                ) {
+                    self.kind = kind
+                    self.program_id = program_id
+                }
+            }
+            internal var query: Operations.presign_uploads_presign_post.Input.Query
+            /// - Remark: Generated from `#/paths/uploads/presign/POST/header`.
+            internal struct Headers: Sendable, Hashable {
+                internal var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.presign_uploads_presign_post.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                internal init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.presign_uploads_presign_post.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            internal var headers: Operations.presign_uploads_presign_post.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - query:
+            ///   - headers:
+            internal init(
+                query: Operations.presign_uploads_presign_post.Input.Query,
+                headers: Operations.presign_uploads_presign_post.Input.Headers = .init()
+            ) {
+                self.query = query
+                self.headers = headers
+            }
+        }
+        internal enum Output: Sendable, Hashable {
+            internal struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/uploads/presign/POST/responses/200/content`.
+                internal enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/uploads/presign/POST/responses/200/content/application\/json`.
+                    case json(Components.Schemas.PresignResponse)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    internal var json: Components.Schemas.PresignResponse {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                internal var body: Operations.presign_uploads_presign_post.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                internal init(body: Operations.presign_uploads_presign_post.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// Successful Response
+            ///
+            /// - Remark: Generated from `#/paths//uploads/presign/post(presign_uploads_presign_post)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.presign_uploads_presign_post.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            internal var ok: Operations.presign_uploads_presign_post.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            internal struct UnprocessableContent: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/uploads/presign/POST/responses/422/content`.
+                internal enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/uploads/presign/POST/responses/422/content/application\/json`.
+                    case json(Components.Schemas.HTTPValidationError)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    internal var json: Components.Schemas.HTTPValidationError {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                internal var body: Operations.presign_uploads_presign_post.Output.UnprocessableContent.Body
+                /// Creates a new `UnprocessableContent`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                internal init(body: Operations.presign_uploads_presign_post.Output.UnprocessableContent.Body) {
+                    self.body = body
+                }
+            }
+            /// Validation Error
+            ///
+            /// - Remark: Generated from `#/paths//uploads/presign/post(presign_uploads_presign_post)/responses/422`.
+            ///
+            /// HTTP response code: `422 unprocessableContent`.
+            case unprocessableContent(Operations.presign_uploads_presign_post.Output.UnprocessableContent)
+            /// The associated value of the enum case if `self` is `.unprocessableContent`.
+            ///
+            /// - Throws: An error if `self` is not `.unprocessableContent`.
+            /// - SeeAlso: `.unprocessableContent`.
+            internal var unprocessableContent: Operations.presign_uploads_presign_post.Output.UnprocessableContent {
+                get throws {
+                    switch self {
+                    case let .unprocessableContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unprocessableContent",
                             response: self
                         )
                     }

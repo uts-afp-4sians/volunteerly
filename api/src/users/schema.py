@@ -43,6 +43,7 @@ class UserProfileUpdate(BaseModel):
 
     first_name: str | None = Field(default=None, min_length=1, max_length=255)
     last_name: str | None = Field(default=None, max_length=255)
+    profile_image_url: str | None = Field(default=None, max_length=500)
     occupation: str | None = Field(default=None, max_length=255)
     goal_text: str | None = Field(default=None, max_length=1000)
     bio: str | None = Field(default=None, max_length=1000)

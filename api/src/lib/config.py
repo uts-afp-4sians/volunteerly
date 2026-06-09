@@ -36,6 +36,13 @@ class Settings(BaseSettings):
     # clears it on logout, so a week-long window matches the client's session.
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7
 
+    # Cloudflare R2
+    R2_ACCOUNT_ID: str = ""
+    R2_ACCESS_KEY_ID: str = ""
+    R2_SECRET_ACCESS_KEY: str = ""
+    R2_BUCKET: str = ""
+    R2_PUBLIC_URL: str = ""  # e.g. https://pub-xxx.r2.dev or custom domain
+
     @field_validator("DATABASE_URL", mode="before")
     @classmethod
     def _clean_database_url(cls, value: object) -> object:

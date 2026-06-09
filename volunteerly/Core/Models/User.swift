@@ -57,6 +57,9 @@ nonisolated struct UserProfileUpdate: Codable {
     var bio: String?
     var instagram: String?
     var keySkills: String?
+    /// Public CDN URL of the uploaded profile image. Set after a successful
+    /// R2 presigned upload; `nil` means no change to the stored URL.
+    var profileImageUrl: String?
 
     enum CodingKeys: String, CodingKey {
         case firstName = "first_name"
@@ -66,6 +69,7 @@ nonisolated struct UserProfileUpdate: Codable {
         case bio
         case instagram
         case keySkills = "key_skills"
+        case profileImageUrl = "profile_image_url"
     }
 }
 

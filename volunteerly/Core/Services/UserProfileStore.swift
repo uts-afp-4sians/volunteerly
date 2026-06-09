@@ -84,13 +84,41 @@ final class UserProfileStore {
 
     /// Persist the current field values: a `PATCH` for the scalar profile and a
     /// `PUT` to replace the interest set. Returns `true` on success.
+    ///
+    /// If `profileImageData` is set, the image is uploaded to R2 first via
+    /// `UploadService` and the returned CDN URL is embedded in the PATCH body.
+    /// On upload failure the method surfaces the error and returns early so the
+    /// rest of the profile is not patched with a stale or missing image URL.
     @discardableResult
     func save() async -> Bool {
         isSaving = true
         errorMessage = nil
         defer { isSaving = false }
+
+        var update = buildUpdate()
+
+        // Upload profile image when the user has picked a new one.
+        if let imageData = profileImageData {
+            do {
+                let publicURL = try await UploadService.upload(
+                    data: imageData,
+                    kind: .profile_image
+                )
+                // publicURL is nil only in local-dev with no R2 bucket — skip the
+                // field so the server keeps whatever URL it already has.
+                if let url = publicURL {
+                    update.profileImageUrl = url
+                }
+                // Clear the local data regardless: the picker selection is consumed.
+                profileImageData = nil
+            } catch {
+                errorMessage = "Couldn't upload profile image. \(Self.message(error))"
+                return false
+            }
+        }
+
         do {
-            try await service.updateMyProfile(buildUpdate())
+            try await service.updateMyProfile(update)
             try await service.replaceMyInterests(keywordIds: resolveInterestIds())
             return true
         } catch {
