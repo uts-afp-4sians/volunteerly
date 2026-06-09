@@ -33,6 +33,10 @@ final class MockHTTPClient: HTTPClient {
         try resolve(path)
     }
 
+    func patch<B: Encodable, T: Decodable>(_ path: String, body: B) async throws -> T {
+        try resolve(path)
+    }
+
     func delete(_ path: String) async throws {
         // no-op for mock
     }

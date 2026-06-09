@@ -21,9 +21,7 @@ def _headers(client: TestClient) -> dict[str, str]:
 
 
 def test_create_post_requires_auth(client: TestClient) -> None:
-    res = client.post(
-        "/programs/1/posts", json={"title": "Q", "body": "Body"}
-    )
+    res = client.post("/programs/1/posts", json={"title": "Q", "body": "Body"})
     assert res.status_code == 401
 
 
@@ -125,9 +123,7 @@ def test_like_and_unlike_comment(client: TestClient) -> None:
 
 
 def test_like_requires_auth(client: TestClient) -> None:
-    assert (
-        client.post("/programs/1/posts/1/comments/1/like").status_code == 401
-    )
+    assert client.post("/programs/1/posts/1/comments/1/like").status_code == 401
 
 
 def test_liked_by_me_reflects_caller(client: TestClient) -> None:

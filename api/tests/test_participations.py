@@ -37,7 +37,9 @@ def test_join_requires_auth(client: TestClient) -> None:
 
 def test_join_unknown_program(client: TestClient) -> None:
     headers = {"Authorization": f"Bearer {_token(client)}"}
-    assert client.post("/programs/999/participations", headers=headers).status_code == 404
+    assert (
+        client.post("/programs/999/participations", headers=headers).status_code == 404
+    )
 
 
 def test_join_when_not_full(client: TestClient) -> None:
@@ -89,7 +91,10 @@ def test_join_rejected_when_full(client: TestClient) -> None:
     program_id = created.json()["program_id"]
 
     # Owner takes the only slot.
-    assert client.post(f"/programs/{program_id}/participations", headers=owner).status_code == 201
+    assert (
+        client.post(f"/programs/{program_id}/participations", headers=owner).status_code
+        == 201
+    )
     full = client.get(f"/programs/{program_id}/participations", headers=owner).json()
     assert full["is_full"] is True
 
@@ -102,12 +107,20 @@ def test_join_rejected_when_full(client: TestClient) -> None:
 
 def test_leave_frees_a_slot(client: TestClient) -> None:
     headers = {"Authorization": f"Bearer {_token(client)}"}
-    # User 1 leaves program 1 (was the only seeded participant).
-    assert client.delete("/programs/1/participations", headers=headers).status_code == 204
+    # Program 1 is seeded with four participants (host + three members).
+    before = client.get("/programs/1/participations", headers=headers).json()
+    assert before["joined"] is True
+
+    # User 1 leaves program 1, freeing exactly one slot.
+    assert (
+        client.delete("/programs/1/participations", headers=headers).status_code == 204
+    )
 
     summary = client.get("/programs/1/participations", headers=headers).json()
-    assert summary["participant_count"] == 0
+    assert summary["participant_count"] == before["participant_count"] - 1
     assert summary["joined"] is False
 
     # Leaving again is a 404 (no active participation to withdraw).
-    assert client.delete("/programs/1/participations", headers=headers).status_code == 404
+    assert (
+        client.delete("/programs/1/participations", headers=headers).status_code == 404
+    )

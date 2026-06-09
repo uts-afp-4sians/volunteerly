@@ -47,6 +47,12 @@ class UserProfile(Base):
     profile_image_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     occupation: Mapped[str | None] = mapped_column(String(255), nullable=True)
     goal_text: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    # Free-text "My bio" shown on the profile screen.
+    bio: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    # Instagram handle for "send me the messages"; stored without the leading
+    # '@' (the client renders the prefix).
+    instagram: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    key_skills: Mapped[str | None] = mapped_column(String(500), nullable=True)
     location_id: Mapped[int | None] = mapped_column(
         ForeignKey("locations.location_id"), nullable=True
     )

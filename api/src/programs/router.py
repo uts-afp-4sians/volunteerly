@@ -42,9 +42,7 @@ _ACTIVE_PARTICIPATION = (
 )
 
 
-def _haversine_coords(
-    lat1: float, lon1: float, lat2: float, lon2: float
-) -> float:
+def _haversine_coords(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     """Great-circle distance between two lat/lon pairs in km, rounded to 0.1."""
     lat1, lon1, lat2, lon2 = map(math.radians, (lat1, lon1, lat2, lon2))
     dlat, dlon = lat2 - lat1, lon2 - lon1
@@ -88,13 +86,17 @@ def _active_participation(
     program_id: int, user_id: int, db: Session
 ) -> ProgramParticipation | None:
     """The caller's current (non-withdrawn) participation, if any."""
-    return db.execute(
-        select(ProgramParticipation).where(
-            ProgramParticipation.program_id == program_id,
-            ProgramParticipation.user_id == user_id,
-            ProgramParticipation.participation_status.in_(_ACTIVE_PARTICIPATION),
+    return (
+        db.execute(
+            select(ProgramParticipation).where(
+                ProgramParticipation.program_id == program_id,
+                ProgramParticipation.user_id == user_id,
+                ProgramParticipation.participation_status.in_(_ACTIVE_PARTICIPATION),
+            )
         )
-    ).scalars().first()
+        .scalars()
+        .first()
+    )
 
 
 @router.get("/programs", response_model=list[ProgramRead])
@@ -156,7 +158,9 @@ def list_programs(
         loc.location_id: loc
         for loc in db.execute(
             select(Location).where(Location.location_id.in_(location_ids))
-        ).scalars().all()
+        )
+        .scalars()
+        .all()
     }
     reads: list[ProgramRead] = []
     for program in programs:
@@ -188,9 +192,11 @@ def create_program(
 
     location_id = payload.location_id
     if location_id is None:
-        location_id = db.execute(
-            select(Location.location_id).order_by(Location.location_id)
-        ).scalars().first()
+        location_id = (
+            db.execute(select(Location.location_id).order_by(Location.location_id))
+            .scalars()
+            .first()
+        )
         if location_id is None:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -271,12 +277,16 @@ def get_similar_program(
     ):
         dlat = Location.latitude - target_location.latitude
         dlon = Location.longitude - target_location.longitude
-        nearest = db.execute(
-            base.join(Location, Program.location_id == Location.location_id)
-            .where(Location.latitude.is_not(None), Location.longitude.is_not(None))
-            .order_by(dlat * dlat + dlon * dlon)
-            .limit(1)
-        ).scalars().first()
+        nearest = (
+            db.execute(
+                base.join(Location, Program.location_id == Location.location_id)
+                .where(Location.latitude.is_not(None), Location.longitude.is_not(None))
+                .order_by(dlat * dlat + dlon * dlon)
+                .limit(1)
+            )
+            .scalars()
+            .first()
+        )
         if nearest is not None:
             return SimilarProgramRead(
                 program=ProgramRead.model_validate(nearest),
@@ -289,29 +299,35 @@ def get_similar_program(
     if target_location is not None:
         region_clauses = [Location.city == target_location.city]
         if target_location.state_region is not None:
-            region_clauses.append(
-                Location.state_region == target_location.state_region
-            )
+            region_clauses.append(Location.state_region == target_location.state_region)
         for clause in region_clauses:
-            match = db.execute(
-                base.join(Location, Program.location_id == Location.location_id)
-                .where(clause)
-                .order_by(Program.program_id)
-                .limit(1)
-            ).scalars().first()
+            match = (
+                db.execute(
+                    base.join(Location, Program.location_id == Location.location_id)
+                    .where(clause)
+                    .order_by(Program.program_id)
+                    .limit(1)
+                )
+                .scalars()
+                .first()
+            )
             if match is not None:
                 return SimilarProgramRead(program=ProgramRead.model_validate(match))
 
     # 3. Same category, then any other program.
-    fallback = db.execute(
-        base.where(Program.category_id == target.category_id)
-        .order_by(Program.program_id)
-        .limit(1)
-    ).scalars().first()
+    fallback = (
+        db.execute(
+            base.where(Program.category_id == target.category_id)
+            .order_by(Program.program_id)
+            .limit(1)
+        )
+        .scalars()
+        .first()
+    )
     if fallback is None:
-        fallback = db.execute(
-            base.order_by(Program.program_id).limit(1)
-        ).scalars().first()
+        fallback = (
+            db.execute(base.order_by(Program.program_id).limit(1)).scalars().first()
+        )
 
     if fallback is None:
         raise HTTPException(

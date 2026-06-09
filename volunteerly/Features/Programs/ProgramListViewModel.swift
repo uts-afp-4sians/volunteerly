@@ -89,10 +89,13 @@ final class ProgramListViewModel {
 
     init(
         httpClient: HTTPClient = LiveHTTPClient.shared,
-        locationProvider: LocationProvider = .shared
+        locationProvider: LocationProvider? = nil
     ) {
         self.httpClient = httpClient
-        self.locationProvider = locationProvider
+        // Resolve the MainActor-isolated singleton here in the actor-isolated
+        // init body — a `= .shared` default argument is evaluated nonisolated
+        // and is an error under the Swift 6 language mode.
+        self.locationProvider = locationProvider ?? .shared
     }
 
     /// Builds `/programs` with the current filters as query items. Repeated

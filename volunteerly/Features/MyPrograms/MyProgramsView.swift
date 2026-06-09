@@ -11,8 +11,17 @@ struct MyProgramsView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                VolunteerlyHeader()
-                    .padding(.horizontal, horizontalPadding)
+                HStack {
+                    VolunteerlyHeader()
+                    Spacer()
+                    NavigationLink(value: ProfileRoute()) {
+                        Image(systemName: "person.crop.circle")
+                            .font(.system(size: 28))
+                            .foregroundStyle(Color.textPrimary)
+                    }
+                    .accessibilityLabel("My page")
+                }
+                .padding(.horizontal, horizontalPadding)
                 title
                 searchRow
                 tabBar

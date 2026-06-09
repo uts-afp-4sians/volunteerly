@@ -1189,4 +1189,66 @@ internal struct Client: APIProtocol {
             }
         )
     }
+    /// List Interests
+    ///
+    /// The profile-interest catalog — the chips on the signup interests step.
+    ///
+    /// - Remark: HTTP `GET /interests`.
+    /// - Remark: Generated from `#/paths//interests/get(list_interests_interests_get)`.
+    internal func list_interests_interests_get(_ input: Operations.list_interests_interests_get.Input) async throws -> Operations.list_interests_interests_get.Output {
+        try await client.send(
+            input: input,
+            forOperation: Operations.list_interests_interests_get.id,
+            serializer: { input in
+                let path = try converter.renderedPath(
+                    template: "/interests",
+                    parameters: []
+                )
+                var request: HTTPTypes.HTTPRequest = .init(
+                    soar_path: path,
+                    method: .get
+                )
+                suppressMutabilityWarning(&request)
+                converter.setAcceptHeader(
+                    in: &request.headerFields,
+                    contentTypes: input.headers.accept
+                )
+                return (request, nil)
+            },
+            deserializer: { response, responseBody in
+                switch response.status.code {
+                case 200:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Operations.list_interests_interests_get.Output.Ok.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            [Components.Schemas.KeywordRead].self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .ok(.init(body: body))
+                default:
+                    return .undocumented(
+                        statusCode: response.status.code,
+                        .init(
+                            headerFields: response.headerFields,
+                            body: responseBody
+                        )
+                    )
+                }
+            }
+        )
+    }
 }

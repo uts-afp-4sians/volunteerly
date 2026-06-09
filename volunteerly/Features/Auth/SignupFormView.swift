@@ -11,11 +11,18 @@ struct SignupFormView: View {
     @State private var step = 2
     private let totalSteps = 4
 
-    // Step 2 — Interests
+    // Step 2 — Interests. The catalogue is loaded from the backend `/interests`
+    // endpoint (the DB-flagged interest keywords); emoji are mapped client-side
+    // by name via `UserProfileStore.emoji(for:)`.
     @State private var selectedInterests: Set<String> = []
     @State private var customInterests: [(emoji: String, name: String)] = []
     @State private var showAddInterestAlert = false
     @State private var newInterestName = ""
+    @State private var interestCatalog: [Keyword] = []
+    @State private var isLoadingInterests = false
+    @State private var interestsLoadFailed = false
+
+    private let profileService = ProfileService.shared
 
     // Step 3 — Make your own profile
     @State private var profileItem: PhotosPickerItem?
@@ -29,24 +36,6 @@ struct SignupFormView: View {
     // Step 4 — Finalising
     @State private var hasStartedFinalising = false
     @State private var finalisingError: String?
-
-    private let interests: [(emoji: String, name: String)] = [
-        ("🐶", "Animal Care"),
-        ("🎨", "Arts & Creativity"),
-        ("👥", "Community Building"),
-        ("📚", "Education"),
-        ("👴", "Aged Care"),
-        ("🌱", "Environment"),
-        ("🍳", "Food"),
-        ("⚽", "Sports"),
-        ("🌳", "Outdoors"),
-        ("👗", "Fashion"),
-        ("✊", "Social Justice"),
-        ("🎵", "Music"),
-        ("📷", "Photography"),
-        ("🛩", "Travel"),
-        ("💻", "Technology"),
-    ]
 
     var body: some View {
         VStack(alignment: .leading, spacing: 24) {
@@ -129,9 +118,19 @@ struct SignupFormView: View {
                 .font(.largeTitle.bold())
                 .foregroundStyle(Theme.textPrimary)
 
-            FlowLayout(spacing: 10, lineSpacing: 12) {
-                ForEach(interests, id: \.name) { interest in
-                    interestChip(emoji: interest.emoji, name: interest.name)
+            if isLoadingInterests {
+                ProgressView()
+                    .tint(Theme.forest)
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 32)
+            } else if interestsLoadFailed {
+                interestsErrorView
+            } else {
+                FlowLayout(spacing: 10, lineSpacing: 12) {
+                    ForEach(interestCatalog) { keyword in
+                        interestChip(emoji: UserProfileStore.emoji(for: keyword.name),
+                                     name: keyword.name)
+                    }
                 }
                 ForEach(customInterests, id: \.name) { interest in
                     interestChip(emoji: interest.emoji, name: interest.name)
@@ -139,6 +138,7 @@ struct SignupFormView: View {
                 addMoreChip
             }
         }
+        .task { await loadInterests() }
         .alert("Add an interest", isPresented: $showAddInterestAlert) {
             TextField("Interest name", text: $newInterestName)
                 .textInputAutocapitalization(.words)
@@ -146,6 +146,36 @@ struct SignupFormView: View {
             Button("Add") { commitNewInterest() }
         } message: {
             Text("Tell us about something else you care about.")
+        }
+    }
+
+    private var interestsErrorView: some View {
+        VStack(spacing: 12) {
+            Text("Couldn't load interests.")
+                .font(.body)
+                .foregroundStyle(Theme.textSecondary)
+            Button("Try again") {
+                Task { await loadInterests(force: true) }
+            }
+            .font(.body.weight(.semibold))
+            .foregroundStyle(Theme.forest)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.top, 32)
+    }
+
+    /// Fetch the interest catalogue from the backend once. Re-fetches when
+    /// `force` is set (the retry button), since a successful load leaves the
+    /// catalogue populated and subsequent appearances are no-ops.
+    private func loadInterests(force: Bool = false) async {
+        guard force || interestCatalog.isEmpty else { return }
+        isLoadingInterests = true
+        interestsLoadFailed = false
+        defer { isLoadingInterests = false }
+        do {
+            interestCatalog = try await profileService.fetchInterestCatalog()
+        } catch {
+            interestsLoadFailed = true
         }
     }
 
@@ -204,7 +234,7 @@ struct SignupFormView: View {
         let trimmed = newInterestName.trimmingCharacters(in: .whitespacesAndNewlines)
         newInterestName = ""
         guard !trimmed.isEmpty else { return }
-        let allNames = interests.map(\.name) + customInterests.map(\.name)
+        let allNames = interestCatalog.map(\.name) + customInterests.map(\.name)
         guard !allNames.contains(where: { $0.caseInsensitiveCompare(trimmed) == .orderedSame }) else {
             selectedInterests.insert(trimmed)
             return
@@ -416,9 +446,16 @@ struct SignupFormView: View {
     private func commitCurrentStep() {
         switch step {
         case 2:
-            let builtIn = interests.filter { selectedInterests.contains($0.name) }
-                .map { UserProfileStore.Interest(emoji: $0.emoji, name: $0.name) }
-            let custom = customInterests.filter { selectedInterests.contains($0.name) }
+            let builtIn = interestCatalog
+                .filter { selectedInterests.contains($0.name) }
+                .map {
+                    UserProfileStore.Interest(
+                        emoji: UserProfileStore.emoji(for: $0.name),
+                        name: $0.name
+                    )
+                }
+            let custom = customInterests
+                .filter { selectedInterests.contains($0.name) }
                 .map { UserProfileStore.Interest(emoji: $0.emoji, name: $0.name) }
             profileStore.interests = builtIn + custom
         case 3:

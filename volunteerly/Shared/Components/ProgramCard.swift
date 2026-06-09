@@ -66,7 +66,9 @@ struct ProgramCard: View {
         }
     }
 
-    private static func distanceText(_ km: Double) -> String {
+    // Pure formatter — marked `nonisolated` so it can be passed as a plain
+    // function value to `Optional.map` without a main-actor isolation warning.
+    nonisolated private static func distanceText(_ km: Double) -> String {
         km < 10 ? String(format: "%.1fkm", km) : String(format: "%.0fkm", km)
     }
 
