@@ -238,8 +238,10 @@ struct SignupView: View {
     private func borderedTextField<Content: View>(@ViewBuilder content: () -> Content) -> some View {
         content()
             .font(.bodyText)
-            .frame(height: 52)
             .padding(.horizontal, 14)
+            .frame(height: 52)
+            .background(Theme.card)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
                     .stroke(Theme.border, lineWidth: 1)
