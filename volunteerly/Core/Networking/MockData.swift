@@ -38,6 +38,9 @@ enum MockData {
         profileImageURL: "https://i.pravatar.cc/150?img=1",
         occupation: "Software Engineer",
         goalText: "I want to give back to my community.",
+        bio: "I am a Student, I can bring social media management.",
+        instagram: "jane.doe",
+        keySkills: "Social media, Communication",
         locationId: 1
     )
 
@@ -47,13 +50,16 @@ enum MockData {
         userProfile,
         UserProfile(userId: 2, firstName: "Marcus", lastName: "Lee",
                     dateOfBirth: nil, profileImageURL: "https://i.pravatar.cc/150?img=12",
-                    occupation: "Teacher", goalText: nil, locationId: 1),
+                    occupation: "Teacher", goalText: nil, bio: nil, instagram: nil,
+                    keySkills: nil, locationId: 1),
         UserProfile(userId: 3, firstName: "Aisha", lastName: "Khan",
                     dateOfBirth: nil, profileImageURL: "https://i.pravatar.cc/150?img=5",
-                    occupation: "Nurse", goalText: nil, locationId: 1),
+                    occupation: "Nurse", goalText: nil, bio: nil, instagram: nil,
+                    keySkills: nil, locationId: 1),
         UserProfile(userId: 4, firstName: "Tom", lastName: "Becker",
                     dateOfBirth: nil, profileImageURL: "https://i.pravatar.cc/150?img=15",
-                    occupation: "Designer", goalText: nil, locationId: 1)
+                    occupation: "Designer", goalText: nil, bio: nil, instagram: nil,
+                    keySkills: nil, locationId: 1)
     ]
 
     // MARK: Category & Keywords
@@ -71,9 +77,20 @@ enum MockData {
     ]
 
     static let keywords: [Keyword] = [
+        // Program-tagging keywords.
         Keyword(id: 1, categoryId: 1, name: "Tree Planting"),
         Keyword(id: 2, categoryId: 1, name: "Beach Cleanup"),
-        Keyword(id: 3, categoryId: 1, name: "Recycling")
+        Keyword(id: 3, categoryId: 1, name: "Recycling"),
+        // Profile interest catalogue (mirrors scripts/seed.py).
+        Keyword(id: 4, categoryId: 5, name: "Animal Care"),
+        Keyword(id: 5, categoryId: 8, name: "Arts & Creativity"),
+        Keyword(id: 6, categoryId: 2, name: "Community Building"),
+        Keyword(id: 7, categoryId: 3, name: "Education"),
+        Keyword(id: 8, categoryId: 6, name: "Aged Care"),
+        Keyword(id: 9, categoryId: 1, name: "Environment"),
+        Keyword(id: 10, categoryId: 7, name: "Food"),
+        Keyword(id: 11, categoryId: 2, name: "Social Justice"),
+        Keyword(id: 12, categoryId: 4, name: "Technology")
     ]
 
     // MARK: Programs
@@ -208,8 +225,8 @@ enum MockData {
 
     // MARK: User Interests (USER_INTEREST junction)
     static let userInterests: [UserInterest] = [
-        UserInterest(userId: 1, keywordId: 1),
-        UserInterest(userId: 1, keywordId: 2)
+        UserInterest(userId: 1, keywordId: 4),  // Animal Care
+        UserInterest(userId: 1, keywordId: 7)   // Education
     ]
 
     // MARK: Program Keywords (PROGRAM_KEYWORD junction)

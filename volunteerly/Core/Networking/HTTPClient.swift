@@ -6,6 +6,7 @@ protocol HTTPClient {
     func get<T: Decodable>(_ path: String) async throws -> T
     func post<B: Encodable, T: Decodable>(_ path: String, body: B) async throws -> T
     func put<B: Encodable, T: Decodable>(_ path: String, body: B) async throws -> T
+    func patch<B: Encodable, T: Decodable>(_ path: String, body: B) async throws -> T
     func delete(_ path: String) async throws
 }
 
@@ -61,6 +62,11 @@ final class LiveHTTPClient: HTTPClient {
 
     func put<B: Encodable, T: Decodable>(_ path: String, body: B) async throws -> T {
         let request = try makeRequest(path: path, method: "PUT", body: body)
+        return try await perform(request)
+    }
+
+    func patch<B: Encodable, T: Decodable>(_ path: String, body: B) async throws -> T {
+        let request = try makeRequest(path: path, method: "PATCH", body: body)
         return try await perform(request)
     }
 
