@@ -377,33 +377,15 @@ struct ProgramDetailView: View {
             }
         } label: {
             Text(joinLabel)
-                .font(.actionButtonLabel)
-                .foregroundStyle(joinLabelColor)
-                .frame(maxWidth: .infinity)
-                .frame(height: 61)
-                .background {
-                    Capsule()
-                        .fill(joinBackground)
-                }
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PrimaryActionButtonStyle())
         .disabled(!viewModel.canToggleJoin)
-        .opacity(viewModel.canToggleJoin ? 1 : 0.5)
         .accessibilityLabel("\(joinLabel): \(viewModel.participantCount) of \(program.maxVolunteers) volunteers joined")
     }
 
     private var joinLabel: String {
         if viewModel.isJoined { return "Joined" }
-        return viewModel.isFull ? "Full" : "Join this program"
-    }
-
-    private var joinLabelColor: Color {
-        if viewModel.isJoined { return Theme.success }
-        return viewModel.isFull ? Theme.textSecondary : Color.onBrand
-    }
-
-    private var joinBackground: Color {
-        viewModel.isJoined || viewModel.isFull ? Color(.systemGray6) : Color.brand
+        return viewModel.isFull ? "Program full" : "Join this program"
     }
 
     // MARK: - Helpers
