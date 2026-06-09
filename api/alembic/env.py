@@ -1,11 +1,9 @@
 from logging.config import fileConfig
 
-from sqlalchemy import engine_from_config, pool
-
 from alembic import context
 from src.lib import all_models  # noqa: F401  (registers all models on Base)
 from src.lib.config import settings
-from src.lib.database import Base
+from src.lib.database import Base, engine
 
 config = context.config
 
@@ -38,14 +36,14 @@ def run_migrations_offline() -> None:
 
 
 def run_migrations_online() -> None:
-    """Run migrations in 'online' mode."""
-    connectable = engine_from_config(
-        config.get_section(config.config_ini_section, {}),
-        prefix="sqlalchemy.",
-        poolclass=pool.NullPool,
-    )
+    """Run migrations in 'online' mode.
 
-    with connectable.connect() as connection:
+    Reuse the application's engine (`src.lib.database.engine`) rather than
+    building one from the .ini. For Turso/libSQL that engine applies the
+    `auth_token` connect-arg workaround the `sqlite+libsql` dialect needs;
+    `engine_from_config` would omit it and the connection would 401.
+    """
+    with engine.connect() as connection:
         context.configure(
             connection=connection,
             target_metadata=target_metadata,

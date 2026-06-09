@@ -8,10 +8,12 @@ struct ProgramDetailView: View {
     @State private var showJoinedConfirmation = false
     @Environment(\.dismiss) private var dismiss
 
+    private let httpClient: HTTPClient
     private let horizontalPadding: CGFloat = 20
 
     init(programId: Int, httpClient: HTTPClient = LiveHTTPClient.shared) {
         self.programId = programId
+        self.httpClient = httpClient
         _viewModel = State(
             initialValue: ProgramDetailViewModel(programId: programId, httpClient: httpClient)
         )
@@ -22,7 +24,7 @@ struct ProgramDetailView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
                     banner
-                    
+
                     VStack(alignment: .leading, spacing: 0) {
                         content
                     }
@@ -140,11 +142,15 @@ struct ProgramDetailView: View {
         } else if let program = viewModel.program {
             VStack(alignment: .leading, spacing: 32) {
                 heading(program)
+                descriptionSection(program)
+                membersSection
                 locationSection
-                opportunitySection(program)
-                hostSection
-                participantGrid
-                joinButton
+                if viewModel.isJoined {
+                    MemberBoardSection(programId: programId, httpClient: httpClient)
+                } else if let similar = viewModel.similarProgram {
+                    similarSection(similar)
+                }
+                joinBar(program)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         } else {
@@ -154,16 +160,150 @@ struct ProgramDetailView: View {
         }
     }
 
+    // MARK: Heading (title + category + schedule)
+
     private func heading(_ program: Program) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(program.name)
-                .font(.subheading)
-                .bold()
+        VStack(alignment: .leading, spacing: 24) {
+            VStack(alignment: .leading, spacing: 16) {
+                Text(program.name)
+                    .font(.pageTitle)
+                    .foregroundStyle(Theme.textPrimary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                if let category = viewModel.category {
+                    categoryChip(category)
+                }
+            }
+            schedule(program)
+        }
+    }
+
+    private func categoryChip(_ category: ProgramCategory) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: CategoryChip.symbolName(for: category.name))
+                .font(.system(size: 14))
+            Text(category.name)
+                .font(.bodyText)
+        }
+        .foregroundStyle(Theme.textPrimary)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 8)
+        .background(Color(.systemGray6), in: Capsule())
+    }
+
+    private func schedule(_ program: Program) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            infoRow(
+                icon: "clock",
+                title: dayText(program.startDatetime),
+                subtitle: "\(timeRange(program)) - \(temporalStatus(program))"
+            )
+            divider
+            infoRow(
+                icon: "mappin.and.ellipse",
+                title: viewModel.location?.city ?? "Location to be announced",
+                subtitle: locationSubtitle
+            )
+        }
+    }
+
+    private func infoRow(icon: String, title: String, subtitle: String?) -> some View {
+        HStack(alignment: .top, spacing: 14) {
+            Image(systemName: icon)
+                .font(.system(size: 16))
                 .foregroundStyle(Theme.textPrimary)
+                .frame(width: 24)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.bodyText)
+                    .foregroundStyle(Theme.textPrimary)
+                if let subtitle, !subtitle.isEmpty {
+                    Text(subtitle)
+                        .font(.bodyText)
+                        .foregroundStyle(Theme.textSecondary)
+                }
+            }
+        }
+    }
+
+    private var locationSubtitle: String? {
+        guard let location = viewModel.location else { return nil }
+        let parts = [location.stateRegion, location.country].compactMap { $0 }
+        return parts.isEmpty ? nil : parts.joined(separator: ", ")
+    }
+
+    // MARK: Description
+
+    private func descriptionSection(_ program: Program) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            sectionHeader("Description")
             Text(program.description)
                 .font(.bodyText)
                 .foregroundStyle(Theme.textPrimary)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
+    }
+
+    // MARK: Members (host + other participants)
+
+    private var membersSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            sectionHeader("Members")
+
+            HStack(spacing: 16) {
+                Avatar(url: URL(string: viewModel.host?.profileImageURL ?? ""), size: 63)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(viewModel.host?.fullName ?? "Host name")
+                        .font(.bodyStrong)
+                        .foregroundStyle(Theme.textPrimary)
+                    Text(hostBio)
+                        .font(.bodyText)
+                        .foregroundStyle(Theme.textSecondary)
+                }
+            }
+
+            if viewModel.otherMemberCount > 0 {
+                divider
+                memberAvatars
+            }
+        }
+    }
+
+    private var hostBio: String {
+        viewModel.host?.occupation ?? viewModel.host?.goalText ?? "Host"
+    }
+
+    /// Up to four member avatars; when there are more, the last slot collapses
+    /// into a "+N" overflow badge. Placeholder circles until participant data is
+    /// wired through.
+    private var memberAvatars: some View {
+        let others = viewModel.otherMemberCount
+        let maxVisible = 4
+        return HStack(spacing: 18) {
+            if others <= maxVisible {
+                ForEach(0..<others, id: \.self) { _ in
+                    Avatar(source: .placeholder, size: 56)
+                }
+            } else {
+                ForEach(0..<(maxVisible - 1), id: \.self) { _ in
+                    Avatar(source: .placeholder, size: 56)
+                }
+                overflowBadge(others - (maxVisible - 1))
+            }
+        }
+    }
+
+    private func overflowBadge(_ count: Int) -> some View {
+        Circle()
+            .fill(Color(.systemGray6))
+            .frame(width: 56, height: 56)
+            .overlay(
+                Text("+\(count)")
+                    .font(.bodyStrong)
+                    .foregroundStyle(Theme.textPrimary)
+            )
     }
 
     // MARK: Location
@@ -171,10 +311,7 @@ struct ProgramDetailView: View {
     private var locationSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             VStack(alignment: .leading, spacing: 8) {
-                Text("Location")
-                    .font(.sectionHeader)
-                    .bold()
-                    .foregroundStyle(Theme.textPrimary)
+                sectionHeader("Location")
                 Text(viewModel.location?.displayName ?? "Location to be announced")
                     .font(.bodyText)
                     .foregroundStyle(Theme.textPrimary)
@@ -216,90 +353,71 @@ struct ProgramDetailView: View {
         return CLLocationCoordinate2D(latitude: lat, longitude: lon)
     }
 
-    // MARK: Upcoming opportunity
+    // MARK: Similar program nearby
 
-    private func opportunitySection(_ program: Program) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            divider
-            HStack(alignment: .bottom) {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Upcoming volunteer opportunities")
-                        .font(.bodyText)
-                        .foregroundStyle(Color.blue)
-                    Text("\(dayText(program.startDatetime))\n\(timeRange(program))")
-                        .font(.bodyText)
-                        .foregroundStyle(Theme.textPrimary)
-                }
-                Spacer(minLength: 12)
-                Text("Occurs every \(weekdayShort(program.startDatetime))")
-                    .font(.bodyText)
-                    .foregroundStyle(Theme.textSecondary)
-                    .multilineTextAlignment(.trailing)
-            }
-            .padding(.vertical, 16)
-            divider
-        }
-    }
-
-    // MARK: About host
-
-    private var hostSection: some View {
+    private func similarSection(_ similar: Program) -> some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("About Host")
-                .font(.sectionHeader)
-                .bold()
-                .foregroundStyle(Theme.textPrimary)
-            HStack(spacing: 16) {
-                AsyncImage(url: URL(string: viewModel.host?.profileImageURL ?? "")) { image in
-                    image.resizable().aspectRatio(contentMode: .fill)
-                } placeholder: {
-                    Circle().fill(Color(.systemGray5))
-                }
-                .frame(width: 63, height: 63)
-                .clipShape(Circle())
-
-                Text(viewModel.host?.fullName ?? "User name")
-                    .font(.bodyText)
-                    .foregroundStyle(Theme.textPrimary)
+            sectionHeader("Similar program nearby")
+            NavigationLink(value: similar.id) {
+                ProgramCard(program: similar, distanceKm: viewModel.similarDistanceKm)
             }
-            divider
-        }
-    }
-
-    // MARK: Participants
-
-    /// Placeholder participant avatars. Real participant data isn't wired yet,
-    /// so this mirrors the design's avatar grid using the program's capacity.
-    private var participantGrid: some View {
-        let count = min(viewModel.program?.maxVolunteers ?? 0, 8)
-        let columns = [GridItem(.adaptive(minimum: 56, maximum: 56), spacing: 18, alignment: .leading)]
-        return LazyVGrid(columns: columns, alignment: .leading, spacing: 18) {
-            ForEach(0..<count, id: \.self) { _ in
-                Circle()
-                    .fill(Color(.systemGray5))
-                    .frame(width: 56, height: 56)
-            }
+            .buttonStyle(.plain)
         }
     }
 
     // MARK: Join
 
-    private var joinButton: some View {
-        Button {
-            withAnimation(.snappy) { viewModel.toggleJoin() }
-            if viewModel.isJoined { showJoinedConfirmation = true }
-        } label: {
-            Text(viewModel.isJoined ? "Joined" : "Join")
-                .font(.actionButtonLabel)
-                .foregroundStyle(viewModel.isJoined ? Theme.success : Color.blue)
-                .frame(maxWidth: .infinity)
-                .frame(height: 61)
-                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 13, style: .continuous))
+    private func joinBar(_ program: Program) -> some View {
+        HStack(spacing: 16) {
+            Button {
+                Task {
+                    let didJoin = await viewModel.toggleJoin()
+                    if didJoin {
+                        withAnimation(.snappy) { showJoinedConfirmation = true }
+                    }
+                }
+            } label: {
+                Text(joinLabel)
+                    .font(.actionButtonLabel)
+                    .foregroundStyle(joinLabelColor)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 61)
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 13, style: .continuous))
+            }
+            .buttonStyle(.plain)
+            .disabled(!viewModel.canToggleJoin)
+            .opacity(viewModel.canToggleJoin ? 1 : 0.5)
+
+            HStack(spacing: 6) {
+                Image(systemName: "person.2.fill")
+                    .font(.system(size: 16))
+                Text("\(viewModel.participantCount)/\(program.maxVolunteers)")
+                    .font(.bodyText)
+            }
+            .foregroundStyle(Theme.textPrimary)
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("\(viewModel.participantCount) of \(program.maxVolunteers) volunteers joined")
         }
-        .buttonStyle(.plain)
+    }
+
+    private var joinLabel: String {
+        if viewModel.isJoined { return "Joined" }
+        return viewModel.isFull ? "Full" : "Join"
+    }
+
+    private var joinLabelColor: Color {
+        if viewModel.isJoined { return Theme.success }
+        return viewModel.isFull ? Theme.textSecondary : Color.blue
     }
 
     // MARK: - Helpers
+
+    private func sectionHeader(_ text: String) -> some View {
+        Text(text)
+            .font(.sectionHeader)
+            .bold()
+            .foregroundStyle(Theme.textPrimary)
+    }
 
     private var divider: some View {
         Rectangle()
@@ -317,8 +435,12 @@ struct ProgramDetailView: View {
         return "\(start) - \(end)"
     }
 
-    private func weekdayShort(_ date: Date) -> String {
-        date.formatted(.dateTime.weekday(.abbreviated))
+    /// Where the event sits relative to now, surfaced beside the time range.
+    private func temporalStatus(_ program: Program) -> String {
+        let now = Date.now
+        if program.startDatetime > now { return "upcoming" }
+        if program.endDatetime < now { return "past" }
+        return "ongoing"
     }
 }
 
@@ -326,5 +448,8 @@ struct ProgramDetailView: View {
     let _ = MockData.registerAll(in: MockHTTPClient.shared)
     return NavigationStack {
         ProgramDetailView(programId: 1, httpClient: MockHTTPClient.shared)
+            .navigationDestination(for: Int.self) { id in
+                ProgramDetailView(programId: id, httpClient: MockHTTPClient.shared)
+            }
     }
 }

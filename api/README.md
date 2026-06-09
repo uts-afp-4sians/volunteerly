@@ -12,6 +12,18 @@ both places — only `DATABASE_URL` changes. The app is synchronous because Turs
 libSQL SQLAlchemy driver has no async dialect (FastAPI runs sync routes in a
 threadpool).
 
+## Architecture
+
+```mermaid
+flowchart LR
+    app["iOS App<br/>(SwiftUI)"] -->|HTTPS / REST| render["Render<br/>FastAPI Web Service"]
+    render -->|libSQL over HTTPS| turso[("Turso<br/>SQLite / libSQL")]
+```
+
+The SwiftUI client talks to a FastAPI service hosted on Render over REST, which
+persists to a Turso (libSQL) database. Locally the same service runs against a
+plain SQLite file — only `DATABASE_URL` differs.
+
 ## Prerequisites
 
 - [mise](https://mise.jdx.dev/) (installs Python 3.12 + uv for you), or

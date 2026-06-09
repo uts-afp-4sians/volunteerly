@@ -12,7 +12,12 @@ from sqlalchemy import (
 from sqlalchemy import Enum as SAEnum
 from sqlalchemy.orm import Mapped, mapped_column
 
-from src.common.enums import ParticipationStatus, ProgramStatus
+from src.common.enums import (
+    CommitmentDuration,
+    CommitmentFrequency,
+    ParticipationStatus,
+    ProgramStatus,
+)
 from src.lib.database import Base
 
 
@@ -37,6 +42,14 @@ class Program(Base):
     start_datetime: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     end_datetime: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     max_volunteers: Mapped[int] = mapped_column(Integer)
+    commitment_frequency: Mapped[CommitmentFrequency | None] = mapped_column(
+        SAEnum(CommitmentFrequency, values_callable=lambda e: [m.value for m in e]),
+        nullable=True,
+    )
+    commitment_duration: Mapped[CommitmentDuration | None] = mapped_column(
+        SAEnum(CommitmentDuration, values_callable=lambda e: [m.value for m in e]),
+        nullable=True,
+    )
     status: Mapped[ProgramStatus] = mapped_column(
         SAEnum(ProgramStatus, values_callable=lambda e: [m.value for m in e]),
         default=ProgramStatus.DRAFT,

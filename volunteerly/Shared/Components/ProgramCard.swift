@@ -2,6 +2,9 @@ import SwiftUI
 
 struct ProgramCard: View {
     let program: Program
+    /// When set, the trailing metric shows this distance (km) instead of the
+    /// start date — used by the "Similar program nearby" card.
+    var distanceKm: Double?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -41,7 +44,7 @@ struct ProgramCard: View {
 
                 HStack(spacing: 12) {
                     metric(systemImage: "person.2.fill", text: "\(program.maxVolunteers)")
-                    metric(systemImage: "map.fill", text: startDateText)
+                    metric(systemImage: "map.fill", text: distanceKm.map(Self.distanceText) ?? "-")
                 }
                 .fixedSize()
             }
@@ -63,8 +66,8 @@ struct ProgramCard: View {
         }
     }
 
-    private var startDateText: String {
-        program.startDatetime.formatted(.dateTime.month(.abbreviated).day())
+    private static func distanceText(_ km: Double) -> String {
+        km < 10 ? String(format: "%.1fkm", km) : String(format: "%.0fkm", km)
     }
 
     /// Derive up to two avatar initials from the program name (placeholder for

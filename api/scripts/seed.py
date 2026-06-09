@@ -11,8 +11,13 @@ from datetime import UTC, datetime
 
 from src.auth.security import hash_password
 from src.categories.model import Keyword, ProgramCategory
-from src.common.enums import ParticipationStatus, ProgramStatus
-from src.forum.model import ForumComment, ForumPost
+from src.common.enums import (
+    CommitmentDuration,
+    CommitmentFrequency,
+    ParticipationStatus,
+    ProgramStatus,
+)
+from src.forum.model import ForumComment, ForumCommentLike, ForumPost
 from src.lib.database import Base, engine, session_factory
 from src.locations.model import Location
 from src.programs.model import (
@@ -32,14 +37,42 @@ CREATED_AT = datetime(2026, 6, 1, 0, 0, 0, tzinfo=UTC)
 
 
 def _rows() -> list[Base]:
-    location = Location(
-        location_id=1,
-        city="Sydney",
-        state_region="NSW",
-        country="Australia",
-        latitude=-33.8688,
-        longitude=151.2093,
-    )
+    # Distinct Sydney-area spots so each program sits at its own coordinates and
+    # the list can show a meaningful per-card distance (not all the same point).
+    locations = [
+        Location(
+            location_id=1,
+            city="Sydney",
+            state_region="NSW",
+            country="Australia",
+            latitude=-33.8688,
+            longitude=151.2093,
+        ),
+        Location(
+            location_id=2,
+            city="Bondi Beach",
+            state_region="NSW",
+            country="Australia",
+            latitude=-33.8908,
+            longitude=151.2743,
+        ),
+        Location(
+            location_id=3,
+            city="Newtown",
+            state_region="NSW",
+            country="Australia",
+            latitude=-33.8983,
+            longitude=151.1784,
+        ),
+        Location(
+            location_id=4,
+            city="Chatswood",
+            state_region="NSW",
+            country="Australia",
+            latitude=-33.7969,
+            longitude=151.1803,
+        ),
+    ]
     user = User(
         user_id=1,
         email="jane.doe@example.com",
@@ -59,6 +92,38 @@ def _rows() -> list[Base]:
         goal_text="I want to give back to my community.",
         location_id=1,
     )
+    # A few extra members so the Member board / forum thread show varied
+    # authors and the Author A-Z / Z-A sort chips have something to do.
+    # Mirrors `MockData.memberProfiles` in the iOS app.
+    members = [
+        (2, "Marcus", "Lee", "https://i.pravatar.cc/150?img=12", "Teacher"),
+        (3, "Aisha", "Khan", "https://i.pravatar.cc/150?img=5", "Nurse"),
+        (4, "Tom", "Becker", "https://i.pravatar.cc/150?img=15", "Designer"),
+    ]
+    member_users = [
+        User(
+            user_id=uid,
+            email=f"{first.lower()}.{last.lower()}@example.com",
+            password_hash=hash_password("password123"),
+            is_deleted=False,
+            deleted_at=None,
+            created_at=CREATED_AT,
+        )
+        for uid, first, last, _img, _occ in members
+    ]
+    member_profiles = [
+        UserProfile(
+            user_id=uid,
+            first_name=first,
+            last_name=last,
+            date_of_birth=None,
+            profile_image_url=img,
+            occupation=occ,
+            goal_text=None,
+            location_id=1,
+        )
+        for uid, first, last, img, occ in members
+    ]
     categories = [
         ProgramCategory(category_id=1, category_name="Environment"),
         ProgramCategory(category_id=2, category_name="Community"),
@@ -89,6 +154,8 @@ def _rows() -> list[Base]:
             start_datetime=_dt("2026-07-01T08:00:00+00:00"),
             end_datetime=_dt("2026-07-01T12:00:00+00:00"),
             max_volunteers=30,
+            commitment_frequency=CommitmentFrequency.MONTHLY,
+            commitment_duration=CommitmentDuration.THREE_TO_SIX,
             status=ProgramStatus.OPEN,
             is_deleted=False,
             deleted_at=None,
@@ -98,7 +165,7 @@ def _rows() -> list[Base]:
             program_id=2,
             creator_user_id=1,
             category_id=1,
-            location_id=1,
+            location_id=2,
             program_name="Bondi Beach Cleanup",
             description=(
                 "Help keep Bondi Beach clean by joining our monthly cleanup crew."
@@ -107,6 +174,8 @@ def _rows() -> list[Base]:
             start_datetime=_dt("2026-07-15T07:00:00+00:00"),
             end_datetime=_dt("2026-07-15T10:00:00+00:00"),
             max_volunteers=50,
+            commitment_frequency=CommitmentFrequency.MONTHLY,
+            commitment_duration=CommitmentDuration.CONTINUOUS,
             status=ProgramStatus.OPEN,
             is_deleted=False,
             deleted_at=None,
@@ -116,7 +185,7 @@ def _rows() -> list[Base]:
             program_id=3,
             creator_user_id=1,
             category_id=3,
-            location_id=1,
+            location_id=3,
             program_name="After-School Reading Club",
             description=(
                 "Help local primary students build confidence by reading "
@@ -126,6 +195,8 @@ def _rows() -> list[Base]:
             start_datetime=_dt("2026-07-08T15:30:00+00:00"),
             end_datetime=_dt("2026-07-08T17:00:00+00:00"),
             max_volunteers=12,
+            commitment_frequency=CommitmentFrequency.WEEKLY,
+            commitment_duration=CommitmentDuration.SEVEN_TO_NINE,
             status=ProgramStatus.OPEN,
             is_deleted=False,
             deleted_at=None,
@@ -135,7 +206,7 @@ def _rows() -> list[Base]:
             program_id=4,
             creator_user_id=1,
             category_id=6,
-            location_id=1,
+            location_id=4,
             program_name="Senior Tech Support Drop-In",
             description=(
                 "Spend an afternoon helping seniors get comfortable with their "
@@ -145,6 +216,8 @@ def _rows() -> list[Base]:
             start_datetime=_dt("2026-07-20T13:00:00+00:00"),
             end_datetime=_dt("2026-07-20T16:00:00+00:00"),
             max_volunteers=8,
+            commitment_frequency=CommitmentFrequency.WEEKLY,
+            commitment_duration=CommitmentDuration.UNDER_2,
             status=ProgramStatus.FULL,
             is_deleted=False,
             deleted_at=None,
@@ -159,13 +232,20 @@ def _rows() -> list[Base]:
         ProgramKeyword(program_id=1, keyword_id=1),
         ProgramKeyword(program_id=2, keyword_id=2),
     ]
-    participation = ProgramParticipation(
-        participation_id=1,
-        program_id=1,
-        user_id=1,
-        participation_status=ParticipationStatus.APPROVED,
-        joined_at=CREATED_AT,
-    )
+    # The host (user 1) plus the three extra members all join program 1, so the
+    # detail screen's Members row has real participants to render (host + 3).
+    participations = [
+        ProgramParticipation(
+            participation_id=pid,
+            program_id=1,
+            user_id=uid,
+            participation_status=ParticipationStatus.APPROVED,
+            joined_at=CREATED_AT,
+        )
+        for pid, uid in enumerate([1, 2, 3, 4], start=1)
+    ]
+    # Member board questions for program 1, authored across members. Mirrors
+    # `MockData.forumPosts` in the iOS app.
     forum_posts = [
         ForumPost(
             post_id=1,
@@ -178,35 +258,119 @@ def _rows() -> list[Base]:
         ForumPost(
             post_id=2,
             program_id=1,
-            author_user_id=1,
+            author_user_id=3,
             title="Parking nearby?",
             body="Is there parking available near the park entrance?",
             created_at=CREATED_AT,
         ),
+        ForumPost(
+            post_id=3,
+            program_id=1,
+            author_user_id=2,
+            title="Dress code?",
+            body="What should we wear — is there a recommended outfit for the day?",
+            created_at=CREATED_AT,
+        ),
+        ForumPost(
+            post_id=4,
+            program_id=1,
+            author_user_id=4,
+            title="Carpool?",
+            body="Anyone coming from the north shore keen to share a ride?",
+            created_at=CREATED_AT,
+        ),
+        ForumPost(
+            post_id=5,
+            program_id=1,
+            author_user_id=3,
+            title="Lunch provided?",
+            body="Will food be provided or should we pack our own?",
+            created_at=CREATED_AT,
+        ),
+        ForumPost(
+            post_id=6,
+            program_id=1,
+            author_user_id=2,
+            title="Kids welcome?",
+            body="Can I bring my two kids along to help out?",
+            created_at=CREATED_AT,
+        ),
     ]
+    # A threaded conversation on post 1: top-level comments and indented
+    # replies via ``parent_comment_id``. Mirrors `MockData.forumComments`.
     forum_comments = [
         ForumComment(
             comment_id=1,
             post_id=1,
-            author_user_id=1,
-            body="Yes, please bring gloves! Tools will be provided.",
+            author_user_id=2,
+            parent_comment_id=None,
+            body="Yes, please bring gloves! Tools will be provided on site.",
             created_at=CREATED_AT,
         ),
+        ForumComment(
+            comment_id=2,
+            post_id=1,
+            author_user_id=3,
+            parent_comment_id=1,
+            body="Great, thanks for confirming.",
+            created_at=CREATED_AT,
+        ),
+        ForumComment(
+            comment_id=3,
+            post_id=1,
+            author_user_id=4,
+            parent_comment_id=1,
+            body="Are gardening gloves fine, or do we need heavy-duty ones?",
+            created_at=CREATED_AT,
+        ),
+        ForumComment(
+            comment_id=4,
+            post_id=1,
+            author_user_id=1,
+            parent_comment_id=3,
+            body="Sturdy gardening gloves are perfect.",
+            created_at=CREATED_AT,
+        ),
+        ForumComment(
+            comment_id=5,
+            post_id=1,
+            author_user_id=3,
+            parent_comment_id=None,
+            body="Also bring a refillable water bottle — it gets warm by midday.",
+            created_at=CREATED_AT,
+        ),
+    ]
+    # Likes spread across members so counts and ``liked_by_me`` (user 1) vary.
+    # Mirrors the like tallies in `MockData.forumComments`.
+    forum_likes = [
+        ForumCommentLike(comment_id=2, user_id=1, created_at=CREATED_AT),
+        ForumCommentLike(comment_id=2, user_id=3, created_at=CREATED_AT),
+        ForumCommentLike(comment_id=3, user_id=4, created_at=CREATED_AT),
+        ForumCommentLike(comment_id=4, user_id=2, created_at=CREATED_AT),
+        ForumCommentLike(comment_id=4, user_id=3, created_at=CREATED_AT),
+        ForumCommentLike(comment_id=4, user_id=4, created_at=CREATED_AT),
+        ForumCommentLike(comment_id=5, user_id=1, created_at=CREATED_AT),
+        ForumCommentLike(comment_id=5, user_id=2, created_at=CREATED_AT),
+        ForumCommentLike(comment_id=5, user_id=3, created_at=CREATED_AT),
+        ForumCommentLike(comment_id=5, user_id=4, created_at=CREATED_AT),
     ]
 
     # Dependency order: parents before children.
     return [
-        location,
+        *locations,
         *categories,
         *keywords,
         user,
         user_profile,
+        *member_users,
+        *member_profiles,
         *programs,
         *user_interests,
         *program_keywords,
-        participation,
+        *participations,
         *forum_posts,
         *forum_comments,
+        *forum_likes,
     ]
 
 

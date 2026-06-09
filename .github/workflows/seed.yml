@@ -1,0 +1,42 @@
+name: seed
+
+# Seeds the production Turso database with the MockData fixtures (scripts/seed.py).
+# Manual-only: seeding mutates fixture rows, so it never runs automatically.
+# Idempotent — uses session.merge on primary keys, leaving user-created rows
+# (e.g. ad-hoc programs) untouched.
+#
+# Requires the `DATABASE_URL` repository secret (Turso libSQL URL).
+
+on:
+  workflow_dispatch: {}
+
+concurrency:
+  group: seed-prod
+  cancel-in-progress: false
+
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: api
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Install dependencies
+        run: uv sync --frozen --no-dev --extra turso
+
+      - name: Seed fixtures
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          PROJECT_ENV: prod
+        run: uv run poe seed

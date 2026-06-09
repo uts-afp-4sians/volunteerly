@@ -17,10 +17,16 @@ PROGRAM_KEYS = {
     "start_datetime",
     "end_datetime",
     "max_volunteers",
+    "commitment_frequency",
+    "commitment_duration",
     "status",
     "is_deleted",
     "deleted_at",
     "created_at",
+    # Optional enrichments, null in list responses unless requested:
+    "participant_count",
+    "is_full",
+    "distance_km",
 }
 
 
@@ -158,7 +164,7 @@ def test_list_program_posts(client: TestClient) -> None:
     res = client.get("/programs/1/posts")
     assert res.status_code == 200
     body = res.json()
-    assert len(body) == 2
+    assert len(body) == 6
     assert set(body[0].keys()) == {
         "post_id",
         "program_id",
@@ -174,12 +180,21 @@ def test_list_post_comments(client: TestClient) -> None:
     res = client.get("/programs/1/posts/1/comments")
     assert res.status_code == 200
     body = res.json()
-    assert len(body) == 1
+    assert len(body) == 5
     assert set(body[0].keys()) == {
         "comment_id",
         "post_id",
         "author_user_id",
         "body",
         "created_at",
+        "parent_comment_id",
+        "like_count",
+        "liked_by_me",
     }
     assert body[0]["comment_id"] == 1
+    # Comment 1 is a root (no parent); comment 2 replies to it.
+    assert body[0]["parent_comment_id"] is None
+    assert body[1]["parent_comment_id"] == 1
+    # Comment 5 has four seeded likes; an anonymous read isn't "liked_by_me".
+    assert body[4]["like_count"] == 4
+    assert body[4]["liked_by_me"] is False

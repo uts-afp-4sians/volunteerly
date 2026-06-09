@@ -18,11 +18,37 @@ internal protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /health`.
     /// - Remark: Generated from `#/paths//health/get(health_check_health_get)`.
     func health_check_health_get(_ input: Operations.health_check_health_get.Input) async throws -> Operations.health_check_health_get.Output
+    /// Register
+    ///
+    /// - Remark: HTTP `POST /auth/register`.
+    /// - Remark: Generated from `#/paths//auth/register/post(register_auth_register_post)`.
+    func register_auth_register_post(_ input: Operations.register_auth_register_post.Input) async throws -> Operations.register_auth_register_post.Output
+    /// Login
+    ///
+    /// - Remark: HTTP `POST /auth/login`.
+    /// - Remark: Generated from `#/paths//auth/login/post(login_auth_login_post)`.
+    func login_auth_login_post(_ input: Operations.login_auth_login_post.Input) async throws -> Operations.login_auth_login_post.Output
+    /// Me
+    ///
+    /// - Remark: HTTP `GET /auth/me`.
+    /// - Remark: Generated from `#/paths//auth/me/get(me_auth_me_get)`.
+    func me_auth_me_get(_ input: Operations.me_auth_me_get.Input) async throws -> Operations.me_auth_me_get.Output
     /// List Programs
+    ///
+    /// List non-deleted programs, optionally narrowed by query-string filters.
+    /// Repeated params (``team_size``, ``commitment_frequency``,
+    /// ``commitment_duration``) are OR-ed within a group and AND-ed across groups.
+    /// When ``lat``/``lng`` are supplied, each program carries ``distance_km`` —
+    /// the straight-line distance from the caller to its location.
     ///
     /// - Remark: HTTP `GET /programs`.
     /// - Remark: Generated from `#/paths//programs/get(list_programs_programs_get)`.
     func list_programs_programs_get(_ input: Operations.list_programs_programs_get.Input) async throws -> Operations.list_programs_programs_get.Output
+    /// Create Program
+    ///
+    /// - Remark: HTTP `POST /programs`.
+    /// - Remark: Generated from `#/paths//programs/post(create_program_programs_post)`.
+    func create_program_programs_post(_ input: Operations.create_program_programs_post.Input) async throws -> Operations.create_program_programs_post.Output
     /// Get Program
     ///
     /// - Remark: HTTP `GET /programs/{program_id}`.
@@ -33,6 +59,42 @@ internal protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /programs/{program_id}/keywords`.
     /// - Remark: Generated from `#/paths//programs/{program_id}/keywords/get(list_program_keywords_programs__program_id__keywords_get)`.
     func list_program_keywords_programs__program_id__keywords_get(_ input: Operations.list_program_keywords_programs__program_id__keywords_get.Input) async throws -> Operations.list_program_keywords_programs__program_id__keywords_get.Output
+    /// Get Similar Program
+    ///
+    /// One "nearby" program to suggest on the detail screen.
+    ///
+    /// Picked server-side so the client never pulls whole tables: each strategy is a
+    /// bounded ``LIMIT 1`` query. Prefers the geographically nearest program (when
+    /// coordinates exist), then the same city, region, category, and finally any
+    /// other program. ``distance_km`` is set only for the coordinate-based match.
+    ///
+    /// - Remark: HTTP `GET /programs/{program_id}/similar`.
+    /// - Remark: Generated from `#/paths//programs/{program_id}/similar/get(get_similar_program_programs__program_id__similar_get)`.
+    func get_similar_program_programs__program_id__similar_get(_ input: Operations.get_similar_program_programs__program_id__similar_get.Input) async throws -> Operations.get_similar_program_programs__program_id__similar_get.Output
+    /// Get Participation Summary
+    ///
+    /// Capacity snapshot for the Join counter, including whether the caller has
+    /// already joined.
+    ///
+    /// - Remark: HTTP `GET /programs/{program_id}/participations`.
+    /// - Remark: Generated from `#/paths//programs/{program_id}/participations/get(get_participation_summary_programs__program_id__participations_get)`.
+    func get_participation_summary_programs__program_id__participations_get(_ input: Operations.get_participation_summary_programs__program_id__participations_get.Input) async throws -> Operations.get_participation_summary_programs__program_id__participations_get.Output
+    /// Join Program
+    ///
+    /// Join the program as the authenticated user, returning the refreshed
+    /// capacity snapshot. Rejects joins when the program isn't open, is at
+    /// capacity, or the caller has already joined.
+    ///
+    /// - Remark: HTTP `POST /programs/{program_id}/participations`.
+    /// - Remark: Generated from `#/paths//programs/{program_id}/participations/post(join_program_programs__program_id__participations_post)`.
+    func join_program_programs__program_id__participations_post(_ input: Operations.join_program_programs__program_id__participations_post.Input) async throws -> Operations.join_program_programs__program_id__participations_post.Output
+    /// Leave Program
+    ///
+    /// Withdraw the authenticated user's participation, freeing their slot.
+    ///
+    /// - Remark: HTTP `DELETE /programs/{program_id}/participations`.
+    /// - Remark: Generated from `#/paths//programs/{program_id}/participations/delete(leave_program_programs__program_id__participations_delete)`.
+    func leave_program_programs__program_id__participations_delete(_ input: Operations.leave_program_programs__program_id__participations_delete.Input) async throws -> Operations.leave_program_programs__program_id__participations_delete.Output
     /// List Categories
     ///
     /// - Remark: HTTP `GET /categories`.
@@ -56,12 +118,70 @@ extension APIProtocol {
     internal func health_check_health_get(headers: Operations.health_check_health_get.Input.Headers = .init()) async throws -> Operations.health_check_health_get.Output {
         try await health_check_health_get(Operations.health_check_health_get.Input(headers: headers))
     }
+    /// Register
+    ///
+    /// - Remark: HTTP `POST /auth/register`.
+    /// - Remark: Generated from `#/paths//auth/register/post(register_auth_register_post)`.
+    internal func register_auth_register_post(
+        headers: Operations.register_auth_register_post.Input.Headers = .init(),
+        body: Operations.register_auth_register_post.Input.Body
+    ) async throws -> Operations.register_auth_register_post.Output {
+        try await register_auth_register_post(Operations.register_auth_register_post.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// Login
+    ///
+    /// - Remark: HTTP `POST /auth/login`.
+    /// - Remark: Generated from `#/paths//auth/login/post(login_auth_login_post)`.
+    internal func login_auth_login_post(
+        headers: Operations.login_auth_login_post.Input.Headers = .init(),
+        body: Operations.login_auth_login_post.Input.Body
+    ) async throws -> Operations.login_auth_login_post.Output {
+        try await login_auth_login_post(Operations.login_auth_login_post.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// Me
+    ///
+    /// - Remark: HTTP `GET /auth/me`.
+    /// - Remark: Generated from `#/paths//auth/me/get(me_auth_me_get)`.
+    internal func me_auth_me_get(headers: Operations.me_auth_me_get.Input.Headers = .init()) async throws -> Operations.me_auth_me_get.Output {
+        try await me_auth_me_get(Operations.me_auth_me_get.Input(headers: headers))
+    }
     /// List Programs
+    ///
+    /// List non-deleted programs, optionally narrowed by query-string filters.
+    /// Repeated params (``team_size``, ``commitment_frequency``,
+    /// ``commitment_duration``) are OR-ed within a group and AND-ed across groups.
+    /// When ``lat``/``lng`` are supplied, each program carries ``distance_km`` —
+    /// the straight-line distance from the caller to its location.
     ///
     /// - Remark: HTTP `GET /programs`.
     /// - Remark: Generated from `#/paths//programs/get(list_programs_programs_get)`.
-    internal func list_programs_programs_get(headers: Operations.list_programs_programs_get.Input.Headers = .init()) async throws -> Operations.list_programs_programs_get.Output {
-        try await list_programs_programs_get(Operations.list_programs_programs_get.Input(headers: headers))
+    internal func list_programs_programs_get(
+        query: Operations.list_programs_programs_get.Input.Query = .init(),
+        headers: Operations.list_programs_programs_get.Input.Headers = .init()
+    ) async throws -> Operations.list_programs_programs_get.Output {
+        try await list_programs_programs_get(Operations.list_programs_programs_get.Input(
+            query: query,
+            headers: headers
+        ))
+    }
+    /// Create Program
+    ///
+    /// - Remark: HTTP `POST /programs`.
+    /// - Remark: Generated from `#/paths//programs/post(create_program_programs_post)`.
+    internal func create_program_programs_post(
+        headers: Operations.create_program_programs_post.Input.Headers = .init(),
+        body: Operations.create_program_programs_post.Input.Body
+    ) async throws -> Operations.create_program_programs_post.Output {
+        try await create_program_programs_post(Operations.create_program_programs_post.Input(
+            headers: headers,
+            body: body
+        ))
     }
     /// Get Program
     ///
@@ -89,6 +209,74 @@ extension APIProtocol {
             headers: headers
         ))
     }
+    /// Get Similar Program
+    ///
+    /// One "nearby" program to suggest on the detail screen.
+    ///
+    /// Picked server-side so the client never pulls whole tables: each strategy is a
+    /// bounded ``LIMIT 1`` query. Prefers the geographically nearest program (when
+    /// coordinates exist), then the same city, region, category, and finally any
+    /// other program. ``distance_km`` is set only for the coordinate-based match.
+    ///
+    /// - Remark: HTTP `GET /programs/{program_id}/similar`.
+    /// - Remark: Generated from `#/paths//programs/{program_id}/similar/get(get_similar_program_programs__program_id__similar_get)`.
+    internal func get_similar_program_programs__program_id__similar_get(
+        path: Operations.get_similar_program_programs__program_id__similar_get.Input.Path,
+        headers: Operations.get_similar_program_programs__program_id__similar_get.Input.Headers = .init()
+    ) async throws -> Operations.get_similar_program_programs__program_id__similar_get.Output {
+        try await get_similar_program_programs__program_id__similar_get(Operations.get_similar_program_programs__program_id__similar_get.Input(
+            path: path,
+            headers: headers
+        ))
+    }
+    /// Get Participation Summary
+    ///
+    /// Capacity snapshot for the Join counter, including whether the caller has
+    /// already joined.
+    ///
+    /// - Remark: HTTP `GET /programs/{program_id}/participations`.
+    /// - Remark: Generated from `#/paths//programs/{program_id}/participations/get(get_participation_summary_programs__program_id__participations_get)`.
+    internal func get_participation_summary_programs__program_id__participations_get(
+        path: Operations.get_participation_summary_programs__program_id__participations_get.Input.Path,
+        headers: Operations.get_participation_summary_programs__program_id__participations_get.Input.Headers = .init()
+    ) async throws -> Operations.get_participation_summary_programs__program_id__participations_get.Output {
+        try await get_participation_summary_programs__program_id__participations_get(Operations.get_participation_summary_programs__program_id__participations_get.Input(
+            path: path,
+            headers: headers
+        ))
+    }
+    /// Join Program
+    ///
+    /// Join the program as the authenticated user, returning the refreshed
+    /// capacity snapshot. Rejects joins when the program isn't open, is at
+    /// capacity, or the caller has already joined.
+    ///
+    /// - Remark: HTTP `POST /programs/{program_id}/participations`.
+    /// - Remark: Generated from `#/paths//programs/{program_id}/participations/post(join_program_programs__program_id__participations_post)`.
+    internal func join_program_programs__program_id__participations_post(
+        path: Operations.join_program_programs__program_id__participations_post.Input.Path,
+        headers: Operations.join_program_programs__program_id__participations_post.Input.Headers = .init()
+    ) async throws -> Operations.join_program_programs__program_id__participations_post.Output {
+        try await join_program_programs__program_id__participations_post(Operations.join_program_programs__program_id__participations_post.Input(
+            path: path,
+            headers: headers
+        ))
+    }
+    /// Leave Program
+    ///
+    /// Withdraw the authenticated user's participation, freeing their slot.
+    ///
+    /// - Remark: HTTP `DELETE /programs/{program_id}/participations`.
+    /// - Remark: Generated from `#/paths//programs/{program_id}/participations/delete(leave_program_programs__program_id__participations_delete)`.
+    internal func leave_program_programs__program_id__participations_delete(
+        path: Operations.leave_program_programs__program_id__participations_delete.Input.Path,
+        headers: Operations.leave_program_programs__program_id__participations_delete.Input.Headers = .init()
+    ) async throws -> Operations.leave_program_programs__program_id__participations_delete.Output {
+        try await leave_program_programs__program_id__participations_delete(Operations.leave_program_programs__program_id__participations_delete.Input(
+            path: path,
+            headers: headers
+        ))
+    }
     /// List Categories
     ///
     /// - Remark: HTTP `GET /categories`.
@@ -112,6 +300,48 @@ internal enum Servers {}
 internal enum Components {
     /// Types generated from the `#/components/schemas` section of the OpenAPI document.
     internal enum Schemas {
+        /// Wire shape matching iOS `AuthResponse` ({ token, user }).
+        ///
+        /// - Remark: Generated from `#/components/schemas/AuthResponse`.
+        internal struct AuthResponse: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/AuthResponse/token`.
+            internal var token: Swift.String
+            /// - Remark: Generated from `#/components/schemas/AuthResponse/user`.
+            internal var user: Components.Schemas.UserRead
+            /// Creates a new `AuthResponse`.
+            ///
+            /// - Parameters:
+            ///   - token:
+            ///   - user:
+            internal init(
+                token: Swift.String,
+                user: Components.Schemas.UserRead
+            ) {
+                self.token = token
+                self.user = user
+            }
+            internal enum CodingKeys: String, CodingKey {
+                case token
+                case user
+            }
+        }
+        /// Expected length of commitment in months, as filter buckets (wire values
+        /// match iOS CommitmentDuration).
+        ///
+        /// - Remark: Generated from `#/components/schemas/CommitmentDuration`.
+        internal enum CommitmentDuration: String, Codable, Hashable, Sendable, CaseIterable {
+            case under_2 = "under_2"
+            case three_to_six = "three_to_six"
+            case seven_to_nine = "seven_to_nine"
+            case continuous = "continuous"
+        }
+        /// How often a program expects volunteers to show up (wire values match iOS).
+        ///
+        /// - Remark: Generated from `#/components/schemas/CommitmentFrequency`.
+        internal enum CommitmentFrequency: String, Codable, Hashable, Sendable, CaseIterable {
+            case weekly = "weekly"
+            case monthly = "monthly"
+        }
         /// - Remark: Generated from `#/components/schemas/HTTPValidationError`.
         internal struct HTTPValidationError: Codable, Hashable, Sendable {
             /// - Remark: Generated from `#/components/schemas/HTTPValidationError/detail`.
@@ -213,6 +443,31 @@ internal enum Components {
                 case keyword_name
             }
         }
+        /// Wire shape matching iOS `LoginRequest`.
+        ///
+        /// - Remark: Generated from `#/components/schemas/LoginRequest`.
+        internal struct LoginRequest: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/LoginRequest/email`.
+            internal var email: Swift.String
+            /// - Remark: Generated from `#/components/schemas/LoginRequest/password`.
+            internal var password: Swift.String
+            /// Creates a new `LoginRequest`.
+            ///
+            /// - Parameters:
+            ///   - email:
+            ///   - password:
+            internal init(
+                email: Swift.String,
+                password: Swift.String
+            ) {
+                self.email = email
+                self.password = password
+            }
+            internal enum CodingKeys: String, CodingKey {
+                case email
+                case password
+            }
+        }
         /// Wire shape matching iOS `ProgramCategory`.
         ///
         /// - Remark: Generated from `#/components/schemas/ProgramCategoryRead`.
@@ -236,6 +491,118 @@ internal enum Components {
             internal enum CodingKeys: String, CodingKey {
                 case category_id
                 case category_name
+            }
+        }
+        /// Create payload for a new program. The creator is taken from the caller's
+        /// auth token, and ``location_id`` falls back to the first known location when
+        /// omitted (the client's free-text region picker isn't mapped to a location
+        /// row yet).
+        ///
+        /// - Remark: Generated from `#/components/schemas/ProgramCreate`.
+        internal struct ProgramCreate: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/ProgramCreate/category_id`.
+            internal var category_id: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/ProgramCreate/program_name`.
+            internal var program_name: Swift.String
+            /// - Remark: Generated from `#/components/schemas/ProgramCreate/description`.
+            internal var description: Swift.String
+            /// - Remark: Generated from `#/components/schemas/ProgramCreate/start_datetime`.
+            internal var start_datetime: Foundation.Date
+            /// - Remark: Generated from `#/components/schemas/ProgramCreate/end_datetime`.
+            internal var end_datetime: Foundation.Date
+            /// - Remark: Generated from `#/components/schemas/ProgramCreate/max_volunteers`.
+            internal var max_volunteers: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/ProgramCreate/commitment_frequency`.
+            internal struct commitment_frequencyPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/ProgramCreate/commitment_frequency/value1`.
+                internal var value1: Components.Schemas.CommitmentFrequency
+                /// Creates a new `commitment_frequencyPayload`.
+                ///
+                /// - Parameters:
+                ///   - value1:
+                internal init(value1: Components.Schemas.CommitmentFrequency) {
+                    self.value1 = value1
+                }
+                internal init(from decoder: any Swift.Decoder) throws {
+                    self.value1 = try decoder.decodeFromSingleValueContainer()
+                }
+                internal func encode(to encoder: any Swift.Encoder) throws {
+                    try encoder.encodeToSingleValueContainer(self.value1)
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/ProgramCreate/commitment_frequency`.
+            internal var commitment_frequency: Components.Schemas.ProgramCreate.commitment_frequencyPayload?
+            /// - Remark: Generated from `#/components/schemas/ProgramCreate/commitment_duration`.
+            internal struct commitment_durationPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/ProgramCreate/commitment_duration/value1`.
+                internal var value1: Components.Schemas.CommitmentDuration
+                /// Creates a new `commitment_durationPayload`.
+                ///
+                /// - Parameters:
+                ///   - value1:
+                internal init(value1: Components.Schemas.CommitmentDuration) {
+                    self.value1 = value1
+                }
+                internal init(from decoder: any Swift.Decoder) throws {
+                    self.value1 = try decoder.decodeFromSingleValueContainer()
+                }
+                internal func encode(to encoder: any Swift.Encoder) throws {
+                    try encoder.encodeToSingleValueContainer(self.value1)
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/ProgramCreate/commitment_duration`.
+            internal var commitment_duration: Components.Schemas.ProgramCreate.commitment_durationPayload?
+            /// - Remark: Generated from `#/components/schemas/ProgramCreate/banner_image_url`.
+            internal var banner_image_url: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/ProgramCreate/location_id`.
+            internal var location_id: Swift.Int?
+            /// Creates a new `ProgramCreate`.
+            ///
+            /// - Parameters:
+            ///   - category_id:
+            ///   - program_name:
+            ///   - description:
+            ///   - start_datetime:
+            ///   - end_datetime:
+            ///   - max_volunteers:
+            ///   - commitment_frequency:
+            ///   - commitment_duration:
+            ///   - banner_image_url:
+            ///   - location_id:
+            internal init(
+                category_id: Swift.Int,
+                program_name: Swift.String,
+                description: Swift.String,
+                start_datetime: Foundation.Date,
+                end_datetime: Foundation.Date,
+                max_volunteers: Swift.Int,
+                commitment_frequency: Components.Schemas.ProgramCreate.commitment_frequencyPayload? = nil,
+                commitment_duration: Components.Schemas.ProgramCreate.commitment_durationPayload? = nil,
+                banner_image_url: Swift.String? = nil,
+                location_id: Swift.Int? = nil
+            ) {
+                self.category_id = category_id
+                self.program_name = program_name
+                self.description = description
+                self.start_datetime = start_datetime
+                self.end_datetime = end_datetime
+                self.max_volunteers = max_volunteers
+                self.commitment_frequency = commitment_frequency
+                self.commitment_duration = commitment_duration
+                self.banner_image_url = banner_image_url
+                self.location_id = location_id
+            }
+            internal enum CodingKeys: String, CodingKey {
+                case category_id
+                case program_name
+                case description
+                case start_datetime
+                case end_datetime
+                case max_volunteers
+                case commitment_frequency
+                case commitment_duration
+                case banner_image_url
+                case location_id
             }
         }
         /// Wire shape matching iOS `ProgramKeyword`.
@@ -263,6 +630,50 @@ internal enum Components {
                 case keyword_id
             }
         }
+        /// Capacity snapshot for a program from the caller's perspective, used by the
+        /// iOS detail screen to render the Join counter and gate the Join button.
+        ///
+        /// - Remark: Generated from `#/components/schemas/ProgramParticipationSummary`.
+        internal struct ProgramParticipationSummary: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/ProgramParticipationSummary/program_id`.
+            internal var program_id: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/ProgramParticipationSummary/participant_count`.
+            internal var participant_count: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/ProgramParticipationSummary/max_volunteers`.
+            internal var max_volunteers: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/ProgramParticipationSummary/is_full`.
+            internal var is_full: Swift.Bool
+            /// - Remark: Generated from `#/components/schemas/ProgramParticipationSummary/joined`.
+            internal var joined: Swift.Bool
+            /// Creates a new `ProgramParticipationSummary`.
+            ///
+            /// - Parameters:
+            ///   - program_id:
+            ///   - participant_count:
+            ///   - max_volunteers:
+            ///   - is_full:
+            ///   - joined:
+            internal init(
+                program_id: Swift.Int,
+                participant_count: Swift.Int,
+                max_volunteers: Swift.Int,
+                is_full: Swift.Bool,
+                joined: Swift.Bool
+            ) {
+                self.program_id = program_id
+                self.participant_count = participant_count
+                self.max_volunteers = max_volunteers
+                self.is_full = is_full
+                self.joined = joined
+            }
+            internal enum CodingKeys: String, CodingKey {
+                case program_id
+                case participant_count
+                case max_volunteers
+                case is_full
+                case joined
+            }
+        }
         /// Wire shape matching iOS `Program`.
         ///
         /// - Remark: Generated from `#/components/schemas/ProgramRead`.
@@ -287,6 +698,46 @@ internal enum Components {
             internal var end_datetime: Swift.String
             /// - Remark: Generated from `#/components/schemas/ProgramRead/max_volunteers`.
             internal var max_volunteers: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/ProgramRead/commitment_frequency`.
+            internal struct commitment_frequencyPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/ProgramRead/commitment_frequency/value1`.
+                internal var value1: Components.Schemas.CommitmentFrequency
+                /// Creates a new `commitment_frequencyPayload`.
+                ///
+                /// - Parameters:
+                ///   - value1:
+                internal init(value1: Components.Schemas.CommitmentFrequency) {
+                    self.value1 = value1
+                }
+                internal init(from decoder: any Swift.Decoder) throws {
+                    self.value1 = try decoder.decodeFromSingleValueContainer()
+                }
+                internal func encode(to encoder: any Swift.Encoder) throws {
+                    try encoder.encodeToSingleValueContainer(self.value1)
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/ProgramRead/commitment_frequency`.
+            internal var commitment_frequency: Components.Schemas.ProgramRead.commitment_frequencyPayload?
+            /// - Remark: Generated from `#/components/schemas/ProgramRead/commitment_duration`.
+            internal struct commitment_durationPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/ProgramRead/commitment_duration/value1`.
+                internal var value1: Components.Schemas.CommitmentDuration
+                /// Creates a new `commitment_durationPayload`.
+                ///
+                /// - Parameters:
+                ///   - value1:
+                internal init(value1: Components.Schemas.CommitmentDuration) {
+                    self.value1 = value1
+                }
+                internal init(from decoder: any Swift.Decoder) throws {
+                    self.value1 = try decoder.decodeFromSingleValueContainer()
+                }
+                internal func encode(to encoder: any Swift.Encoder) throws {
+                    try encoder.encodeToSingleValueContainer(self.value1)
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/ProgramRead/commitment_duration`.
+            internal var commitment_duration: Components.Schemas.ProgramRead.commitment_durationPayload?
             /// - Remark: Generated from `#/components/schemas/ProgramRead/status`.
             internal var status: Components.Schemas.ProgramStatus
             /// - Remark: Generated from `#/components/schemas/ProgramRead/is_deleted`.
@@ -295,6 +746,12 @@ internal enum Components {
             internal var deleted_at: Swift.String?
             /// - Remark: Generated from `#/components/schemas/ProgramRead/created_at`.
             internal var created_at: Swift.String
+            /// - Remark: Generated from `#/components/schemas/ProgramRead/participant_count`.
+            internal var participant_count: Swift.Int?
+            /// - Remark: Generated from `#/components/schemas/ProgramRead/is_full`.
+            internal var is_full: Swift.Bool?
+            /// - Remark: Generated from `#/components/schemas/ProgramRead/distance_km`.
+            internal var distance_km: Swift.Double?
             /// Creates a new `ProgramRead`.
             ///
             /// - Parameters:
@@ -308,10 +765,15 @@ internal enum Components {
             ///   - start_datetime:
             ///   - end_datetime:
             ///   - max_volunteers:
+            ///   - commitment_frequency:
+            ///   - commitment_duration:
             ///   - status:
             ///   - is_deleted:
             ///   - deleted_at:
             ///   - created_at:
+            ///   - participant_count:
+            ///   - is_full:
+            ///   - distance_km:
             internal init(
                 program_id: Swift.Int,
                 creator_user_id: Swift.Int,
@@ -323,10 +785,15 @@ internal enum Components {
                 start_datetime: Swift.String,
                 end_datetime: Swift.String,
                 max_volunteers: Swift.Int,
+                commitment_frequency: Components.Schemas.ProgramRead.commitment_frequencyPayload? = nil,
+                commitment_duration: Components.Schemas.ProgramRead.commitment_durationPayload? = nil,
                 status: Components.Schemas.ProgramStatus,
                 is_deleted: Swift.Bool,
                 deleted_at: Swift.String? = nil,
-                created_at: Swift.String
+                created_at: Swift.String,
+                participant_count: Swift.Int? = nil,
+                is_full: Swift.Bool? = nil,
+                distance_km: Swift.Double? = nil
             ) {
                 self.program_id = program_id
                 self.creator_user_id = creator_user_id
@@ -338,10 +805,15 @@ internal enum Components {
                 self.start_datetime = start_datetime
                 self.end_datetime = end_datetime
                 self.max_volunteers = max_volunteers
+                self.commitment_frequency = commitment_frequency
+                self.commitment_duration = commitment_duration
                 self.status = status
                 self.is_deleted = is_deleted
                 self.deleted_at = deleted_at
                 self.created_at = created_at
+                self.participant_count = participant_count
+                self.is_full = is_full
+                self.distance_km = distance_km
             }
             internal enum CodingKeys: String, CodingKey {
                 case program_id
@@ -354,10 +826,15 @@ internal enum Components {
                 case start_datetime
                 case end_datetime
                 case max_volunteers
+                case commitment_frequency
+                case commitment_duration
                 case status
                 case is_deleted
                 case deleted_at
                 case created_at
+                case participant_count
+                case is_full
+                case distance_km
             }
         }
         /// Lifecycle status of a program (wire values match iOS ProgramStatus).
@@ -369,6 +846,43 @@ internal enum Components {
             case full = "full"
             case closed = "closed"
             case cancelled = "cancelled"
+        }
+        /// Sign-up payload: creates a `User` plus its `UserProfile`.
+        ///
+        /// - Remark: Generated from `#/components/schemas/RegisterRequest`.
+        internal struct RegisterRequest: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/RegisterRequest/email`.
+            internal var email: Swift.String
+            /// - Remark: Generated from `#/components/schemas/RegisterRequest/password`.
+            internal var password: Swift.String
+            /// - Remark: Generated from `#/components/schemas/RegisterRequest/first_name`.
+            internal var first_name: Swift.String
+            /// - Remark: Generated from `#/components/schemas/RegisterRequest/last_name`.
+            internal var last_name: Swift.String
+            /// Creates a new `RegisterRequest`.
+            ///
+            /// - Parameters:
+            ///   - email:
+            ///   - password:
+            ///   - first_name:
+            ///   - last_name:
+            internal init(
+                email: Swift.String,
+                password: Swift.String,
+                first_name: Swift.String,
+                last_name: Swift.String
+            ) {
+                self.email = email
+                self.password = password
+                self.first_name = first_name
+                self.last_name = last_name
+            }
+            internal enum CodingKeys: String, CodingKey {
+                case email
+                case password
+                case first_name
+                case last_name
+            }
         }
         /// Individual service health status.
         ///
@@ -404,6 +918,88 @@ internal enum Components {
                 case status
                 case latency_ms
                 case error
+            }
+        }
+        /// A single "nearby" suggestion for the program detail screen, picked
+        /// server-side with a bounded ``LIMIT 1`` query. ``distance_km`` is the
+        /// straight-line distance from the source program when both have coordinates,
+        /// else ``None`` (the match was made by city/region/category).
+        ///
+        /// - Remark: Generated from `#/components/schemas/SimilarProgramRead`.
+        internal struct SimilarProgramRead: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/SimilarProgramRead/program`.
+            internal var program: Components.Schemas.ProgramRead
+            /// - Remark: Generated from `#/components/schemas/SimilarProgramRead/distance_km`.
+            internal var distance_km: Swift.Double?
+            /// Creates a new `SimilarProgramRead`.
+            ///
+            /// - Parameters:
+            ///   - program:
+            ///   - distance_km:
+            internal init(
+                program: Components.Schemas.ProgramRead,
+                distance_km: Swift.Double? = nil
+            ) {
+                self.program = program
+                self.distance_km = distance_km
+            }
+            internal enum CodingKeys: String, CodingKey {
+                case program
+                case distance_km
+            }
+        }
+        /// Team-size preference buckets used as a `GET /programs` filter. Not stored
+        /// on the program; mapped to ``max_volunteers`` ranges at query time (wire
+        /// values match iOS TeamSize).
+        ///
+        /// - Remark: Generated from `#/components/schemas/TeamSize`.
+        internal enum TeamSize: String, Codable, Hashable, Sendable, CaseIterable {
+            case small = "small"
+            case medium = "medium"
+            case large = "large"
+            case open = "open"
+        }
+        /// Wire shape matching iOS `User`.
+        ///
+        /// - Remark: Generated from `#/components/schemas/UserRead`.
+        internal struct UserRead: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/UserRead/user_id`.
+            internal var user_id: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/UserRead/email`.
+            internal var email: Swift.String
+            /// - Remark: Generated from `#/components/schemas/UserRead/is_deleted`.
+            internal var is_deleted: Swift.Bool
+            /// - Remark: Generated from `#/components/schemas/UserRead/deleted_at`.
+            internal var deleted_at: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/UserRead/created_at`.
+            internal var created_at: Swift.String
+            /// Creates a new `UserRead`.
+            ///
+            /// - Parameters:
+            ///   - user_id:
+            ///   - email:
+            ///   - is_deleted:
+            ///   - deleted_at:
+            ///   - created_at:
+            internal init(
+                user_id: Swift.Int,
+                email: Swift.String,
+                is_deleted: Swift.Bool,
+                deleted_at: Swift.String? = nil,
+                created_at: Swift.String
+            ) {
+                self.user_id = user_id
+                self.email = email
+                self.is_deleted = is_deleted
+                self.deleted_at = deleted_at
+                self.created_at = created_at
+            }
+            internal enum CodingKeys: String, CodingKey {
+                case user_id
+                case email
+                case is_deleted
+                case deleted_at
+                case created_at
             }
         }
         /// - Remark: Generated from `#/components/schemas/ValidationError`.
@@ -621,13 +1217,524 @@ internal enum Operations {
             }
         }
     }
+    /// Register
+    ///
+    /// - Remark: HTTP `POST /auth/register`.
+    /// - Remark: Generated from `#/paths//auth/register/post(register_auth_register_post)`.
+    internal enum register_auth_register_post {
+        internal static let id: Swift.String = "register_auth_register_post"
+        internal struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/auth/register/POST/header`.
+            internal struct Headers: Sendable, Hashable {
+                internal var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.register_auth_register_post.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                internal init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.register_auth_register_post.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            internal var headers: Operations.register_auth_register_post.Input.Headers
+            /// - Remark: Generated from `#/paths/auth/register/POST/requestBody`.
+            internal enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/auth/register/POST/requestBody/content/application\/json`.
+                case json(Components.Schemas.RegisterRequest)
+            }
+            internal var body: Operations.register_auth_register_post.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            ///   - body:
+            internal init(
+                headers: Operations.register_auth_register_post.Input.Headers = .init(),
+                body: Operations.register_auth_register_post.Input.Body
+            ) {
+                self.headers = headers
+                self.body = body
+            }
+        }
+        internal enum Output: Sendable, Hashable {
+            internal struct Created: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/auth/register/POST/responses/201/content`.
+                internal enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/auth/register/POST/responses/201/content/application\/json`.
+                    case json(Components.Schemas.AuthResponse)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    internal var json: Components.Schemas.AuthResponse {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                internal var body: Operations.register_auth_register_post.Output.Created.Body
+                /// Creates a new `Created`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                internal init(body: Operations.register_auth_register_post.Output.Created.Body) {
+                    self.body = body
+                }
+            }
+            /// Successful Response
+            ///
+            /// - Remark: Generated from `#/paths//auth/register/post(register_auth_register_post)/responses/201`.
+            ///
+            /// HTTP response code: `201 created`.
+            case created(Operations.register_auth_register_post.Output.Created)
+            /// The associated value of the enum case if `self` is `.created`.
+            ///
+            /// - Throws: An error if `self` is not `.created`.
+            /// - SeeAlso: `.created`.
+            internal var created: Operations.register_auth_register_post.Output.Created {
+                get throws {
+                    switch self {
+                    case let .created(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "created",
+                            response: self
+                        )
+                    }
+                }
+            }
+            internal struct UnprocessableContent: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/auth/register/POST/responses/422/content`.
+                internal enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/auth/register/POST/responses/422/content/application\/json`.
+                    case json(Components.Schemas.HTTPValidationError)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    internal var json: Components.Schemas.HTTPValidationError {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                internal var body: Operations.register_auth_register_post.Output.UnprocessableContent.Body
+                /// Creates a new `UnprocessableContent`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                internal init(body: Operations.register_auth_register_post.Output.UnprocessableContent.Body) {
+                    self.body = body
+                }
+            }
+            /// Validation Error
+            ///
+            /// - Remark: Generated from `#/paths//auth/register/post(register_auth_register_post)/responses/422`.
+            ///
+            /// HTTP response code: `422 unprocessableContent`.
+            case unprocessableContent(Operations.register_auth_register_post.Output.UnprocessableContent)
+            /// The associated value of the enum case if `self` is `.unprocessableContent`.
+            ///
+            /// - Throws: An error if `self` is not `.unprocessableContent`.
+            /// - SeeAlso: `.unprocessableContent`.
+            internal var unprocessableContent: Operations.register_auth_register_post.Output.UnprocessableContent {
+                get throws {
+                    switch self {
+                    case let .unprocessableContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unprocessableContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        internal enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            internal init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            internal var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            internal static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Login
+    ///
+    /// - Remark: HTTP `POST /auth/login`.
+    /// - Remark: Generated from `#/paths//auth/login/post(login_auth_login_post)`.
+    internal enum login_auth_login_post {
+        internal static let id: Swift.String = "login_auth_login_post"
+        internal struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/auth/login/POST/header`.
+            internal struct Headers: Sendable, Hashable {
+                internal var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.login_auth_login_post.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                internal init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.login_auth_login_post.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            internal var headers: Operations.login_auth_login_post.Input.Headers
+            /// - Remark: Generated from `#/paths/auth/login/POST/requestBody`.
+            internal enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/auth/login/POST/requestBody/content/application\/json`.
+                case json(Components.Schemas.LoginRequest)
+            }
+            internal var body: Operations.login_auth_login_post.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            ///   - body:
+            internal init(
+                headers: Operations.login_auth_login_post.Input.Headers = .init(),
+                body: Operations.login_auth_login_post.Input.Body
+            ) {
+                self.headers = headers
+                self.body = body
+            }
+        }
+        internal enum Output: Sendable, Hashable {
+            internal struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/auth/login/POST/responses/200/content`.
+                internal enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/auth/login/POST/responses/200/content/application\/json`.
+                    case json(Components.Schemas.AuthResponse)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    internal var json: Components.Schemas.AuthResponse {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                internal var body: Operations.login_auth_login_post.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                internal init(body: Operations.login_auth_login_post.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// Successful Response
+            ///
+            /// - Remark: Generated from `#/paths//auth/login/post(login_auth_login_post)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.login_auth_login_post.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            internal var ok: Operations.login_auth_login_post.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            internal struct UnprocessableContent: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/auth/login/POST/responses/422/content`.
+                internal enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/auth/login/POST/responses/422/content/application\/json`.
+                    case json(Components.Schemas.HTTPValidationError)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    internal var json: Components.Schemas.HTTPValidationError {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                internal var body: Operations.login_auth_login_post.Output.UnprocessableContent.Body
+                /// Creates a new `UnprocessableContent`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                internal init(body: Operations.login_auth_login_post.Output.UnprocessableContent.Body) {
+                    self.body = body
+                }
+            }
+            /// Validation Error
+            ///
+            /// - Remark: Generated from `#/paths//auth/login/post(login_auth_login_post)/responses/422`.
+            ///
+            /// HTTP response code: `422 unprocessableContent`.
+            case unprocessableContent(Operations.login_auth_login_post.Output.UnprocessableContent)
+            /// The associated value of the enum case if `self` is `.unprocessableContent`.
+            ///
+            /// - Throws: An error if `self` is not `.unprocessableContent`.
+            /// - SeeAlso: `.unprocessableContent`.
+            internal var unprocessableContent: Operations.login_auth_login_post.Output.UnprocessableContent {
+                get throws {
+                    switch self {
+                    case let .unprocessableContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unprocessableContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        internal enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            internal init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            internal var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            internal static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Me
+    ///
+    /// - Remark: HTTP `GET /auth/me`.
+    /// - Remark: Generated from `#/paths//auth/me/get(me_auth_me_get)`.
+    internal enum me_auth_me_get {
+        internal static let id: Swift.String = "me_auth_me_get"
+        internal struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/auth/me/GET/header`.
+            internal struct Headers: Sendable, Hashable {
+                internal var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.me_auth_me_get.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                internal init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.me_auth_me_get.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            internal var headers: Operations.me_auth_me_get.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            internal init(headers: Operations.me_auth_me_get.Input.Headers = .init()) {
+                self.headers = headers
+            }
+        }
+        internal enum Output: Sendable, Hashable {
+            internal struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/auth/me/GET/responses/200/content`.
+                internal enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/auth/me/GET/responses/200/content/application\/json`.
+                    case json(Components.Schemas.UserRead)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    internal var json: Components.Schemas.UserRead {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                internal var body: Operations.me_auth_me_get.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                internal init(body: Operations.me_auth_me_get.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// Successful Response
+            ///
+            /// - Remark: Generated from `#/paths//auth/me/get(me_auth_me_get)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.me_auth_me_get.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            internal var ok: Operations.me_auth_me_get.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        internal enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            internal init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            internal var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            internal static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
     /// List Programs
+    ///
+    /// List non-deleted programs, optionally narrowed by query-string filters.
+    /// Repeated params (``team_size``, ``commitment_frequency``,
+    /// ``commitment_duration``) are OR-ed within a group and AND-ed across groups.
+    /// When ``lat``/``lng`` are supplied, each program carries ``distance_km`` —
+    /// the straight-line distance from the caller to its location.
     ///
     /// - Remark: HTTP `GET /programs`.
     /// - Remark: Generated from `#/paths//programs/get(list_programs_programs_get)`.
     internal enum list_programs_programs_get {
         internal static let id: Swift.String = "list_programs_programs_get"
         internal struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/programs/GET/query`.
+            internal struct Query: Sendable, Hashable {
+                /// Search in name/description
+                ///
+                /// - Remark: Generated from `#/paths/programs/GET/query/q`.
+                internal var q: Swift.String?
+                /// - Remark: Generated from `#/paths/programs/GET/query/category_id`.
+                internal var category_id: Swift.Int?
+                /// - Remark: Generated from `#/paths/programs/GET/query/team_size`.
+                internal var team_size: [Components.Schemas.TeamSize]?
+                /// - Remark: Generated from `#/paths/programs/GET/query/commitment_frequency`.
+                internal var commitment_frequency: [Components.Schemas.CommitmentFrequency]?
+                /// - Remark: Generated from `#/paths/programs/GET/query/commitment_duration`.
+                internal var commitment_duration: [Components.Schemas.CommitmentDuration]?
+                /// Caller latitude for distance
+                ///
+                /// - Remark: Generated from `#/paths/programs/GET/query/lat`.
+                internal var lat: Swift.Double?
+                /// Caller longitude for distance
+                ///
+                /// - Remark: Generated from `#/paths/programs/GET/query/lng`.
+                internal var lng: Swift.Double?
+                /// Creates a new `Query`.
+                ///
+                /// - Parameters:
+                ///   - q: Search in name/description
+                ///   - category_id:
+                ///   - team_size:
+                ///   - commitment_frequency:
+                ///   - commitment_duration:
+                ///   - lat: Caller latitude for distance
+                ///   - lng: Caller longitude for distance
+                internal init(
+                    q: Swift.String? = nil,
+                    category_id: Swift.Int? = nil,
+                    team_size: [Components.Schemas.TeamSize]? = nil,
+                    commitment_frequency: [Components.Schemas.CommitmentFrequency]? = nil,
+                    commitment_duration: [Components.Schemas.CommitmentDuration]? = nil,
+                    lat: Swift.Double? = nil,
+                    lng: Swift.Double? = nil
+                ) {
+                    self.q = q
+                    self.category_id = category_id
+                    self.team_size = team_size
+                    self.commitment_frequency = commitment_frequency
+                    self.commitment_duration = commitment_duration
+                    self.lat = lat
+                    self.lng = lng
+                }
+            }
+            internal var query: Operations.list_programs_programs_get.Input.Query
             /// - Remark: Generated from `#/paths/programs/GET/header`.
             internal struct Headers: Sendable, Hashable {
                 internal var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.list_programs_programs_get.AcceptableContentType>]
@@ -643,8 +1750,13 @@ internal enum Operations {
             /// Creates a new `Input`.
             ///
             /// - Parameters:
+            ///   - query:
             ///   - headers:
-            internal init(headers: Operations.list_programs_programs_get.Input.Headers = .init()) {
+            internal init(
+                query: Operations.list_programs_programs_get.Input.Query = .init(),
+                headers: Operations.list_programs_programs_get.Input.Headers = .init()
+            ) {
+                self.query = query
                 self.headers = headers
             }
         }
@@ -695,6 +1807,229 @@ internal enum Operations {
                     default:
                         try throwUnexpectedResponseStatus(
                             expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            internal struct UnprocessableContent: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/programs/GET/responses/422/content`.
+                internal enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/programs/GET/responses/422/content/application\/json`.
+                    case json(Components.Schemas.HTTPValidationError)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    internal var json: Components.Schemas.HTTPValidationError {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                internal var body: Operations.list_programs_programs_get.Output.UnprocessableContent.Body
+                /// Creates a new `UnprocessableContent`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                internal init(body: Operations.list_programs_programs_get.Output.UnprocessableContent.Body) {
+                    self.body = body
+                }
+            }
+            /// Validation Error
+            ///
+            /// - Remark: Generated from `#/paths//programs/get(list_programs_programs_get)/responses/422`.
+            ///
+            /// HTTP response code: `422 unprocessableContent`.
+            case unprocessableContent(Operations.list_programs_programs_get.Output.UnprocessableContent)
+            /// The associated value of the enum case if `self` is `.unprocessableContent`.
+            ///
+            /// - Throws: An error if `self` is not `.unprocessableContent`.
+            /// - SeeAlso: `.unprocessableContent`.
+            internal var unprocessableContent: Operations.list_programs_programs_get.Output.UnprocessableContent {
+                get throws {
+                    switch self {
+                    case let .unprocessableContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unprocessableContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        internal enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            internal init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            internal var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            internal static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Create Program
+    ///
+    /// - Remark: HTTP `POST /programs`.
+    /// - Remark: Generated from `#/paths//programs/post(create_program_programs_post)`.
+    internal enum create_program_programs_post {
+        internal static let id: Swift.String = "create_program_programs_post"
+        internal struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/programs/POST/header`.
+            internal struct Headers: Sendable, Hashable {
+                internal var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.create_program_programs_post.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                internal init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.create_program_programs_post.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            internal var headers: Operations.create_program_programs_post.Input.Headers
+            /// - Remark: Generated from `#/paths/programs/POST/requestBody`.
+            internal enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/programs/POST/requestBody/content/application\/json`.
+                case json(Components.Schemas.ProgramCreate)
+            }
+            internal var body: Operations.create_program_programs_post.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            ///   - body:
+            internal init(
+                headers: Operations.create_program_programs_post.Input.Headers = .init(),
+                body: Operations.create_program_programs_post.Input.Body
+            ) {
+                self.headers = headers
+                self.body = body
+            }
+        }
+        internal enum Output: Sendable, Hashable {
+            internal struct Created: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/programs/POST/responses/201/content`.
+                internal enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/programs/POST/responses/201/content/application\/json`.
+                    case json(Components.Schemas.ProgramRead)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    internal var json: Components.Schemas.ProgramRead {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                internal var body: Operations.create_program_programs_post.Output.Created.Body
+                /// Creates a new `Created`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                internal init(body: Operations.create_program_programs_post.Output.Created.Body) {
+                    self.body = body
+                }
+            }
+            /// Successful Response
+            ///
+            /// - Remark: Generated from `#/paths//programs/post(create_program_programs_post)/responses/201`.
+            ///
+            /// HTTP response code: `201 created`.
+            case created(Operations.create_program_programs_post.Output.Created)
+            /// The associated value of the enum case if `self` is `.created`.
+            ///
+            /// - Throws: An error if `self` is not `.created`.
+            /// - SeeAlso: `.created`.
+            internal var created: Operations.create_program_programs_post.Output.Created {
+                get throws {
+                    switch self {
+                    case let .created(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "created",
+                            response: self
+                        )
+                    }
+                }
+            }
+            internal struct UnprocessableContent: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/programs/POST/responses/422/content`.
+                internal enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/programs/POST/responses/422/content/application\/json`.
+                    case json(Components.Schemas.HTTPValidationError)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    internal var json: Components.Schemas.HTTPValidationError {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                internal var body: Operations.create_program_programs_post.Output.UnprocessableContent.Body
+                /// Creates a new `UnprocessableContent`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                internal init(body: Operations.create_program_programs_post.Output.UnprocessableContent.Body) {
+                    self.body = body
+                }
+            }
+            /// Validation Error
+            ///
+            /// - Remark: Generated from `#/paths//programs/post(create_program_programs_post)/responses/422`.
+            ///
+            /// HTTP response code: `422 unprocessableContent`.
+            case unprocessableContent(Operations.create_program_programs_post.Output.UnprocessableContent)
+            /// The associated value of the enum case if `self` is `.unprocessableContent`.
+            ///
+            /// - Throws: An error if `self` is not `.unprocessableContent`.
+            /// - SeeAlso: `.unprocessableContent`.
+            internal var unprocessableContent: Operations.create_program_programs_post.Output.UnprocessableContent {
+                get throws {
+                    switch self {
+                    case let .unprocessableContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unprocessableContent",
                             response: self
                         )
                     }
@@ -1046,6 +2381,722 @@ internal enum Operations {
             /// - Throws: An error if `self` is not `.unprocessableContent`.
             /// - SeeAlso: `.unprocessableContent`.
             internal var unprocessableContent: Operations.list_program_keywords_programs__program_id__keywords_get.Output.UnprocessableContent {
+                get throws {
+                    switch self {
+                    case let .unprocessableContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unprocessableContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        internal enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            internal init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            internal var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            internal static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Get Similar Program
+    ///
+    /// One "nearby" program to suggest on the detail screen.
+    ///
+    /// Picked server-side so the client never pulls whole tables: each strategy is a
+    /// bounded ``LIMIT 1`` query. Prefers the geographically nearest program (when
+    /// coordinates exist), then the same city, region, category, and finally any
+    /// other program. ``distance_km`` is set only for the coordinate-based match.
+    ///
+    /// - Remark: HTTP `GET /programs/{program_id}/similar`.
+    /// - Remark: Generated from `#/paths//programs/{program_id}/similar/get(get_similar_program_programs__program_id__similar_get)`.
+    internal enum get_similar_program_programs__program_id__similar_get {
+        internal static let id: Swift.String = "get_similar_program_programs__program_id__similar_get"
+        internal struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/programs/{program_id}/similar/GET/path`.
+            internal struct Path: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/programs/{program_id}/similar/GET/path/program_id`.
+                internal var program_id: Swift.Int
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - program_id:
+                internal init(program_id: Swift.Int) {
+                    self.program_id = program_id
+                }
+            }
+            internal var path: Operations.get_similar_program_programs__program_id__similar_get.Input.Path
+            /// - Remark: Generated from `#/paths/programs/{program_id}/similar/GET/header`.
+            internal struct Headers: Sendable, Hashable {
+                internal var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.get_similar_program_programs__program_id__similar_get.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                internal init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.get_similar_program_programs__program_id__similar_get.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            internal var headers: Operations.get_similar_program_programs__program_id__similar_get.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            internal init(
+                path: Operations.get_similar_program_programs__program_id__similar_get.Input.Path,
+                headers: Operations.get_similar_program_programs__program_id__similar_get.Input.Headers = .init()
+            ) {
+                self.path = path
+                self.headers = headers
+            }
+        }
+        internal enum Output: Sendable, Hashable {
+            internal struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/programs/{program_id}/similar/GET/responses/200/content`.
+                internal enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/programs/{program_id}/similar/GET/responses/200/content/application\/json`.
+                    case json(Components.Schemas.SimilarProgramRead)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    internal var json: Components.Schemas.SimilarProgramRead {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                internal var body: Operations.get_similar_program_programs__program_id__similar_get.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                internal init(body: Operations.get_similar_program_programs__program_id__similar_get.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// Successful Response
+            ///
+            /// - Remark: Generated from `#/paths//programs/{program_id}/similar/get(get_similar_program_programs__program_id__similar_get)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.get_similar_program_programs__program_id__similar_get.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            internal var ok: Operations.get_similar_program_programs__program_id__similar_get.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            internal struct UnprocessableContent: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/programs/{program_id}/similar/GET/responses/422/content`.
+                internal enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/programs/{program_id}/similar/GET/responses/422/content/application\/json`.
+                    case json(Components.Schemas.HTTPValidationError)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    internal var json: Components.Schemas.HTTPValidationError {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                internal var body: Operations.get_similar_program_programs__program_id__similar_get.Output.UnprocessableContent.Body
+                /// Creates a new `UnprocessableContent`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                internal init(body: Operations.get_similar_program_programs__program_id__similar_get.Output.UnprocessableContent.Body) {
+                    self.body = body
+                }
+            }
+            /// Validation Error
+            ///
+            /// - Remark: Generated from `#/paths//programs/{program_id}/similar/get(get_similar_program_programs__program_id__similar_get)/responses/422`.
+            ///
+            /// HTTP response code: `422 unprocessableContent`.
+            case unprocessableContent(Operations.get_similar_program_programs__program_id__similar_get.Output.UnprocessableContent)
+            /// The associated value of the enum case if `self` is `.unprocessableContent`.
+            ///
+            /// - Throws: An error if `self` is not `.unprocessableContent`.
+            /// - SeeAlso: `.unprocessableContent`.
+            internal var unprocessableContent: Operations.get_similar_program_programs__program_id__similar_get.Output.UnprocessableContent {
+                get throws {
+                    switch self {
+                    case let .unprocessableContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unprocessableContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        internal enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            internal init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            internal var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            internal static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Get Participation Summary
+    ///
+    /// Capacity snapshot for the Join counter, including whether the caller has
+    /// already joined.
+    ///
+    /// - Remark: HTTP `GET /programs/{program_id}/participations`.
+    /// - Remark: Generated from `#/paths//programs/{program_id}/participations/get(get_participation_summary_programs__program_id__participations_get)`.
+    internal enum get_participation_summary_programs__program_id__participations_get {
+        internal static let id: Swift.String = "get_participation_summary_programs__program_id__participations_get"
+        internal struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/programs/{program_id}/participations/GET/path`.
+            internal struct Path: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/programs/{program_id}/participations/GET/path/program_id`.
+                internal var program_id: Swift.Int
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - program_id:
+                internal init(program_id: Swift.Int) {
+                    self.program_id = program_id
+                }
+            }
+            internal var path: Operations.get_participation_summary_programs__program_id__participations_get.Input.Path
+            /// - Remark: Generated from `#/paths/programs/{program_id}/participations/GET/header`.
+            internal struct Headers: Sendable, Hashable {
+                internal var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.get_participation_summary_programs__program_id__participations_get.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                internal init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.get_participation_summary_programs__program_id__participations_get.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            internal var headers: Operations.get_participation_summary_programs__program_id__participations_get.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            internal init(
+                path: Operations.get_participation_summary_programs__program_id__participations_get.Input.Path,
+                headers: Operations.get_participation_summary_programs__program_id__participations_get.Input.Headers = .init()
+            ) {
+                self.path = path
+                self.headers = headers
+            }
+        }
+        internal enum Output: Sendable, Hashable {
+            internal struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/programs/{program_id}/participations/GET/responses/200/content`.
+                internal enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/programs/{program_id}/participations/GET/responses/200/content/application\/json`.
+                    case json(Components.Schemas.ProgramParticipationSummary)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    internal var json: Components.Schemas.ProgramParticipationSummary {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                internal var body: Operations.get_participation_summary_programs__program_id__participations_get.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                internal init(body: Operations.get_participation_summary_programs__program_id__participations_get.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// Successful Response
+            ///
+            /// - Remark: Generated from `#/paths//programs/{program_id}/participations/get(get_participation_summary_programs__program_id__participations_get)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.get_participation_summary_programs__program_id__participations_get.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            internal var ok: Operations.get_participation_summary_programs__program_id__participations_get.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            internal struct UnprocessableContent: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/programs/{program_id}/participations/GET/responses/422/content`.
+                internal enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/programs/{program_id}/participations/GET/responses/422/content/application\/json`.
+                    case json(Components.Schemas.HTTPValidationError)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    internal var json: Components.Schemas.HTTPValidationError {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                internal var body: Operations.get_participation_summary_programs__program_id__participations_get.Output.UnprocessableContent.Body
+                /// Creates a new `UnprocessableContent`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                internal init(body: Operations.get_participation_summary_programs__program_id__participations_get.Output.UnprocessableContent.Body) {
+                    self.body = body
+                }
+            }
+            /// Validation Error
+            ///
+            /// - Remark: Generated from `#/paths//programs/{program_id}/participations/get(get_participation_summary_programs__program_id__participations_get)/responses/422`.
+            ///
+            /// HTTP response code: `422 unprocessableContent`.
+            case unprocessableContent(Operations.get_participation_summary_programs__program_id__participations_get.Output.UnprocessableContent)
+            /// The associated value of the enum case if `self` is `.unprocessableContent`.
+            ///
+            /// - Throws: An error if `self` is not `.unprocessableContent`.
+            /// - SeeAlso: `.unprocessableContent`.
+            internal var unprocessableContent: Operations.get_participation_summary_programs__program_id__participations_get.Output.UnprocessableContent {
+                get throws {
+                    switch self {
+                    case let .unprocessableContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unprocessableContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        internal enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            internal init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            internal var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            internal static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Join Program
+    ///
+    /// Join the program as the authenticated user, returning the refreshed
+    /// capacity snapshot. Rejects joins when the program isn't open, is at
+    /// capacity, or the caller has already joined.
+    ///
+    /// - Remark: HTTP `POST /programs/{program_id}/participations`.
+    /// - Remark: Generated from `#/paths//programs/{program_id}/participations/post(join_program_programs__program_id__participations_post)`.
+    internal enum join_program_programs__program_id__participations_post {
+        internal static let id: Swift.String = "join_program_programs__program_id__participations_post"
+        internal struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/programs/{program_id}/participations/POST/path`.
+            internal struct Path: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/programs/{program_id}/participations/POST/path/program_id`.
+                internal var program_id: Swift.Int
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - program_id:
+                internal init(program_id: Swift.Int) {
+                    self.program_id = program_id
+                }
+            }
+            internal var path: Operations.join_program_programs__program_id__participations_post.Input.Path
+            /// - Remark: Generated from `#/paths/programs/{program_id}/participations/POST/header`.
+            internal struct Headers: Sendable, Hashable {
+                internal var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.join_program_programs__program_id__participations_post.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                internal init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.join_program_programs__program_id__participations_post.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            internal var headers: Operations.join_program_programs__program_id__participations_post.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            internal init(
+                path: Operations.join_program_programs__program_id__participations_post.Input.Path,
+                headers: Operations.join_program_programs__program_id__participations_post.Input.Headers = .init()
+            ) {
+                self.path = path
+                self.headers = headers
+            }
+        }
+        internal enum Output: Sendable, Hashable {
+            internal struct Created: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/programs/{program_id}/participations/POST/responses/201/content`.
+                internal enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/programs/{program_id}/participations/POST/responses/201/content/application\/json`.
+                    case json(Components.Schemas.ProgramParticipationSummary)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    internal var json: Components.Schemas.ProgramParticipationSummary {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                internal var body: Operations.join_program_programs__program_id__participations_post.Output.Created.Body
+                /// Creates a new `Created`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                internal init(body: Operations.join_program_programs__program_id__participations_post.Output.Created.Body) {
+                    self.body = body
+                }
+            }
+            /// Successful Response
+            ///
+            /// - Remark: Generated from `#/paths//programs/{program_id}/participations/post(join_program_programs__program_id__participations_post)/responses/201`.
+            ///
+            /// HTTP response code: `201 created`.
+            case created(Operations.join_program_programs__program_id__participations_post.Output.Created)
+            /// The associated value of the enum case if `self` is `.created`.
+            ///
+            /// - Throws: An error if `self` is not `.created`.
+            /// - SeeAlso: `.created`.
+            internal var created: Operations.join_program_programs__program_id__participations_post.Output.Created {
+                get throws {
+                    switch self {
+                    case let .created(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "created",
+                            response: self
+                        )
+                    }
+                }
+            }
+            internal struct UnprocessableContent: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/programs/{program_id}/participations/POST/responses/422/content`.
+                internal enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/programs/{program_id}/participations/POST/responses/422/content/application\/json`.
+                    case json(Components.Schemas.HTTPValidationError)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    internal var json: Components.Schemas.HTTPValidationError {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                internal var body: Operations.join_program_programs__program_id__participations_post.Output.UnprocessableContent.Body
+                /// Creates a new `UnprocessableContent`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                internal init(body: Operations.join_program_programs__program_id__participations_post.Output.UnprocessableContent.Body) {
+                    self.body = body
+                }
+            }
+            /// Validation Error
+            ///
+            /// - Remark: Generated from `#/paths//programs/{program_id}/participations/post(join_program_programs__program_id__participations_post)/responses/422`.
+            ///
+            /// HTTP response code: `422 unprocessableContent`.
+            case unprocessableContent(Operations.join_program_programs__program_id__participations_post.Output.UnprocessableContent)
+            /// The associated value of the enum case if `self` is `.unprocessableContent`.
+            ///
+            /// - Throws: An error if `self` is not `.unprocessableContent`.
+            /// - SeeAlso: `.unprocessableContent`.
+            internal var unprocessableContent: Operations.join_program_programs__program_id__participations_post.Output.UnprocessableContent {
+                get throws {
+                    switch self {
+                    case let .unprocessableContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unprocessableContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        internal enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            internal init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            internal var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            internal static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Leave Program
+    ///
+    /// Withdraw the authenticated user's participation, freeing their slot.
+    ///
+    /// - Remark: HTTP `DELETE /programs/{program_id}/participations`.
+    /// - Remark: Generated from `#/paths//programs/{program_id}/participations/delete(leave_program_programs__program_id__participations_delete)`.
+    internal enum leave_program_programs__program_id__participations_delete {
+        internal static let id: Swift.String = "leave_program_programs__program_id__participations_delete"
+        internal struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/programs/{program_id}/participations/DELETE/path`.
+            internal struct Path: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/programs/{program_id}/participations/DELETE/path/program_id`.
+                internal var program_id: Swift.Int
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - program_id:
+                internal init(program_id: Swift.Int) {
+                    self.program_id = program_id
+                }
+            }
+            internal var path: Operations.leave_program_programs__program_id__participations_delete.Input.Path
+            /// - Remark: Generated from `#/paths/programs/{program_id}/participations/DELETE/header`.
+            internal struct Headers: Sendable, Hashable {
+                internal var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.leave_program_programs__program_id__participations_delete.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                internal init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.leave_program_programs__program_id__participations_delete.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            internal var headers: Operations.leave_program_programs__program_id__participations_delete.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            internal init(
+                path: Operations.leave_program_programs__program_id__participations_delete.Input.Path,
+                headers: Operations.leave_program_programs__program_id__participations_delete.Input.Headers = .init()
+            ) {
+                self.path = path
+                self.headers = headers
+            }
+        }
+        internal enum Output: Sendable, Hashable {
+            internal struct NoContent: Sendable, Hashable {
+                /// Creates a new `NoContent`.
+                internal init() {}
+            }
+            /// Successful Response
+            ///
+            /// - Remark: Generated from `#/paths//programs/{program_id}/participations/delete(leave_program_programs__program_id__participations_delete)/responses/204`.
+            ///
+            /// HTTP response code: `204 noContent`.
+            case noContent(Operations.leave_program_programs__program_id__participations_delete.Output.NoContent)
+            /// Successful Response
+            ///
+            /// - Remark: Generated from `#/paths//programs/{program_id}/participations/delete(leave_program_programs__program_id__participations_delete)/responses/204`.
+            ///
+            /// HTTP response code: `204 noContent`.
+            internal static var noContent: Self {
+                .noContent(.init())
+            }
+            /// The associated value of the enum case if `self` is `.noContent`.
+            ///
+            /// - Throws: An error if `self` is not `.noContent`.
+            /// - SeeAlso: `.noContent`.
+            internal var noContent: Operations.leave_program_programs__program_id__participations_delete.Output.NoContent {
+                get throws {
+                    switch self {
+                    case let .noContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "noContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            internal struct UnprocessableContent: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/programs/{program_id}/participations/DELETE/responses/422/content`.
+                internal enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/programs/{program_id}/participations/DELETE/responses/422/content/application\/json`.
+                    case json(Components.Schemas.HTTPValidationError)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    internal var json: Components.Schemas.HTTPValidationError {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                internal var body: Operations.leave_program_programs__program_id__participations_delete.Output.UnprocessableContent.Body
+                /// Creates a new `UnprocessableContent`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                internal init(body: Operations.leave_program_programs__program_id__participations_delete.Output.UnprocessableContent.Body) {
+                    self.body = body
+                }
+            }
+            /// Validation Error
+            ///
+            /// - Remark: Generated from `#/paths//programs/{program_id}/participations/delete(leave_program_programs__program_id__participations_delete)/responses/422`.
+            ///
+            /// HTTP response code: `422 unprocessableContent`.
+            case unprocessableContent(Operations.leave_program_programs__program_id__participations_delete.Output.UnprocessableContent)
+            /// The associated value of the enum case if `self` is `.unprocessableContent`.
+            ///
+            /// - Throws: An error if `self` is not `.unprocessableContent`.
+            /// - SeeAlso: `.unprocessableContent`.
+            internal var unprocessableContent: Operations.leave_program_programs__program_id__participations_delete.Output.UnprocessableContent {
                 get throws {
                     switch self {
                     case let .unprocessableContent(response):

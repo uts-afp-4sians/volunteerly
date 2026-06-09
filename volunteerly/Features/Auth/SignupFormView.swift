@@ -2,11 +2,11 @@ import SwiftUI
 import PhotosUI
 
 struct SignupFormView: View {
+    let basics: SignupBasics
+
     @Environment(\.dismiss) private var dismiss
     @Environment(AppRouter.self) private var router
     @Environment(UserProfileStore.self) private var profileStore
-
-    let basics: SignupBasics
 
     @State private var step = 2
     private let totalSteps = 4
