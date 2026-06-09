@@ -142,14 +142,14 @@ struct FilterChip: View {
                 .font(.bodyText)
                 .lineLimit(1)
                 .fixedSize()
-                .foregroundStyle(isSelected ? Color.accentColor : .primary)
+                .foregroundStyle(isSelected ? Color.brand : .primary)
                 .padding(.horizontal, 16)
                 .frame(height: 48)
                 .background(
-                    Capsule().fill(isSelected ? Color.accentColor.opacity(0.18) : Color(.systemGray6))
+                    Capsule().fill(isSelected ? Color.brand.opacity(0.12) : Color(.systemGray6))
                 )
                 .overlay(
-                    Capsule().strokeBorder(Color.accentColor, lineWidth: isSelected ? 1.5 : 0)
+                    Capsule().strokeBorder(isSelected ? Color.brand : Color.clear, lineWidth: 1)
                 )
         }
         .buttonStyle(.plain)

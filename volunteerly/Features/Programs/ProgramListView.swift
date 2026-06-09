@@ -104,7 +104,7 @@ struct ProgramListView: View {
                 .overlay(alignment: .topTrailing) {
                     if viewModel.hasActiveFilters {
                         Circle()
-                            .fill(Color.accentColor)
+                            .fill(Color.brand)
                             .frame(width: 8, height: 8)
                             .offset(x: 5, y: -3)
                     }
