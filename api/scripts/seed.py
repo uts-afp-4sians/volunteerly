@@ -232,13 +232,18 @@ def _rows() -> list[Base]:
         ProgramKeyword(program_id=1, keyword_id=1),
         ProgramKeyword(program_id=2, keyword_id=2),
     ]
-    participation = ProgramParticipation(
-        participation_id=1,
-        program_id=1,
-        user_id=1,
-        participation_status=ParticipationStatus.APPROVED,
-        joined_at=CREATED_AT,
-    )
+    # The host (user 1) plus the three extra members all join program 1, so the
+    # detail screen's Members row has real participants to render (host + 3).
+    participations = [
+        ProgramParticipation(
+            participation_id=pid,
+            program_id=1,
+            user_id=uid,
+            participation_status=ParticipationStatus.APPROVED,
+            joined_at=CREATED_AT,
+        )
+        for pid, uid in enumerate([1, 2, 3, 4], start=1)
+    ]
     # Member board questions for program 1, authored across members. Mirrors
     # `MockData.forumPosts` in the iOS app.
     forum_posts = [
@@ -362,7 +367,7 @@ def _rows() -> list[Base]:
         *programs,
         *user_interests,
         *program_keywords,
-        participation,
+        *participations,
         *forum_posts,
         *forum_comments,
         *forum_likes,
