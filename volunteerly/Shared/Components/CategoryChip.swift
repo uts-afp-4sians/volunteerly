@@ -10,22 +10,18 @@ struct CategoryChip: View {
     var body: some View {
         Button(action: action) {
             VStack(spacing: 6) {
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(isSelected ? Color.accentColor.opacity(0.18) : Color(.systemGray6))
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(isSelected ? Color.brandLight : Color(.systemGray6))
                     .frame(width: 50, height: 50)
                     .overlay(
                         Image(systemName: Self.symbolName(for: category.name))
                             .font(.system(size: 20))
-                            .foregroundStyle(isSelected ? Color.accentColor : .primary)
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .strokeBorder(Color.accentColor, lineWidth: isSelected ? 2 : 0)
+                            .foregroundStyle(isSelected ? Color.white : Color.primary)
                     )
 
                 Text(category.name)
-                    .font(.system(size: 11))
-                    .foregroundStyle(isSelected ? Color.accentColor : .primary)
+                    .font(.system(size: 11, weight: isSelected ? .medium : .regular))
+                    .foregroundStyle(isSelected ? Color.brand : .primary)
                     .lineLimit(1)
             }
             .frame(width: 56)
