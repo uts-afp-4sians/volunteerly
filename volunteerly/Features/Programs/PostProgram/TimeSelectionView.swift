@@ -1,18 +1,16 @@
 import SwiftUI
 
-/// Date picker bottom sheet — the calendar half of the Starts/Ends row
-/// (Figma node 358:967). Tapping a row's **Date** chip presents this.
+/// Time picker bottom sheet — the time half of the Starts/Ends row
+/// (Figma node 329:1550). Tapping a row's **Time** chip presents this.
 ///
-/// The frame is the native SwiftUI `DatePicker` in `.graphical` style: the bold
-/// month label with a disclosure chevron, the `‹ ›` month arrows, the weekday
-/// header row and the circular selected-day are all stock system UI. We keep it
-/// native (rather than hand-rolling a calendar) so it tracks iOS behaviour, and
-/// tint the selection brand-green to match the mock. Chrome (blue drag handle,
+/// Shorter than the calendar sheet: a "Time" header over the native
+/// `DatePicker` wheel limited to `.hourAndMinute`. Chrome (blue drag handle,
 /// centred title, green Confirm) matches the other PostProgram sheets.
-struct DateSelectionView: View {
+struct TimeSelectionView: View {
     let title: String
     @Binding var date: Date
-    /// Lower bound for selection (used by the "Ends" sheet to stay >= start).
+    /// Lower bound (used by the "Ends" sheet so the end can't precede the start
+    /// on the same day).
     var minimumDate: Date? = nil
     @Environment(\.dismiss) private var dismiss
 
@@ -25,7 +23,7 @@ struct DateSelectionView: View {
                 .font(.system(size: 26, weight: .bold))
                 .foregroundStyle(Theme.textPrimary)
                 .padding(.top, 8)
-                .padding(.bottom, 8)
+                .padding(.bottom, 4)
 
             Group {
                 if let minimumDate {
@@ -33,21 +31,18 @@ struct DateSelectionView: View {
                         "",
                         selection: $date,
                         in: minimumDate...,
-                        displayedComponents: [.date]
+                        displayedComponents: [.hourAndMinute]
                     )
                 } else {
                     DatePicker(
                         "",
                         selection: $date,
-                        displayedComponents: [.date]
+                        displayedComponents: [.hourAndMinute]
                     )
                 }
             }
-            .datePickerStyle(.graphical)
+            .datePickerStyle(.wheel)
             .labelsHidden()
-            // Figma shows a brand-green filled selection circle.
-            .tint(Color.brand)
-            .padding(.horizontal, 20)
 
             Spacer(minLength: 0)
 
@@ -85,8 +80,8 @@ struct DateSelectionView: View {
 #Preview {
     Color.white
         .sheet(isPresented: .constant(true)) {
-            DateSelectionView(title: "Starts", date: .constant(Date()))
-                .presentationDetents([.height(560)])
+            TimeSelectionView(title: "Starts", date: .constant(Date()))
+                .presentationDetents([.height(440)])
                 .presentationDragIndicator(.hidden)
         }
 }
