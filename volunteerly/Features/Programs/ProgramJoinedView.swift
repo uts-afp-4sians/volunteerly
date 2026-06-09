@@ -140,19 +140,12 @@ struct ProgramJoinedView: View {
                     Text("Check the team board")
                     Image(systemName: "arrow.right")
                 }
-                .font(.bodyText)
-                .foregroundStyle(.white)
-                .frame(maxWidth: .infinity)
-                .frame(height: 61)
-                .background(Color.brand, in: Capsule())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(PrimaryActionButtonStyle())
 
             Button(action: onFindOtherOpportunities) {
                 Text("or find other opportunities")
-                    .font(.bodyText)
-                    .underline()
-                    .foregroundStyle(Color.brand)
+                    .linkStyle()
             }
             .buttonStyle(.plain)
         }
