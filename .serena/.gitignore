@@ -1,1 +1,4 @@
 /cache
+# Serena memories are local working notes — keep the folder, ignore its contents.
+/memories/*
+!/memories/.gitkeep
