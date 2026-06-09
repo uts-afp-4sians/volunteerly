@@ -8,3 +8,4 @@ DerivedData/
 .antigravitycli/
 .agents/results/
 .agents/state/
+.DS_Store
