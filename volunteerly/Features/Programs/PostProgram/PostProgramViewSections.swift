@@ -1,6 +1,43 @@
 import SwiftUI
 import PhotosUI
 
+// MARK: - Jiggle effect
+
+/// iOS home-screen "jiggle": a continuous, gentle back-and-forth tilt used to
+/// signal that an item is in edit/delete mode. Each item is phase-shifted by
+/// its index so the row doesn't wobble in lockstep, and the whole effect is
+/// suppressed when Reduce Motion is on (HIG).
+private struct JiggleEffect: ViewModifier {
+    let isActive: Bool
+    let index: Int
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var wobble = false
+
+    private let angle: Double = 1.8
+
+    func body(content: Content) -> some View {
+        content
+            .rotationEffect(.degrees(rotation))
+            .animation(animation, value: wobble)
+            .animation(animation, value: isActive)
+            .onChange(of: isActive) { _, active in wobble = active }
+            .onAppear { wobble = isActive }
+    }
+
+    private var rotation: Double {
+        guard isActive, !reduceMotion else { return 0 }
+        return wobble ? angle : -angle
+    }
+
+    private var animation: Animation? {
+        guard isActive, !reduceMotion else { return .easeOut(duration: 0.2) }
+        return .easeInOut(duration: 0.13)
+            .repeatForever(autoreverses: true)
+            .delay(Double(index % 3) * 0.05)
+    }
+}
+
 // MARK: - Form sections
 //
 // The visual building blocks of `PostProgramView`, split out to keep the main
@@ -296,7 +333,8 @@ extension PostProgramView {
 
     /// "Add images" (Figma 190:639): a header with an "Up to three photos" hint,
     /// a row of three thumbnail slots, and a large picker that fills the next
-    /// empty slot. Tapping a filled thumbnail removes that photo.
+    /// empty slot. Long-pressing a filled thumbnail enters an iOS home-screen
+    /// style edit mode — the row jiggles and a delete badge removes that photo.
     var imageSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .firstTextBaseline) {
@@ -342,28 +380,61 @@ extension PostProgramView {
     }
 
     /// One of the three thumbnail slots: the selected photo, or an empty
-    /// placeholder. Tapping a filled slot removes that photo.
+    /// placeholder. Long-pressing a filled slot enters edit mode (jiggle +
+    /// delete badge); tapping the badge removes that photo.
     @ViewBuilder
     private func photoThumbnail(at index: Int) -> some View {
         let shape = RoundedRectangle(cornerRadius: 12, style: .continuous)
         if index < photoImages.count {
-            Button {
-                removePhoto(at: index)
-            } label: {
-                photoImages[index]
-                    .resizable()
-                    .scaledToFill()
-                    .frame(maxWidth: .infinity)
-                    .aspectRatio(1, contentMode: .fit)
-                    .clipShape(shape)
-            }
-            .buttonStyle(.plain)
+            photoImages[index]
+                .resizable()
+                .scaledToFill()
+                .frame(maxWidth: .infinity)
+                .aspectRatio(1, contentMode: .fit)
+                .clipShape(shape)
+                .modifier(JiggleEffect(isActive: photosEditing, index: index))
+                .overlay(alignment: .topTrailing) {
+                    if photosEditing {
+                        photoDeleteBadge(at: index)
+                            .transition(.scale.combined(with: .opacity))
+                    }
+                }
+                .onLongPressGesture(minimumDuration: 0.35) {
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                        photosEditing = true
+                    }
+                }
         } else {
             shape
                 .fill(Color(.systemGray6))
                 .frame(maxWidth: .infinity)
                 .aspectRatio(1, contentMode: .fit)
         }
+    }
+
+    /// Circular "✕" delete badge that hangs over the thumbnail's top-right
+    /// corner. The visible disc is small, but transparent padding inflates the
+    /// hit area to ~44pt so it stays comfortably thumb-tappable.
+    private func photoDeleteBadge(at index: Int) -> some View {
+        Button {
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            withAnimation(.easeOut(duration: 0.2)) {
+                removePhoto(at: index)
+                if photoImages.isEmpty { photosEditing = false }
+            }
+        } label: {
+            Image(systemName: "xmark")
+                .font(.system(size: 12, weight: .heavy))
+                .foregroundStyle(.white)
+                .frame(width: 24, height: 24)
+                .background(Color.black.opacity(0.6), in: Circle())
+                .overlay(Circle().stroke(.white, lineWidth: 2))
+                .padding(10)
+                .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .offset(x: 14, y: -14)
     }
 
     // MARK: Commitment
