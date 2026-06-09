@@ -141,10 +141,9 @@ struct ProgramDetailView: View {
                 .padding(.top, 60)
         } else if let program = viewModel.program {
             VStack(alignment: .leading, spacing: 32) {
-                heading(program)
+                overview(program)
                 descriptionSection(program)
                 membersSection
-                locationSection
                 if viewModel.isJoined {
                     MemberBoardSection(programId: programId, httpClient: httpClient)
                 } else if let similar = viewModel.similarProgram {
@@ -160,9 +159,9 @@ struct ProgramDetailView: View {
         }
     }
 
-    // MARK: Heading (title + category + schedule)
+    // MARK: Overview (title + category + time/location boxes + map)
 
-    private func heading(_ program: Program) -> some View {
+    private func overview(_ program: Program) -> some View {
         VStack(alignment: .leading, spacing: 24) {
             VStack(alignment: .leading, spacing: 16) {
                 Text(program.name)
@@ -174,7 +173,21 @@ struct ProgramDetailView: View {
                     categoryChip(category)
                 }
             }
-            schedule(program)
+
+            VStack(alignment: .leading, spacing: 12) {
+                infoBox(
+                    icon: "clock",
+                    title: dayText(program.startDatetime),
+                    subtitle: timeRange(program)
+                )
+                infoBox(
+                    icon: "mappin.and.ellipse",
+                    title: viewModel.location?.city ?? "Location to be announced",
+                    subtitle: locationSubtitle
+                )
+            }
+
+            mapCard
         }
     }
 
@@ -191,28 +204,13 @@ struct ProgramDetailView: View {
         .background(Color(.systemGray6), in: Capsule())
     }
 
-    private func schedule(_ program: Program) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            infoRow(
-                icon: "clock",
-                title: dayText(program.startDatetime),
-                subtitle: "\(timeRange(program)) - \(temporalStatus(program))"
-            )
-            divider
-            infoRow(
-                icon: "mappin.and.ellipse",
-                title: viewModel.location?.city ?? "Location to be announced",
-                subtitle: locationSubtitle
-            )
-        }
-    }
-
-    private func infoRow(icon: String, title: String, subtitle: String?) -> some View {
-        HStack(alignment: .top, spacing: 14) {
+    /// Outlined information box used for the schedule and location summaries.
+    private func infoBox(icon: String, title: String, subtitle: String?) -> some View {
+        HStack(alignment: .center, spacing: 14) {
             Image(systemName: icon)
                 .font(.system(size: 16))
                 .foregroundStyle(Theme.textPrimary)
-                .frame(width: 24)
+                .frame(width: 20)
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                     .font(.bodyText)
@@ -220,10 +218,18 @@ struct ProgramDetailView: View {
                 if let subtitle, !subtitle.isEmpty {
                     Text(subtitle)
                         .font(.bodyText)
-                        .foregroundStyle(Theme.textSecondary)
+                        .foregroundStyle(Theme.textPrimary)
                 }
             }
+            Spacer(minLength: 0)
         }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .overlay(
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .strokeBorder(Theme.border, lineWidth: 1)
+        )
     }
 
     private var locationSubtitle: String? {
@@ -232,29 +238,97 @@ struct ProgramDetailView: View {
         return parts.isEmpty ? nil : parts.joined(separator: ", ")
     }
 
+    // MARK: Map + View Location
+
+    /// Map preview with the green "View Location" action fused to its lower edge,
+    /// the two clipped together as a single rounded card.
+    private var mapCard: some View {
+        VStack(spacing: 0) {
+            mapTile
+                .frame(height: 179)
+
+            Button {
+                openInMaps()
+            } label: {
+                Text("View Location")
+                    .font(.buttonLabel)
+                    .foregroundStyle(Color.onBrand)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 18)
+                    .background(Color.brand)
+            }
+            .buttonStyle(.plain)
+            .disabled(locationCoordinate == nil)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+    }
+
+    @ViewBuilder
+    private var mapTile: some View {
+        if let coordinate = locationCoordinate {
+            Map(initialPosition: .region(MKCoordinateRegion(
+                center: coordinate,
+                latitudinalMeters: 800,
+                longitudinalMeters: 800
+            ))) {
+                Marker(viewModel.location?.city ?? "", coordinate: coordinate)
+            }
+            .frame(maxWidth: .infinity)
+            .allowsHitTesting(false)
+        } else {
+            Rectangle()
+                .fill(Color(.systemGray6))
+                .frame(maxWidth: .infinity)
+                .overlay(
+                    Image(systemName: "map")
+                        .font(.system(size: 28))
+                        .foregroundStyle(Color(uiColor: .systemGray3))
+                )
+        }
+    }
+
+    private var locationCoordinate: CLLocationCoordinate2D? {
+        guard let lat = viewModel.location?.latitude,
+              let lon = viewModel.location?.longitude else { return nil }
+        return CLLocationCoordinate2D(latitude: lat, longitude: lon)
+    }
+
+    /// Opens the program's coordinate in Apple Maps.
+    private func openInMaps() {
+        guard let coordinate = locationCoordinate else { return }
+        let mapItem = MKMapItem(location: CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude), address: nil)
+        mapItem.name = viewModel.location?.displayName ?? viewModel.location?.city
+        mapItem.openInMaps()
+    }
+
     // MARK: Description
 
     private func descriptionSection(_ program: Program) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 16) {
             sectionHeader("Description")
             Text(program.description)
                 .font(.bodyText)
-                .foregroundStyle(Theme.textPrimary)
+                .italic()
+                .foregroundStyle(Theme.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(16)
+                .background(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .fill(Color(.systemGray6))
+                )
         }
     }
 
     // MARK: Members (host + other participants)
 
     private var membersSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 24) {
             sectionHeader("Members")
 
-            HStack(spacing: 16) {
-                Avatar(url: URL(string: viewModel.host?.profileImageURL ?? ""), size: 63)
-
-                VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 10) {
+                hostAvatar
+                VStack(alignment: .leading, spacing: 2) {
                     Text(viewModel.host?.fullName ?? "Host name")
                         .font(.bodyStrong)
                         .foregroundStyle(Theme.textPrimary)
@@ -265,7 +339,6 @@ struct ProgramDetailView: View {
             }
 
             if viewModel.otherMemberCount > 0 {
-                divider
                 memberAvatars
             }
         }
@@ -275,9 +348,31 @@ struct ProgramDetailView: View {
         viewModel.host?.occupation ?? viewModel.host?.goalText ?? "Host"
     }
 
+    /// Rounded-square host avatar, falling back to the person silhouette when no
+    /// profile image is available.
+    private var hostAvatar: some View {
+        let size: CGFloat = 96
+        return RoundedRectangle(cornerRadius: 16, style: .continuous)
+            .fill(Color(red: 245 / 255, green: 245 / 255, blue: 245 / 255))
+            .frame(width: size, height: size)
+            .overlay {
+                AsyncImage(url: URL(string: viewModel.host?.profileImageURL ?? "")) { image in
+                    image.resizable().aspectRatio(contentMode: .fill)
+                } placeholder: {
+                    Image(systemName: "person.fill")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .foregroundStyle(Color(uiColor: .systemGray3))
+                        .frame(width: size * 0.55)
+                        .offset(y: size * 0.13)
+                }
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+
     /// Up to four member avatars; when there are more, the last slot collapses
-    /// into a "+N" overflow badge. Placeholder circles until participant data is
-    /// wired through.
+    /// into a "+N" overflow badge pinned to the trailing edge. Placeholder
+    /// circles until participant data is wired through.
     private var memberAvatars: some View {
         let others = viewModel.otherMemberCount
         let maxVisible = 4
@@ -286,10 +381,12 @@ struct ProgramDetailView: View {
                 ForEach(0..<others, id: \.self) { _ in
                     Avatar(source: .placeholder, size: 56)
                 }
+                Spacer(minLength: 0)
             } else {
                 ForEach(0..<(maxVisible - 1), id: \.self) { _ in
                     Avatar(source: .placeholder, size: 56)
                 }
+                Spacer(minLength: 0)
                 overflowBadge(others - (maxVisible - 1))
             }
         }
@@ -306,58 +403,11 @@ struct ProgramDetailView: View {
             )
     }
 
-    // MARK: Location
-
-    private var locationSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            VStack(alignment: .leading, spacing: 8) {
-                sectionHeader("Location")
-                Text(viewModel.location?.displayName ?? "Location to be announced")
-                    .font(.bodyText)
-                    .foregroundStyle(Theme.textPrimary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            map
-        }
-    }
-
-    @ViewBuilder
-    private var map: some View {
-        if let coordinate = locationCoordinate {
-            Map(initialPosition: .region(MKCoordinateRegion(
-                center: coordinate,
-                latitudinalMeters: 800,
-                longitudinalMeters: 800
-            ))) {
-                Marker(viewModel.location?.city ?? "", coordinate: coordinate)
-            }
-            .frame(maxWidth: .infinity)
-            .frame(height: 179)
-            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-            .allowsHitTesting(false)
-        } else {
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(Color(.systemGray5))
-                .frame(height: 179)
-                .overlay(
-                    Image(systemName: "map")
-                        .font(.system(size: 28))
-                        .foregroundStyle(.secondary)
-                )
-        }
-    }
-
-    private var locationCoordinate: CLLocationCoordinate2D? {
-        guard let lat = viewModel.location?.latitude,
-              let lon = viewModel.location?.longitude else { return nil }
-        return CLLocationCoordinate2D(latitude: lat, longitude: lon)
-    }
-
     // MARK: Similar program nearby
 
     private func similarSection(_ similar: Program) -> some View {
         VStack(alignment: .leading, spacing: 16) {
-            sectionHeader("Similar program nearby")
+            sectionHeader("Similar programs nearby")
             NavigationLink(value: similar.id) {
                 ProgramCard(program: similar, distanceKm: viewModel.similarDistanceKm)
             }
@@ -397,28 +447,23 @@ struct ProgramDetailView: View {
             .foregroundStyle(Theme.textPrimary)
     }
 
-    private var divider: some View {
-        Rectangle()
-            .fill(Theme.border)
-            .frame(height: 1)
+    private func dayText(_ date: Date) -> String {
+        Self.dayFormatter.string(from: date)
     }
 
-    private func dayText(_ date: Date) -> String {
-        date.formatted(.dateTime.weekday(.wide).day().month(.abbreviated).year())
-    }
+    /// "Thursday 11 June 2026" — day-first, full month, no commas, matching the
+    /// schedule box in the Figma design.
+    private static let dayFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_AU")
+        formatter.dateFormat = "EEEE d MMMM yyyy"
+        return formatter
+    }()
 
     private func timeRange(_ program: Program) -> String {
         let start = program.startDatetime.formatted(date: .omitted, time: .shortened)
         let end = program.endDatetime.formatted(date: .omitted, time: .shortened)
         return "\(start) - \(end)"
-    }
-
-    /// Where the event sits relative to now, surfaced beside the time range.
-    private func temporalStatus(_ program: Program) -> String {
-        let now = Date.now
-        if program.startDatetime > now { return "upcoming" }
-        if program.endDatetime < now { return "past" }
-        return "ongoing"
     }
 }
 
