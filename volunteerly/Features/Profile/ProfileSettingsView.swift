@@ -1,6 +1,9 @@
 import SwiftUI
 import PhotosUI
 
+/// Route value for the profile ("My page") screen — pushed from the menus.
+struct ProfileRoute: Hashable {}
+
 struct ProfileSettingsView: View {
     @Environment(AppRouter.self) private var router
     @Environment(UserProfileStore.self) private var profileStore
