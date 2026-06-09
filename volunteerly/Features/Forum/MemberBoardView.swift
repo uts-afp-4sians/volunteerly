@@ -1,11 +1,15 @@
 import SwiftUI
 
+/// Route value for the "Add post" link — pushes the New post page.
+struct NewPostRoute: Hashable {
+    let programId: Int
+}
+
 /// The Member board block shown at the bottom of a joined program's detail:
 /// a "Member board" header with an "Add post" link, a single sort chip, and a
 /// two-column grid of question cards. Matches Figma `group-4-prototype` 2A.
 struct MemberBoardSection: View {
     @State private var viewModel: MemberBoardViewModel
-    @State private var showNewPost = false
     private let httpClient: HTTPClient
 
     init(programId: Int, httpClient: HTTPClient = LiveHTTPClient.shared) {
@@ -24,11 +28,11 @@ struct MemberBoardSection: View {
                 await viewModel.load()
             }
         }
-        .sheet(isPresented: $showNewPost) {
-            NewPostView(viewModel: viewModel)
-        }
         .navigationDestination(for: ForumPost.self) { post in
             ForumThreadView(post: post, currentUserId: 1, httpClient: httpClient)
+        }
+        .navigationDestination(for: NewPostRoute.self) { _ in
+            NewPostView(viewModel: viewModel)
         }
     }
 
@@ -39,9 +43,7 @@ struct MemberBoardSection: View {
                 .bold()
                 .foregroundStyle(Theme.textPrimary)
             Spacer(minLength: 8)
-            Button {
-                showNewPost = true
-            } label: {
+            NavigationLink(value: NewPostRoute(programId: viewModel.programId)) {
                 Text("Add post")
                     .font(.bodyText)
                     .underline()
@@ -49,7 +51,7 @@ struct MemberBoardSection: View {
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Add post")
-            .accessibilityHint("Opens a form to ask a new question")
+            .accessibilityHint("Opens a page to write a new post")
         }
     }
 
