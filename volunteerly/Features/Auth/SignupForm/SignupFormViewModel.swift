@@ -61,7 +61,7 @@ final class SignupFormViewModel {
         isGeocodingCity = true
         Task {
             defer { isGeocodingCity = false }
-            if let coord = (try? await request.mapItems)?.first?.placemark.coordinate {
+            if let coord = (try? await request.mapItems)?.first?.location.coordinate {
                 withAnimation {
                     mapCameraPosition = .region(MKCoordinateRegion(
                         center: coord,
