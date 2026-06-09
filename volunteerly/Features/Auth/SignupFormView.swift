@@ -12,7 +12,7 @@ struct SignupFormView: View {
     @Environment(UserProfileStore.self) private var profileStore
 
     @State private var step = 2
-    private let totalSteps = 4
+    private let totalSteps = 5
 
     // Step 2 — Interests. The catalogue is loaded from the backend `/interests`
     // endpoint (the DB-flagged interest keywords); emoji are mapped client-side
@@ -27,7 +27,11 @@ struct SignupFormView: View {
 
     private let profileService = ProfileService.shared
 
-    // Step 3 — Make your own profile
+    // Step 3 — Secure your account
+    @State private var email = ""
+    @State private var password = ""
+
+    // Step 4 — Make your own profile
     @State private var profileItem: PhotosPickerItem?
     @State private var profileImageData: Data?
     @State private var displayName = ""
@@ -50,7 +54,7 @@ struct SignupFormView: View {
                     .padding(.bottom, 16)
             }
 
-            if step < 4 {
+            if step < 5 {
                 nextButton
             }
         }
@@ -62,7 +66,7 @@ struct SignupFormView: View {
         .navigationBarBackButtonHidden(true)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            if step < 4 {
+            if step < 5 {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button {
                         withAnimation(.easeInOut(duration: 0.2)) {
@@ -97,8 +101,9 @@ struct SignupFormView: View {
     private var stepContent: some View {
         switch step {
         case 2: interestsStep
-        case 3: makeProfileStep
-        case 4: finalisingStep
+        case 3: emailPasswordStep
+        case 4: makeProfileStep
+        case 5: finalisingStep
         default: comingSoonStep
         }
     }
@@ -248,7 +253,61 @@ struct SignupFormView: View {
         }
     }
 
-    // MARK: Step 3 — Make your own profile
+    // MARK: Step 3 — Secure your account
+
+    private var emailPasswordStep: some View {
+        VStack(alignment: .leading, spacing: 28) {
+            Text("Secure your account")
+                .font(.pageTitle)
+                .foregroundStyle(Theme.textPrimary)
+
+            VStack(alignment: .leading, spacing: 20) {
+                secureFieldColumn(label: "Email", required: true) {
+                    secureBorderedField {
+                        TextField("", text: $email)
+                            .textContentType(.emailAddress)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+                            .keyboardType(.emailAddress)
+                    }
+                }
+
+                secureFieldColumn(label: "Password", required: true) {
+                    secureBorderedField {
+                        SecureField("", text: $password)
+                            .textContentType(.newPassword)
+                    }
+                }
+            }
+        }
+    }
+
+    private func secureFieldColumn<Content: View>(label: String, required: Bool, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 3) {
+                Text(label)
+                    .font(.bodyText)
+                    .foregroundStyle(Theme.textPrimary)
+                if required {
+                    Text("*").requiredFieldStyle()
+                }
+            }
+            content()
+        }
+    }
+
+    private func secureBorderedField<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        content()
+            .font(.bodyText)
+            .frame(height: 52)
+            .padding(.horizontal, 14)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(Theme.border, lineWidth: 1)
+            )
+    }
+
+    // MARK: Step 4 — Make your own profile
 
     private var makeProfileStep: some View {
         VStack(alignment: .leading, spacing: 28) {
@@ -326,7 +385,7 @@ struct SignupFormView: View {
         }
     }
 
-    // MARK: Step 4 — Finalising
+    // MARK: Step 5 — Finalising
 
     private var finalisingStep: some View {
         VStack(spacing: 24) {
@@ -394,8 +453,8 @@ struct SignupFormView: View {
         Task {
             let registration = Task {
                 try await AuthService.shared.register(
-                    email: basics.email,
-                    password: basics.password,
+                    email: email,
+                    password: password,
                     firstName: basics.firstName,
                     lastName: basics.lastName
                 )
@@ -434,7 +493,8 @@ struct SignupFormView: View {
     private var canAdvance: Bool {
         switch step {
         case 2: return !selectedInterests.isEmpty
-        case 3: return !displayName.isEmpty && !expectations.isEmpty && !occupation.isEmpty && !keySkills.isEmpty
+        case 3: return !email.isEmpty && !password.isEmpty
+        case 4: return !displayName.isEmpty && !expectations.isEmpty && !occupation.isEmpty && !keySkills.isEmpty
         default: return false
         }
     }
@@ -443,7 +503,7 @@ struct SignupFormView: View {
         guard step < totalSteps else { return }
         commitCurrentStep()
         step += 1
-        if step == 4 { startFinalisingIfNeeded() }
+        if step == 5 { startFinalisingIfNeeded() }
     }
 
     private func commitCurrentStep() {
@@ -462,6 +522,8 @@ struct SignupFormView: View {
                 .map { UserProfileStore.Interest(emoji: $0.emoji, name: $0.name) }
             profileStore.interests = builtIn + custom
         case 3:
+            break
+        case 4:
             profileStore.displayName = displayName
             profileStore.instagram = instagram
             profileStore.personalGoal = expectations
