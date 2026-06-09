@@ -81,21 +81,29 @@ final class ProgramListViewModel {
     }
 
     private let httpClient: HTTPClient
-    private let locationProvider: LocationProvider
+    private let locationProvider: any LocationProviding
 
     /// The caller's coordinate, resolved once on first load and sent to the API
     /// so each card can show its distance. `nil` until/unless location is granted.
     private var userCoordinate: CLLocationCoordinate2D?
 
+    /// One-shot guard so the permission prompt is raised at most once; denying
+    /// it must not re-prompt on every search/filter reload.
+    private var didAttemptLocation = false
+
+    /// Background coordinate-resolution task. Exposed (internal) so tests can
+    /// await the silent distance re-fetch it triggers.
+    private(set) var locationTask: Task<Void, Never>?
+
     init(
         httpClient: HTTPClient = LiveHTTPClient.shared,
-        locationProvider: LocationProvider? = nil
+        locationProvider: (any LocationProviding)? = nil
     ) {
         self.httpClient = httpClient
         // Resolve the MainActor-isolated singleton here in the actor-isolated
         // init body — a `= .shared` default argument is evaluated nonisolated
         // and is an error under the Swift 6 language mode.
-        self.locationProvider = locationProvider ?? .shared
+        self.locationProvider = locationProvider ?? LocationProvider.shared
     }
 
     /// Builds `/programs` with the current filters as query items. Repeated
@@ -125,13 +133,20 @@ final class ProgramListViewModel {
     func load() async {
         isLoading = true
         errorMessage = nil
+        await fetchPrograms()
+        isLoading = false
 
-        // Resolve the device location once so the list can carry per-card
-        // distances. Best-effort: if it's nil, the cards fall back to dates.
-        if userCoordinate == nil {
-            userCoordinate = await locationProvider.currentCoordinate()
-        }
+        // Distance is supplementary, so the list never waits on it: resolve the
+        // coordinate in the background (the permission prompt can sit unanswered
+        // forever) and, once it arrives, silently re-fetch so cards gain their
+        // "1.5km" labels — no spinner, no blocked list.
+        resolveLocationIfNeeded()
+    }
 
+    /// Fetches programs (and categories on first load) with the current filters
+    /// and `userCoordinate`. Records a failure in `errorMessage` and otherwise
+    /// clears it; the existing list is left untouched on error.
+    private func fetchPrograms() async {
         do {
             async let programs: [Program] = httpClient.get(programsPath)
             // Categories only need to load once.
@@ -140,11 +155,25 @@ final class ProgramListViewModel {
                 self.categories = try await categories
             }
             self.programs = try await programs
+            self.errorMessage = nil
         } catch {
             self.errorMessage = error.localizedDescription
         }
+    }
 
-        isLoading = false
+    /// Resolves the device coordinate at most once and, on success, re-fetches
+    /// so distances appear. Fire-and-forget: `load()` returns immediately even
+    /// when the permission prompt is never answered.
+    private func resolveLocationIfNeeded() {
+        guard !didAttemptLocation else { return }
+        didAttemptLocation = true
+        locationTask = Task { [weak self] in
+            guard let self else { return }
+            guard let coordinate = await self.locationProvider.currentCoordinate() else { return }
+            guard !Task.isCancelled else { return }
+            self.userCoordinate = coordinate
+            await self.fetchPrograms()
+        }
     }
 
     func toggleCategory(_ id: Int) {
