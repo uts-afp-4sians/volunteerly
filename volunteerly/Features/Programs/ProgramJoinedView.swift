@@ -50,14 +50,21 @@ struct ProgramJoinedView: View {
     // MARK: - Banner
 
     private var banner: some View {
-        AsyncImage(url: URL(string: program.bannerImageURL ?? "")) { image in
-            image.resizable().aspectRatio(contentMode: .fill)
-        } placeholder: {
-            Rectangle().fill(Color(.systemGray5))
-        }
-        .frame(height: 215)
-        .frame(maxWidth: .infinity)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        // The frame (not the image) must define the banner's size — a
+        // `.fill` image reports a width wider than the proposed one, which
+        // would otherwise push the enclosing VStack past the screen edges and
+        // swallow the horizontal padding. Mirror ProgramDetailView's banner.
+        Color.clear
+            .frame(maxWidth: .infinity)
+            .frame(height: 215)
+            .overlay(
+                AsyncImage(url: URL(string: program.bannerImageURL ?? "")) { image in
+                    image.resizable().aspectRatio(contentMode: .fill)
+                } placeholder: {
+                    Rectangle().fill(Color(.systemGray5))
+                }
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 
     // MARK: - Heading
