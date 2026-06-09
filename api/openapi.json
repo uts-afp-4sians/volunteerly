@@ -1298,6 +1298,32 @@
         }
       }
     },
+    "/interests": {
+      "get": {
+        "tags": [
+          "categories"
+        ],
+        "summary": "List Interests",
+        "description": "The profile-interest catalog \u2014 the chips on the signup interests step.",
+        "operationId": "list_interests_interests_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/KeywordRead"
+                  },
+                  "type": "array",
+                  "title": "Response List Interests Interests Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/locations": {
       "get": {
         "tags": [

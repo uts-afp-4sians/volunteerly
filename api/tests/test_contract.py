@@ -112,6 +112,29 @@ def test_list_keywords(client: TestClient) -> None:
     assert {"Animal Care", "Education", "Technology"} <= interest_names
 
 
+def test_list_interests(client: TestClient) -> None:
+    res = client.get("/interests")
+    assert res.status_code == 200
+    body = res.json()
+    # Only the 9 profile-interest keywords (is_interest=True) — program-tagging
+    # keywords like "Tree Planting" are excluded.
+    assert len(body) == 9
+    assert set(body[0].keys()) == {"keyword_id", "category_id", "keyword_name"}
+    names = [row["keyword_name"] for row in body]
+    assert names == [
+        "Animal Care",
+        "Arts & Creativity",
+        "Community Building",
+        "Education",
+        "Aged Care",
+        "Environment",
+        "Food",
+        "Social Justice",
+        "Technology",
+    ]
+    assert "Tree Planting" not in names
+
+
 def test_get_user(client: TestClient) -> None:
     res = client.get("/users/1")
     assert res.status_code == 200
