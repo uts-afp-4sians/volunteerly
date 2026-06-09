@@ -41,6 +41,22 @@ def test_create_program(client: TestClient) -> None:
     assert any(p["program_name"] == "Harbour Cleanup Crew" for p in listing)
 
 
+def test_create_program_host_auto_enrolled(client: TestClient) -> None:
+    # Creating a program must auto-enroll the creator so participant_count
+    # starts at 1 and the program card never shows 0.
+    headers = {"Authorization": f"Bearer {_token(client)}"}
+    res = client.post("/programs", json=VALID_PROGRAM, headers=headers)
+    assert res.status_code == 201
+    body = res.json()
+    assert body["participant_count"] == 1
+    assert body["is_full"] is False  # 1 of 15 slots taken
+
+    # The list endpoint must also reflect the enrollment.
+    listing = client.get("/programs").json()
+    created = next(p for p in listing if p["program_name"] == "Harbour Cleanup Crew")
+    assert created["participant_count"] == 1
+
+
 def test_create_program_unknown_category(client: TestClient) -> None:
     headers = {"Authorization": f"Bearer {_token(client)}"}
     payload = {**VALID_PROGRAM, "category_id": 999}

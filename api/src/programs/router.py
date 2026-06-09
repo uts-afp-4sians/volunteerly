@@ -203,7 +203,7 @@ def create_program(
     payload: ProgramCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-) -> Program:
+) -> ProgramRead:
     if payload.end_datetime <= payload.start_datetime:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -247,7 +247,18 @@ def create_program(
     )
     db.add(program)
     db.flush()
-    return program
+    # Auto-enroll the creator so participant_count starts at 1 (host occupies a slot).
+    db.add(
+        ProgramParticipation(
+            program_id=program.program_id,
+            user_id=current_user.user_id,
+            participation_status=ParticipationStatus.APPROVED,
+        )
+    )
+    read = ProgramRead.model_validate(program)
+    read.participant_count = 1
+    read.is_full = program.max_volunteers <= 1
+    return read
 
 
 @router.get("/programs/{program_id}", response_model=ProgramRead)

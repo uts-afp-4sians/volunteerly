@@ -73,34 +73,40 @@ def test_join_twice_conflicts(client: TestClient) -> None:
 
 
 def test_join_rejected_when_full(client: TestClient) -> None:
-    # Create a single-seat program, fill it, then a second user is refused.
+    # Create a two-seat program; creator is auto-enrolled (occupies slot 1).
+    # A second volunteer fills slot 2, then a third is refused.
     owner = {"Authorization": f"Bearer {_token(client)}"}
     created = client.post(
         "/programs",
         json={
             "category_id": 1,
-            "program_name": "Solo Shift",
-            "description": "Only one volunteer needed.",
+            "program_name": "Duo Shift",
+            "description": "Only two volunteers needed.",
             "start_datetime": "2026-08-01T08:00:00Z",
             "end_datetime": "2026-08-01T11:00:00Z",
-            "max_volunteers": 1,
+            "max_volunteers": 2,
         },
         headers=owner,
     )
     assert created.status_code == 201
-    program_id = created.json()["program_id"]
+    body = created.json()
+    program_id = body["program_id"]
+    # Creator is auto-enrolled: count=1, not yet full.
+    assert body["participant_count"] == 1
+    assert body["is_full"] is False
 
-    # Owner takes the only slot.
+    # A second volunteer fills the last slot.
+    second = {"Authorization": f"Bearer {_register(client, 'second@example.com')}"}
     assert (
-        client.post(f"/programs/{program_id}/participations", headers=owner).status_code
+        client.post(f"/programs/{program_id}/participations", headers=second).status_code
         == 201
     )
     full = client.get(f"/programs/{program_id}/participations", headers=owner).json()
     assert full["is_full"] is True
 
-    # A second volunteer is turned away.
-    other = {"Authorization": f"Bearer {_register(client, 'second@example.com')}"}
-    res = client.post(f"/programs/{program_id}/participations", headers=other)
+    # A third volunteer is turned away.
+    third = {"Authorization": f"Bearer {_register(client, 'third@example.com')}"}
+    res = client.post(f"/programs/{program_id}/participations", headers=third)
     assert res.status_code == 409
     assert "full" in res.json()["detail"].lower()
 
