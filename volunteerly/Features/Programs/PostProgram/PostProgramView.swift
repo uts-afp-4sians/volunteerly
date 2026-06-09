@@ -51,21 +51,8 @@ struct PostProgramView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            // Full width progress bar matching the mockup (roughly 30% progress)
-            GeometryReader { geo in
-                ZStack(alignment: .leading) {
-                    Rectangle()
-                        .fill(Color(.systemGray6))
-                    Rectangle()
-                        .fill(Color.secondaryBlue)
-                        .frame(width: geo.size.width * 0.3)
-                }
-            }
-            .frame(height: 4)
-            
-            ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 24) {
                     // 1. Category
                     categorySelectorRow
                     
@@ -111,10 +98,8 @@ struct PostProgramView: View {
                 }
                 .padding(.horizontal, 20)
                 .padding(.vertical, 24)
-            }
-            .scrollDismissesKeyboard(.interactively)
-            .background(Color.pageBackground)
         }
+        .scrollDismissesKeyboard(.interactively)
         .background(Color.pageBackground)
         .onTapGesture {
             UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
