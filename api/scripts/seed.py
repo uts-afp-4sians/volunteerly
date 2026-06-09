@@ -135,9 +135,22 @@ def _rows() -> list[Base]:
         ProgramCategory(category_id=8, category_name="Arts"),
     ]
     keywords = [
+        # Program-tagging keywords (referenced by program_keywords below).
         Keyword(keyword_id=1, category_id=1, keyword_name="Tree Planting"),
         Keyword(keyword_id=2, category_id=1, keyword_name="Beach Cleanup"),
         Keyword(keyword_id=3, category_id=1, keyword_name="Recycling"),
+        # Profile interest catalog — the chips on the "My interests" picker.
+        # Each maps to the closest existing category (the category isn't shown
+        # in the interest UI; emoji are rendered client-side by keyword name).
+        Keyword(keyword_id=4, category_id=5, keyword_name="Animal Care"),
+        Keyword(keyword_id=5, category_id=8, keyword_name="Arts & Creativity"),
+        Keyword(keyword_id=6, category_id=2, keyword_name="Community Building"),
+        Keyword(keyword_id=7, category_id=3, keyword_name="Education"),
+        Keyword(keyword_id=8, category_id=6, keyword_name="Aged Care"),
+        Keyword(keyword_id=9, category_id=1, keyword_name="Environment"),
+        Keyword(keyword_id=10, category_id=7, keyword_name="Food"),
+        Keyword(keyword_id=11, category_id=2, keyword_name="Social Justice"),
+        Keyword(keyword_id=12, category_id=4, keyword_name="Technology"),
     ]
     programs = [
         Program(
@@ -224,9 +237,11 @@ def _rows() -> list[Base]:
             created_at=CREATED_AT,
         ),
     ]
+    # Jane's profile interests — "Animal Care" (4) + "Education" (7), matching
+    # the chips on the profile mockup.
     user_interests = [
-        UserInterest(user_id=1, keyword_id=1),
-        UserInterest(user_id=1, keyword_id=2),
+        UserInterest(user_id=1, keyword_id=4),
+        UserInterest(user_id=1, keyword_id=7),
     ]
     program_keywords = [
         ProgramKeyword(program_id=1, keyword_id=1),

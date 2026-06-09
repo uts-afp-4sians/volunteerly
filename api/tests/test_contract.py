@@ -99,13 +99,17 @@ def test_list_keywords(client: TestClient) -> None:
     res = client.get("/keywords")
     assert res.status_code == 200
     body = res.json()
-    assert len(body) == 3
+    # 3 program-tagging keywords + 9 profile interest keywords.
+    assert len(body) == 12
     assert set(body[0].keys()) == {"keyword_id", "category_id", "keyword_name"}
     assert body[0] == {
         "keyword_id": 1,
         "category_id": 1,
         "keyword_name": "Tree Planting",
     }
+    # The interest catalog the profile picker offers.
+    interest_names = {row["keyword_name"] for row in body if row["keyword_id"] >= 4}
+    assert {"Animal Care", "Education", "Technology"} <= interest_names
 
 
 def test_get_user(client: TestClient) -> None:
@@ -137,6 +141,9 @@ def test_get_user_profile(client: TestClient) -> None:
         "profile_image_url",
         "occupation",
         "goal_text",
+        "bio",
+        "instagram",
+        "key_skills",
         "location_id",
     }
     assert body["first_name"] == "Jane"
@@ -150,7 +157,7 @@ def test_list_user_interests(client: TestClient) -> None:
     body = res.json()
     assert len(body) == 2
     assert set(body[0].keys()) == {"user_id", "keyword_id"}
-    assert {row["keyword_id"] for row in body} == {1, 2}
+    assert {row["keyword_id"] for row in body} == {4, 7}
 
 
 def test_list_program_keywords(client: TestClient) -> None:

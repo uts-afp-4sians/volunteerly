@@ -970,6 +970,154 @@
         }
       }
     },
+    "/me/profile": {
+      "get": {
+        "tags": [
+          "users"
+        ],
+        "summary": "Get My Profile",
+        "operationId": "get_my_profile_me_profile_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserProfileRead"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "patch": {
+        "tags": [
+          "users"
+        ],
+        "summary": "Update My Profile",
+        "operationId": "update_my_profile_me_profile_patch",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserProfileUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserProfileRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/me/interests": {
+      "get": {
+        "tags": [
+          "users"
+        ],
+        "summary": "Get My Interests",
+        "operationId": "get_my_interests_me_interests_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/UserInterestDetail"
+                  },
+                  "type": "array",
+                  "title": "Response Get My Interests Me Interests Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "users"
+        ],
+        "summary": "Update My Interests",
+        "operationId": "update_my_interests_me_interests_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserInterestsUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/UserInterestDetail"
+                  },
+                  "type": "array",
+                  "title": "Response Update My Interests Me Interests Put"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/users/{user_id}": {
       "get": {
         "tags": [
@@ -1875,6 +2023,25 @@
         "title": "TeamSize",
         "description": "Team-size preference buckets used as a `GET /programs` filter. Not stored\non the program; mapped to ``max_volunteers`` ranges at query time (wire\nvalues match iOS TeamSize)."
       },
+      "UserInterestDetail": {
+        "properties": {
+          "keyword_id": {
+            "type": "integer",
+            "title": "Keyword Id"
+          },
+          "keyword_name": {
+            "type": "string",
+            "title": "Keyword Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "keyword_id",
+          "keyword_name"
+        ],
+        "title": "UserInterestDetail",
+        "description": "A user's interest joined with its keyword name, for the profile screen."
+      },
       "UserInterestRead": {
         "properties": {
           "user_id": {
@@ -1893,6 +2060,20 @@
         ],
         "title": "UserInterestRead",
         "description": "Wire shape matching iOS `UserInterest`."
+      },
+      "UserInterestsUpdate": {
+        "properties": {
+          "keyword_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Keyword Ids"
+          }
+        },
+        "type": "object",
+        "title": "UserInterestsUpdate",
+        "description": "Replace the signed-in user's interest set (`PUT /me/interests`)."
       },
       "UserProfileRead": {
         "properties": {
@@ -1928,6 +2109,21 @@
             "nullable": true,
             "type": "string"
           },
+          "bio": {
+            "title": "Bio",
+            "nullable": true,
+            "type": "string"
+          },
+          "instagram": {
+            "title": "Instagram",
+            "nullable": true,
+            "type": "string"
+          },
+          "key_skills": {
+            "title": "Key Skills",
+            "nullable": true,
+            "type": "string"
+          },
           "location_id": {
             "title": "Location Id",
             "nullable": true,
@@ -1942,6 +2138,56 @@
         ],
         "title": "UserProfileRead",
         "description": "Wire shape matching iOS `UserProfile`."
+      },
+      "UserProfileUpdate": {
+        "properties": {
+          "first_name": {
+            "title": "First Name",
+            "nullable": true,
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1
+          },
+          "last_name": {
+            "title": "Last Name",
+            "nullable": true,
+            "type": "string",
+            "maxLength": 255
+          },
+          "occupation": {
+            "title": "Occupation",
+            "nullable": true,
+            "type": "string",
+            "maxLength": 255
+          },
+          "goal_text": {
+            "title": "Goal Text",
+            "nullable": true,
+            "type": "string",
+            "maxLength": 1000
+          },
+          "bio": {
+            "title": "Bio",
+            "nullable": true,
+            "type": "string",
+            "maxLength": 1000
+          },
+          "instagram": {
+            "title": "Instagram",
+            "nullable": true,
+            "type": "string",
+            "maxLength": 255
+          },
+          "key_skills": {
+            "title": "Key Skills",
+            "nullable": true,
+            "type": "string",
+            "maxLength": 500
+          }
+        },
+        "type": "object",
+        "title": "UserProfileUpdate",
+        "description": "Partial update for the signed-in user's profile (`PATCH /me/profile`).\n\nEvery field is optional; only fields explicitly present in the request body\nare written, so a client can update a single field without clobbering the\nrest. Use ``model_dump(exclude_unset=True)`` to honour that contract."
       },
       "UserRead": {
         "properties": {

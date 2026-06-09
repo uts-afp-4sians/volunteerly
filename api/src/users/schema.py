@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from src.common.schema import UTCDateTime
 
@@ -27,7 +27,27 @@ class UserProfileRead(BaseModel):
     profile_image_url: str | None = None
     occupation: str | None = None
     goal_text: str | None = None
+    bio: str | None = None
+    instagram: str | None = None
+    key_skills: str | None = None
     location_id: int | None = None
+
+
+class UserProfileUpdate(BaseModel):
+    """Partial update for the signed-in user's profile (`PATCH /me/profile`).
+
+    Every field is optional; only fields explicitly present in the request body
+    are written, so a client can update a single field without clobbering the
+    rest. Use ``model_dump(exclude_unset=True)`` to honour that contract.
+    """
+
+    first_name: str | None = Field(default=None, min_length=1, max_length=255)
+    last_name: str | None = Field(default=None, max_length=255)
+    occupation: str | None = Field(default=None, max_length=255)
+    goal_text: str | None = Field(default=None, max_length=1000)
+    bio: str | None = Field(default=None, max_length=1000)
+    instagram: str | None = Field(default=None, max_length=255)
+    key_skills: str | None = Field(default=None, max_length=500)
 
 
 class UserInterestRead(BaseModel):
@@ -37,3 +57,18 @@ class UserInterestRead(BaseModel):
 
     user_id: int
     keyword_id: int
+
+
+class UserInterestDetail(BaseModel):
+    """A user's interest joined with its keyword name, for the profile screen."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    keyword_id: int
+    keyword_name: str
+
+
+class UserInterestsUpdate(BaseModel):
+    """Replace the signed-in user's interest set (`PUT /me/interests`)."""
+
+    keyword_ids: list[int] = Field(default_factory=list)
