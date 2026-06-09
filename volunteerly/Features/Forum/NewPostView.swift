@@ -16,10 +16,12 @@ struct NewPostView: View {
     @State private var photoImage: Image?
     @State private var isSubmitting = false
     @State private var errorMessage: String?
+    @State private var showingDrafts = false
 
     private let titleLimit = 60
     private let titleMinimum = 3
     private let bodyLimit = 500
+    private let maxDrafts = 3
 
     private var titleValid: Bool {
         let count = title.trimmingCharacters(in: .whitespacesAndNewlines).count
@@ -49,9 +51,7 @@ struct NewPostView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
-                Text("New post")
-                    .font(.pageTitle)
-                    .foregroundStyle(Theme.textPrimary)
+                header
 
                 draftsChip
                 titleSection
@@ -71,10 +71,31 @@ struct NewPostView: View {
         .background(Theme.background.ignoresSafeArea())
         .scrollDismissesKeyboard(.interactively)
         .safeAreaInset(edge: .bottom) { actionBar }
-        .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.hidden, for: .navigationBar)
         .onAppear { drafts = ForumDraftStore.load(programId: viewModel.programId) }
         .onChange(of: photoItem) { _, item in
             Task { await loadPhoto(item) }
+        }
+        .navigationDestination(isPresented: $showingDrafts) {
+            DraftsView(drafts: drafts) { loadDraft($0) }
+        }
+    }
+
+    // MARK: Header
+
+    private var header: some View {
+        HStack(spacing: 12) {
+            Button { dismiss() } label: {
+                Image(systemName: "arrow.left")
+                    .font(.system(size: 20, weight: .regular))
+                    .foregroundStyle(Theme.textPrimary)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Back")
+
+            Text("New post")
+                .font(.pageTitle)
+                .foregroundStyle(Theme.textPrimary)
         }
     }
 
@@ -82,12 +103,12 @@ struct NewPostView: View {
 
     private var draftsChip: some View {
         Button {
-            restoreLatestDraft()
+            showingDrafts = true
         } label: {
             HStack(spacing: 8) {
                 Image(systemName: "plus.viewfinder")
                     .font(.system(size: 14))
-                Text("Drafts \(drafts.count)")
+                Text("Drafts \(drafts.count)/\(maxDrafts)")
                     .font(.bodyText)
             }
             .foregroundStyle(Theme.textPrimary)
@@ -99,7 +120,8 @@ struct NewPostView: View {
         .disabled(drafts.isEmpty)
         .opacity(drafts.isEmpty ? 0.6 : 1)
         .accessibilityLabel("Drafts")
-        .accessibilityValue("\(drafts.count) saved")
+        .accessibilityValue("\(drafts.count) of \(maxDrafts) saved")
+        .accessibilityHint("Opens your saved drafts")
     }
 
     // MARK: Title
@@ -253,20 +275,24 @@ struct NewPostView: View {
     }
 
     private func saveDraft() {
+        guard drafts.count < maxDrafts else {
+            errorMessage = "You can save up to \(maxDrafts) drafts. Open Drafts and edit one to free a slot."
+            return
+        }
         let draft = PostDraft(title: title, body: postBody)
         drafts.append(draft)
         ForumDraftStore.save(drafts, programId: viewModel.programId)
         dismiss()
     }
 
-    /// Pull the most recent draft back into the fields and drop it from the
-    /// store, so tapping the chip resumes where the user left off.
-    private func restoreLatestDraft() {
-        guard let latest = drafts.last else { return }
-        title = latest.title
-        postBody = latest.body
-        drafts.removeLast()
+    /// Pull a chosen draft back into the fields and drop it from the store, so
+    /// the user resumes editing where they left off (and frees a draft slot).
+    private func loadDraft(_ draft: PostDraft) {
+        title = draft.title
+        postBody = draft.body
+        drafts.removeAll { $0.id == draft.id }
         ForumDraftStore.save(drafts, programId: viewModel.programId)
+        showingDrafts = false
     }
 
     private func loadPhoto(_ item: PhotosPickerItem?) async {
