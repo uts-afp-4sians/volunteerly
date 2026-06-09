@@ -368,46 +368,42 @@ struct ProgramDetailView: View {
     // MARK: Join
 
     private func joinBar(_ program: Program) -> some View {
-        HStack(spacing: 16) {
-            Button {
-                Task {
-                    let didJoin = await viewModel.toggleJoin()
-                    if didJoin {
-                        withAnimation(.snappy) { showJoinedConfirmation = true }
-                    }
+        Button {
+            Task {
+                let didJoin = await viewModel.toggleJoin()
+                if didJoin {
+                    withAnimation(.snappy) { showJoinedConfirmation = true }
                 }
-            } label: {
-                Text(joinLabel)
-                    .font(.actionButtonLabel)
-                    .foregroundStyle(joinLabelColor)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 61)
-                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 13, style: .continuous))
             }
-            .buttonStyle(.plain)
-            .disabled(!viewModel.canToggleJoin)
-            .opacity(viewModel.canToggleJoin ? 1 : 0.5)
-
-            HStack(spacing: 6) {
-                Image(systemName: "person.2.fill")
-                    .font(.system(size: 16))
-                Text("\(viewModel.participantCount)/\(program.maxVolunteers)")
-                    .font(.bodyText)
-            }
-            .foregroundStyle(Theme.textPrimary)
-            .accessibilityElement(children: .combine)
-            .accessibilityLabel("\(viewModel.participantCount) of \(program.maxVolunteers) volunteers joined")
+        } label: {
+            Text(joinLabel)
+                .font(.actionButtonLabel)
+                .foregroundStyle(joinLabelColor)
+                .frame(maxWidth: .infinity)
+                .frame(height: 61)
+                .background {
+                    Capsule()
+                        .fill(joinBackground)
+                }
         }
+        .buttonStyle(.plain)
+        .disabled(!viewModel.canToggleJoin)
+        .opacity(viewModel.canToggleJoin ? 1 : 0.5)
+        .accessibilityLabel("\(joinLabel): \(viewModel.participantCount) of \(program.maxVolunteers) volunteers joined")
     }
 
     private var joinLabel: String {
         if viewModel.isJoined { return "Joined" }
-        return viewModel.isFull ? "Full" : "Join"
+        return viewModel.isFull ? "Full" : "Join this program"
     }
 
     private var joinLabelColor: Color {
         if viewModel.isJoined { return Theme.success }
-        return viewModel.isFull ? Theme.textSecondary : Color.blue
+        return viewModel.isFull ? Theme.textSecondary : Color.onBrand
+    }
+
+    private var joinBackground: Color {
+        viewModel.isJoined || viewModel.isFull ? Color(.systemGray6) : Color.brand
     }
 
     // MARK: - Helpers
