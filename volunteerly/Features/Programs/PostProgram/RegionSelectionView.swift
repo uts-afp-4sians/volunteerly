@@ -61,7 +61,6 @@ struct RegionSelectionView: View {
                             .foregroundStyle(.secondary)
                     }
                 }
-                MicButton(text: $searchText)
             }
             .padding(.horizontal, 16)
             .frame(height: 44)

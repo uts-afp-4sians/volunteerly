@@ -60,7 +60,6 @@ struct MyProgramsView: View {
                 TextField("Search", text: $viewModel.searchQuery)
                     .textFieldStyle(.plain)
                     .submitLabel(.search)
-                MicButton(text: $viewModel.searchQuery)
             }
             .padding(.horizontal, 16)
             .frame(height: 44)

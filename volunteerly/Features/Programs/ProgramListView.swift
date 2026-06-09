@@ -87,7 +87,6 @@ struct ProgramListView: View {
                 .textFieldStyle(.plain)
                 .submitLabel(.search)
                 .onSubmit { Task { await viewModel.load() } }
-            MicButton(text: $viewModel.searchQuery)
         }
         .padding(.horizontal, 16)
         .frame(height: 42)
