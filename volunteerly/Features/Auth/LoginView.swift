@@ -12,23 +12,20 @@ struct LoginView: View {
     @State private var errorMessage: String?
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 28) {
-                header
-                form
-                submitButton
-                dividerRow
-                socialButtons
-                Spacer(minLength: 24)
-                signupPrompt
-            }
-            .padding(.horizontal, 24)
-            .padding(.top, 56)
-            .padding(.bottom, 32)
-            .frame(maxWidth: .infinity, minHeight: 0, alignment: .leading)
+        VStack(alignment: .leading, spacing: 28) {
+            header
+            form
+            submitButton
+            dividerRow
+            socialButtons
+            Spacer(minLength: 24)
+            signupPrompt
         }
+        .padding(.horizontal, 24)
+        .padding(.top, 56)
+        .padding(.bottom, 32)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(Theme.background.ignoresSafeArea())
-        .scrollDismissesKeyboard(.interactively)
     }
 
     // MARK: Sections
