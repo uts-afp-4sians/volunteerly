@@ -1,71 +1,76 @@
 import SwiftUI
 
-/// The design-system **Radio** button: a brand-green pill with a 20×20 indicator
-/// 15px in from the leading edge and an SF Pro Regular 14 label in `#f5f5f5`.
+/// The design-system single-select **Radio** pill (Figma `RADIO` component set,
+/// node 226-869).
 ///
-/// - Unselected  — solid white indicator (Node 200-482).
-/// - Selected    — hollow white ring (Node 200-490).
+/// Selection is parent-controlled — pass `isSelected` and an `action`; the pill
+/// renders one of two states:
+/// - **Selected**   — brand-green fill, white hollow ring, white label.
+/// - **Unselected** — white fill with a dark hairline border, grey hollow ring,
+///   primary-text label.
 ///
-/// Pill: height 48px, 20px rounded corners; label padded 15px on all sides.
+/// Geometry: 48px tall, 20px rounded corners; a 20×20 indicator 15px in from the
+/// leading edge, then an SF Pro Regular 14 (`buttonLabel`) label.
 struct RadioButton: View {
     let title: String
-    @Binding var isSelected: Bool
+    let isSelected: Bool
+    var action: () -> Void = {}
 
     var body: some View {
-        Button {
-            isSelected.toggle()
-        } label: {
-            HStack(spacing: 0) {
+        Button(action: action) {
+            HStack(spacing: 16) {
                 indicator
                     .frame(width: 20, height: 20)
-                    .padding(.leading, 15)
 
                 Text(title)
                     .font(.buttonLabel)
-                    .foregroundStyle(Color.onBrand)
-                    .padding(.trailing, 15)
-                    .padding(.vertical, 15)
-                
-                Spacer()
+                    .foregroundStyle(isSelected ? Color.onBrand : Theme.textPrimary)
+
+                Spacer(minLength: 0)
             }
+            .padding(.horizontal, 15)
             .frame(height: 48)
-            .background(
-                RoundedRectangle(cornerRadius: 20, style: .continuous)
-                    .fill(Color.brand)
-            )
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(background)
         }
         .buttonStyle(.plain)
     }
 
+    private var shape: RoundedRectangle {
+        RoundedRectangle(cornerRadius: 20, style: .continuous)
+    }
+
     @ViewBuilder
-    private var indicator: some View {
+    private var background: some View {
         if isSelected {
-            Circle()
-                .strokeBorder(Color.onBrand, lineWidth: 3)
+            shape.fill(Color.brand)
         } else {
-            Circle()
-                .fill(Color.onBrand)
+            shape
+                .fill(Color.white)
+                .overlay(shape.strokeBorder(Theme.textPrimary, lineWidth: 1.5))
         }
+    }
+
+    /// A hollow ring in both states — white on the selected pill, grey otherwise.
+    private var indicator: some View {
+        Circle().strokeBorder(isSelected ? Color.onBrand : Color(.systemGray), lineWidth: 3)
     }
 }
 
 #Preview("Radio states") {
     struct Demo: View {
-        @State private var off = false
-        @State private var on = true
+        @State private var selected = "Never"
+        private let options = ["Never", "Every week", "Every month", "Custom"]
         var body: some View {
-            VStack(spacing: 24) {
-                VStack(spacing: 6) {
-                    RadioButton(title: "Unselected state", isSelected: $off)
-                    Text("Unselected (Solid white circle)").font(.labelItalic)
-                }
-                VStack(spacing: 6) {
-                    RadioButton(title: "Selected state", isSelected: $on)
-                    Text("Selected (Hollow white ring)").font(.labelItalic)
+            VStack(spacing: 16) {
+                ForEach(options, id: \.self) { option in
+                    RadioButton(title: option, isSelected: selected == option) {
+                        selected = option
+                    }
                 }
             }
             .padding(40)
-            .background(Color.pageBackground)
+            .background(Color.white)
         }
     }
     return Demo()
