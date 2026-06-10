@@ -29,6 +29,23 @@ class ProgramCreate(BaseModel):
     location_id: int | None = None
 
 
+class ProgramUpdate(BaseModel):
+    """Partial update body for ``PATCH /programs/{program_id}``. Every field is
+    optional; only fields explicitly set are applied. The caller must be the
+    program's creator (enforced in the route)."""
+
+    category_id: int | None = None
+    program_name: str | None = Field(default=None, min_length=1, max_length=255)
+    description: str | None = Field(default=None, min_length=1)
+    start_datetime: datetime | None = None
+    end_datetime: datetime | None = None
+    max_volunteers: int | None = Field(default=None, ge=1)
+    commitment_frequency: CommitmentFrequency | None = None
+    commitment_duration: CommitmentDuration | None = None
+    banner_image_url: str | None = None
+    location_id: int | None = None
+
+
 class ProgramRead(BaseModel):
     """Wire shape matching iOS `Program`."""
 
