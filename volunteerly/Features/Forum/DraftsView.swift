@@ -1,3 +1,4 @@
+import PhotosUI
 import SwiftUI
 
 /// The Drafts browser: a two-column grid of the board drafts saved for a program
@@ -6,9 +7,8 @@ import SwiftUI
 /// 329-605 (left frame).
 struct DraftsView: View {
     let drafts: [PostDraft]
-    /// Invoked when the user opens a draft for editing (the detail's pencil).
-    /// The composer reloads the draft and this browser closes.
-    let onEdit: (PostDraft) -> Void
+    let viewModel: MemberBoardViewModel
+    let onPosted: (PostDraft) -> Void
     @Environment(\.dismiss) private var dismiss
 
     private let columns = [
@@ -32,6 +32,7 @@ struct DraftsView: View {
         }
         .background(Theme.background.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
+        .enableInteractiveSwipeBack()
     }
 
     private var header: some View {
@@ -54,7 +55,11 @@ struct DraftsView: View {
         LazyVGrid(columns: columns, spacing: 11) {
             ForEach(drafts) { draft in
                 NavigationLink {
-                    DraftDetailView(draft: draft) { onEdit(draft) }
+                    DraftDetailView(
+                        draft: draft,
+                        viewModel: viewModel,
+                        onPosted: onPosted
+                    )
                 } label: {
                     DraftCard(draft: draft)
                 }
@@ -100,23 +105,31 @@ struct DraftCard: View {
 /// Matches Figma `group-4-prototype` node 329-605 (right frame).
 struct DraftDetailView: View {
     let draft: PostDraft
-    let onEdit: () -> Void
+    let viewModel: MemberBoardViewModel
+    let onPosted: (PostDraft) -> Void
     @Environment(\.dismiss) private var dismiss
 
     private let horizontalPadding: CGFloat = 20
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
-                backRow
-                content
+        GeometryReader { proxy in
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+                    backRow
+                    draftContent
+                    divider
+                    Spacer(minLength: 130)
+                }
+                .frame(minHeight: proxy.size.height, alignment: .top)
+                .padding(.horizontal, horizontalPadding)
+                .padding(.top, 8)
+                .padding(.bottom, 24)
             }
-            .padding(.horizontal, horizontalPadding)
-            .padding(.top, 8)
-            .padding(.bottom, 24)
+            .scrollIndicators(.hidden)
         }
         .background(Theme.background.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
+        .enableInteractiveSwipeBack()
         .overlay(alignment: .bottomTrailing) { editButton }
     }
 
@@ -130,33 +143,261 @@ struct DraftDetailView: View {
             .buttonStyle(.plain)
             .accessibilityLabel("Back")
 
-            Text(draft.title.isEmpty ? "Untitled draft" : draft.title)
+            Text("Draft Title")
                 .font(.pageTitle)
                 .foregroundStyle(Theme.textPrimary)
                 .lineLimit(1)
         }
     }
 
-    private var content: some View {
-        Text(draft.body.isEmpty ? "No description yet" : draft.body)
-            .font(.bodyText)
-            .foregroundStyle(Theme.textSecondary)
-            .fixedSize(horizontal: false, vertical: true)
-            .frame(maxWidth: .infinity, alignment: .leading)
+    private var draftContent: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(draft.title.isEmpty ? "Question" : draft.title)
+                .font(.sectionHeader)
+                .foregroundStyle(Theme.textPrimary)
+                .padding(.top, 28)
+
+            Text(draft.body.isEmpty ? "Description" : draft.body)
+                .font(.bodyText)
+                .foregroundStyle(Theme.textPrimary)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 3)
+
+            imagePlaceholder
+                .padding(.top, 19)
+        }
+    }
+
+    private var imagePlaceholder: some View {
+        RoundedRectangle(cornerRadius: 8, style: .continuous)
+            .fill(Color(.systemGray6))
+            .frame(height: 253)
+            .overlay {
+                Image(systemName: "camera.fill")
+                    .font(.system(size: 36, weight: .regular))
+                    .foregroundStyle(Color(.systemGray3))
+            }
+    }
+
+    private var divider: some View {
+        Divider()
+            .padding(.top, 132)
     }
 
     private var editButton: some View {
-        Button(action: onEdit) {
+        NavigationLink {
+            DraftEditView(
+                draft: draft,
+                viewModel: viewModel,
+                onPosted: onPosted
+            )
+        } label: {
             Image(systemName: "pencil")
-                .font(.system(size: 22, weight: .regular))
+                .font(.system(size: 37, weight: .regular))
                 .foregroundStyle(Theme.textPrimary)
-                .frame(width: 56, height: 56)
+                .frame(width: 87, height: 87)
                 .background(Color(.systemGray6), in: Circle())
         }
         .buttonStyle(.plain)
-        .padding(.trailing, 20)
-        .padding(.bottom, 24)
+        .padding(.trailing, 36)
+        .padding(.bottom, 36)
         .accessibilityLabel("Edit draft")
+    }
+}
+
+/// Editable draft preview matching Figma node 398:1260. The title,
+/// description and optional image are edited in place before posting.
+struct DraftEditView: View {
+    let draft: PostDraft
+    let viewModel: MemberBoardViewModel
+    let onPosted: (PostDraft) -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var title: String
+    @State private var postBody: String
+    @State private var photoItem: PhotosPickerItem?
+    @State private var photoImage: Image?
+    @State private var isSubmitting = false
+    @State private var errorMessage: String?
+    @State private var showDiscardConfirm = false
+
+    init(
+        draft: PostDraft,
+        viewModel: MemberBoardViewModel,
+        onPosted: @escaping (PostDraft) -> Void
+    ) {
+        self.draft = draft
+        self.viewModel = viewModel
+        self.onPosted = onPosted
+        _title = State(initialValue: draft.title)
+        _postBody = State(initialValue: draft.body)
+    }
+
+    private var isDirty: Bool {
+        title != draft.title || postBody != draft.body || photoItem != nil
+    }
+
+    private var canPost: Bool {
+        !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            && !postBody.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            && !isSubmitting
+    }
+
+    var body: some View {
+        GeometryReader { proxy in
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+                    backRow
+                    editableContent
+                    divider
+                    Spacer(minLength: 130)
+                }
+                .frame(minHeight: proxy.size.height, alignment: .top)
+                .padding(.horizontal, 20)
+                .padding(.top, 8)
+                .padding(.bottom, 100)
+            }
+            .scrollIndicators(.hidden)
+        }
+        .background(Theme.background.ignoresSafeArea())
+        .scrollDismissesKeyboard(.interactively)
+        .toolbar(.hidden, for: .navigationBar)
+        .safeAreaInset(edge: .bottom) { postButton }
+        .interactiveSwipeBack(
+            canPop: { !isDirty },
+            onBlocked: { showDiscardConfirm = true }
+        )
+        .onChange(of: photoItem) { _, item in
+            Task { await loadPhoto(item) }
+        }
+        .confirmationDialog(
+            "Discard changes to this draft?",
+            isPresented: $showDiscardConfirm,
+            titleVisibility: .visible
+        ) {
+            Button("Discard Changes", role: .destructive) { dismiss() }
+            Button("Keep Editing", role: .cancel) {}
+        } message: {
+            Text("Your changes won't be saved.")
+        }
+        .alert(
+            "Couldn't post",
+            isPresented: Binding(
+                get: { errorMessage != nil },
+                set: { if !$0 { errorMessage = nil } }
+            )
+        ) {
+            Button("OK") {}
+        } message: {
+            Text(errorMessage ?? "")
+        }
+    }
+
+    private var backRow: some View {
+        HStack(spacing: 16) {
+            Button { attemptDismiss() } label: {
+                Image(systemName: "arrow.left")
+                    .font(.system(size: 20, weight: .regular))
+                    .foregroundStyle(Theme.textPrimary)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Back")
+
+            Text("Draft Title")
+                .font(.pageTitle)
+                .foregroundStyle(Theme.textPrimary)
+                .lineLimit(1)
+        }
+    }
+
+    private var editableContent: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            TextField("Question", text: $title, axis: .vertical)
+                .font(.sectionHeader)
+                .foregroundStyle(Theme.textPrimary)
+                .padding(.top, 28)
+
+            TextField("Description", text: $postBody, axis: .vertical)
+                .font(.bodyText)
+                .foregroundStyle(Theme.textPrimary)
+                .padding(.top, 3)
+
+            PhotosPicker(selection: $photoItem, matching: .images) {
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(Color(.systemGray6))
+                    .frame(height: 253)
+                    .overlay {
+                        if let photoImage {
+                            photoImage
+                                .resizable()
+                                .scaledToFill()
+                                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                        } else {
+                            Image(systemName: "camera.fill")
+                                .font(.system(size: 36, weight: .regular))
+                                .foregroundStyle(Color(.systemGray3))
+                        }
+                    }
+            }
+            .buttonStyle(.plain)
+            .padding(.top, 19)
+        }
+    }
+
+    private var divider: some View {
+        Divider()
+            .padding(.top, 132)
+    }
+
+    private var postButton: some View {
+        Button {
+            Task { await postDraft() }
+        } label: {
+            ZStack {
+                if isSubmitting {
+                    ProgressView().tint(Theme.onBrand)
+                } else {
+                    Text("Post")
+                        .font(.buttonLabel)
+                }
+            }
+            .foregroundStyle(Theme.onBrand)
+            .frame(maxWidth: .infinity)
+            .frame(height: 53)
+            .background(Theme.forest, in: Capsule())
+        }
+        .buttonStyle(.plain)
+        .disabled(!canPost)
+        .opacity(canPost ? 1 : 0.5)
+        .padding(.horizontal, 21)
+        .padding(.bottom, 22)
+        .background(Theme.background)
+    }
+
+    private func attemptDismiss() {
+        if isDirty {
+            showDiscardConfirm = true
+        } else {
+            dismiss()
+        }
+    }
+
+    private func postDraft() async {
+        isSubmitting = true
+        defer { isSubmitting = false }
+
+        if await viewModel.createPost(title: title, body: postBody) {
+            onPosted(draft)
+        } else {
+            errorMessage = viewModel.errorMessage ?? "Couldn't post your question. Please try again."
+        }
+    }
+
+    private func loadPhoto(_ item: PhotosPickerItem?) async {
+        guard let item,
+              let data = try? await item.loadTransferable(type: Data.self),
+              let uiImage = UIImage(data: data) else { return }
+        photoImage = Image(uiImage: uiImage)
     }
 }
 
@@ -168,7 +409,8 @@ struct DraftDetailView: View {
                 PostDraft(title: "Ride share to the shelter", body: "Anyone driving from downtown on Saturday morning?"),
                 PostDraft(title: "", body: "")
             ],
-            onEdit: { _ in }
+            viewModel: MemberBoardViewModel(programId: 1, httpClient: MockHTTPClient.shared),
+            onPosted: { _ in }
         )
     }
 }
@@ -177,7 +419,8 @@ struct DraftDetailView: View {
     NavigationStack {
         DraftDetailView(
             draft: PostDraft(title: "Best moment from the cleanup?", body: "Share a highlight from last weekend's beach cleanup so newcomers know what to expect."),
-            onEdit: {}
+            viewModel: MemberBoardViewModel(programId: 1, httpClient: MockHTTPClient.shared),
+            onPosted: { _ in }
         )
     }
 }
