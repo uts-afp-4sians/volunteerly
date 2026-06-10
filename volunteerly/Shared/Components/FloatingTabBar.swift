@@ -12,10 +12,14 @@ struct FloatingTabBar: View {
     private let itemSize: CGFloat = 56
 
     var body: some View {
-        HStack(spacing: 12) {
+        ZStack {
             capsule
+
             if showsPostButton {
-                postButton
+                HStack {
+                    Spacer()
+                    postButton
+                }
             }
         }
         .padding(.horizontal, 20)
