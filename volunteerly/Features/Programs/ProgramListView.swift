@@ -28,7 +28,9 @@ struct ProgramListView: View {
             }
             .padding(.top, 16)
             .padding(.bottom, 24)
+            .tabScrollTopAnchor()
         }
+        .scrollsToTop(on: .programs)
         .scrollDismissesKeyboard(.immediately)
         .background(Color(.systemBackground))
         .toolbar(.hidden, for: .navigationBar)
