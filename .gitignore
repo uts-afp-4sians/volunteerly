@@ -2,6 +2,7 @@ xcuserdata/
 *.xcuserstate
 DerivedData/
 .build/
+build/
 .github/hooks/superset-notify.json
 
 # oh-my-agent runtime (local artifacts — do not commit)
