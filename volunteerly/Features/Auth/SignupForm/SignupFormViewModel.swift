@@ -64,12 +64,12 @@ final class SignupFormViewModel {
 
     func geocodeCity() {
         let name = city
-        guard !name.isEmpty, let request = MKGeocodingRequest(addressString: name) else { return }
+        guard !name.isEmpty else { return }
         locationError = nil
         isGeocodingCity = true
         Task {
             defer { isGeocodingCity = false }
-            if let coord = (try? await request.mapItems)?.first?.location.coordinate {
+            if let coord = await Self.forwardGeocode(addressString: name) {
                 withAnimation {
                     mapCameraPosition = .region(MKCoordinateRegion(
                         center: coord,
@@ -100,40 +100,58 @@ final class SignupFormViewModel {
                 ))
             }
 
-            guard let request = MKReverseGeocodingRequest(location: CLLocation(
-                latitude: coordinate.latitude,
-                longitude: coordinate.longitude
-            )),
-            let item = try? await request.mapItems.first
-            else {
+            guard let resolved = await Self.reverseGeocode(coordinate: coordinate) else {
                 locationError = "We found your location but couldn't identify the city."
                 return
             }
 
-            city = item.addressRepresentations?.cityName
-                ?? item.name
-                ?? ""
+            city = resolved
         }
     }
 
     func reverseGeocode(coordinate: CLLocationCoordinate2D) {
         Task {
-            guard let request = MKReverseGeocodingRequest(location: CLLocation(
-                latitude: coordinate.latitude,
-                longitude: coordinate.longitude
-            )),
-            let item = try? await request.mapItems.first
+            guard let newCity = await Self.reverseGeocode(coordinate: coordinate),
+                  !newCity.isEmpty
             else {
                 return
             }
 
-            let newCity = item.addressRepresentations?.cityName
-                ?? item.name
-                ?? ""
-                
-            if !newCity.isEmpty {
-                city = newCity
+            city = newCity
+        }
+    }
+
+    // MARK: - Geocoding helpers
+    //
+    // iOS 26 introduced `MKGeocodingRequest`/`MKReverseGeocodingRequest`; on
+    // earlier releases we fall back to `CLGeocoder`, which covers our minimum
+    // deployment target (iOS 18.7).
+
+    private static func forwardGeocode(addressString: String) async -> CLLocationCoordinate2D? {
+        if #available(iOS 26.0, *) {
+            guard let request = MKGeocodingRequest(addressString: addressString) else { return nil }
+            return (try? await request.mapItems)?.first?.location.coordinate
+        } else {
+            let placemarks = try? await CLGeocoder().geocodeAddressString(addressString)
+            return placemarks?.first?.location?.coordinate
+        }
+    }
+
+    private static func reverseGeocode(coordinate: CLLocationCoordinate2D) async -> String? {
+        let location = CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
+        if #available(iOS 26.0, *) {
+            guard let request = MKReverseGeocodingRequest(location: location),
+                  let item = try? await request.mapItems.first
+            else {
+                return nil
             }
+            return item.addressRepresentations?.cityName ?? item.name
+        } else {
+            guard let placemark = try? await CLGeocoder().reverseGeocodeLocation(location).first
+            else {
+                return nil
+            }
+            return placemark.locality ?? placemark.name
         }
     }
 

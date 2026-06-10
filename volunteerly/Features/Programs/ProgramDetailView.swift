@@ -297,7 +297,12 @@ struct ProgramDetailView: View {
     /// Opens the program's coordinate in Apple Maps.
     private func openInMaps() {
         guard let coordinate = locationCoordinate else { return }
-        let mapItem = MKMapItem(location: CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude), address: nil)
+        let mapItem: MKMapItem
+        if #available(iOS 26.0, *) {
+            mapItem = MKMapItem(location: CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude), address: nil)
+        } else {
+            mapItem = MKMapItem(placemark: MKPlacemark(coordinate: coordinate))
+        }
         mapItem.name = viewModel.location?.displayName ?? viewModel.location?.city
         mapItem.openInMaps()
     }
