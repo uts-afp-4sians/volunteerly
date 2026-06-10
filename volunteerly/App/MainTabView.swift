@@ -6,12 +6,15 @@ struct MainTabView: View {
     @State private var programRefreshID = 0
 
     var body: some View {
+        // Default tab style (not .page): tabs switch only via the floating
+        // bar — no horizontal swipe between menus — and each page keeps its
+        // own state. The native tab bar stays hidden per-tab via
+        // `.toolbar(.hidden, for: .tabBar)`.
         TabView(selection: $tabRouter.selectedTab) {
             programsTab.tag(TabRouter.Tab.programs)
             bookmarksTab.tag(TabRouter.Tab.bookmarks)
             myPageTab.tag(TabRouter.Tab.myPage)
         }
-        .tabViewStyle(.page(indexDisplayMode: .never))
         .environment(tabRouter)
         .environment(profileStore)
     }
