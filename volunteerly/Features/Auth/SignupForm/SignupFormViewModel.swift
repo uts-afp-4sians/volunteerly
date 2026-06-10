@@ -43,7 +43,7 @@ final class SignupFormViewModel {
         switch step {
         case 2: return !city.isEmpty
         case 3: return selectedInterests.count >= 2
-        case 4: return !email.isEmpty && !password.isEmpty
+        case 4: return !email.isEmpty && AuthValidation.isValidPassword(password)
         case 5: return !expectations.isEmpty
         default: return false
         }

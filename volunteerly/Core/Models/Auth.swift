@@ -1,5 +1,13 @@
 import Foundation
 
+enum AuthValidation {
+    static let minimumPasswordLength = 8
+
+    static func isValidPassword(_ password: String) -> Bool {
+        password.count >= minimumPasswordLength
+    }
+}
+
 struct LoginRequest: Encodable {
     let email: String
     let password: String

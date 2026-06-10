@@ -21,13 +21,24 @@ struct EmailPasswordStepView: View {
                 }
 
                 fieldColumn(label: "Password", required: true) {
-                    borderedField {
+                    borderedField(isError: passwordIsError) {
                         SecureField("", text: $vm.password)
                             .textContentType(.newPassword)
+                    }
+
+                    if passwordIsError {
+                        Text("Password must be at least \(AuthValidation.minimumPasswordLength) characters")
+                            .font(.footnote)
+                            .foregroundStyle(.red)
+                            .padding(.leading, 4)
                     }
                 }
             }
         }
+    }
+
+    private var passwordIsError: Bool {
+        !vm.password.isEmpty && !AuthValidation.isValidPassword(vm.password)
     }
 
     private func fieldColumn<Content: View>(
@@ -46,14 +57,17 @@ struct EmailPasswordStepView: View {
         }
     }
 
-    private func borderedField<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+    private func borderedField<Content: View>(
+        isError: Bool = false,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
         content()
             .font(.bodyText)
             .frame(height: 52)
             .padding(.horizontal, 14)
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
-                    .stroke(Theme.border, lineWidth: 1)
+                    .stroke(isError ? Color.red : Theme.border, lineWidth: 1)
             )
     }
 }
