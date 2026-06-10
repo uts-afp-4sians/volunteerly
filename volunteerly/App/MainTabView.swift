@@ -12,24 +12,18 @@ struct MainTabView: View {
                     .navigationDestination(for: Int.self) { programId in
                         ProgramDetailView(programId: programId)
                     }
-                    .navigationDestination(for: ProfileRoute.self) { _ in
-                        ProfileSettingsView()
-                    }
             }
             .tag(TabRouter.Tab.programs)
             .tabItem { SwiftUI.Label("Programs", systemImage: "list.bullet") }
 
             NavigationStack {
-                MyProgramsView()
+                MyPageView()
                     .navigationDestination(for: Int.self) { programId in
                         ProgramDetailView(programId: programId)
                     }
-                    .navigationDestination(for: ProfileRoute.self) { _ in
-                        ProfileSettingsView()
-                    }
             }
-            .tag(TabRouter.Tab.myPrograms)
-            .tabItem { SwiftUI.Label("My Programs", systemImage: "person.crop.circle") }
+            .tag(TabRouter.Tab.myPage)
+            .tabItem { SwiftUI.Label("My page", systemImage: "person.crop.circle") }
         }
         .environment(tabRouter)
         .environment(profileStore)

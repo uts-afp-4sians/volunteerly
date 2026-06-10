@@ -7,7 +7,7 @@ import SwiftUI
 final class TabRouter {
     enum Tab: Hashable {
         case programs
-        case myPrograms
+        case myPage
     }
 
     var selectedTab: Tab = .programs
