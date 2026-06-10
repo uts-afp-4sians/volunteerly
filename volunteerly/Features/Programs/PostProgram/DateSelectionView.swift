@@ -7,10 +7,9 @@ import SwiftUI
 /// month label with a disclosure chevron, the `‹ ›` month arrows, the weekday
 /// header row and the circular selected-day are all stock system UI. We keep it
 /// native (rather than hand-rolling a calendar) so it tracks iOS behaviour, and
-/// tint the selection brand-green to match the mock. Chrome (blue drag handle,
-/// centred title, green Confirm) matches the other PostProgram sheets.
+/// tint the selection brand-green to match the mock. Chrome (grey drag handle,
+/// centred 24pt title, green Save) matches the Figma sheet (389:1157).
 struct DateSelectionView: View {
-    let title: String
     @Binding var date: Date
     /// Lower bound for selection (used by the "Ends" sheet to stay >= start).
     var minimumDate: Date? = nil
@@ -21,8 +20,8 @@ struct DateSelectionView: View {
             dragHandle
                 .padding(.top, 12)
 
-            Text(title)
-                .font(.system(size: 26, weight: .bold))
+            Text("Calendar View")
+                .font(.sectionHeader)
                 .foregroundStyle(Theme.textPrimary)
                 .padding(.top, 8)
                 .padding(.bottom, 8)
@@ -58,22 +57,22 @@ struct DateSelectionView: View {
 
     // MARK: - Chrome
 
-    /// Custom blue drag handle matching the other PostProgram sheets.
+    /// Custom grey drag handle (Figma 358:984 — #F5F5F5, 80×6).
     private var dragHandle: some View {
         Capsule()
-            .fill(Color.secondaryBlue)
-            .frame(width: 56, height: 6)
+            .fill(Color(.systemGray6))
+            .frame(width: 80, height: 6)
     }
 
     private var confirmButton: some View {
         Button {
             dismiss()
         } label: {
-            Text("Confirm")
-                .font(.bodyStrong)
+            Text("Save")
+                .font(.buttonLabel)
                 .foregroundStyle(Color.onBrand)
                 .frame(maxWidth: .infinity)
-                .frame(height: 50)
+                .frame(height: 53)
                 .background(Color.brand, in: Capsule())
         }
         .buttonStyle(.plain)
@@ -85,7 +84,7 @@ struct DateSelectionView: View {
 #Preview {
     Color.white
         .sheet(isPresented: .constant(true)) {
-            DateSelectionView(title: "Starts", date: .constant(Date()))
+            DateSelectionView(date: .constant(Date()))
                 .presentationDetents([.height(560)])
                 .presentationDragIndicator(.hidden)
         }

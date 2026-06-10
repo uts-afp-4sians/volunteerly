@@ -88,7 +88,6 @@ struct PostProgramView: View {
         .task {
             if viewModel.categories.isEmpty { await viewModel.loadCategories() }
         }
-        .navigationTitle("Post Program")
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)
         .toolbar(.visible, for: .navigationBar)
@@ -101,6 +100,13 @@ struct PostProgramView: View {
                         .font(.system(size: 16, weight: .bold))
                         .foregroundStyle(.primary)
                 }
+            }
+            // Figma 190:639: "Post Program" is a 30pt regular title (.subheading),
+            // centered, not the default ~17pt inline title.
+            ToolbarItem(placement: .principal) {
+                Text("Post Program")
+                    .font(.subheading)
+                    .foregroundStyle(Theme.textPrimary)
             }
         }
         .alert(
@@ -118,20 +124,20 @@ struct PostProgramView: View {
             switch type {
             case .startDate:
                 // Calendar sheet — tapping the "Starts" date chip (Figma 358:967).
-                DateSelectionView(title: "Starts", date: $viewModel.startDate)
+                DateSelectionView(date: $viewModel.startDate)
                     .presentationDetents([.height(560)])
                     .presentationDragIndicator(.hidden)
             case .startTime:
                 // Time wheel sheet — tapping the "Starts" time chip (Figma 329:1550).
-                TimeSelectionView(title: "Starts", date: $viewModel.startDate)
+                TimeSelectionView(date: $viewModel.startDate)
                     .presentationDetents([.height(440)])
                     .presentationDragIndicator(.hidden)
             case .endDate:
-                DateSelectionView(title: "Ends", date: $viewModel.endDate, minimumDate: viewModel.startDate)
+                DateSelectionView(date: $viewModel.endDate, minimumDate: viewModel.startDate)
                     .presentationDetents([.height(560)])
                     .presentationDragIndicator(.hidden)
             case .endTime:
-                TimeSelectionView(title: "Ends", date: $viewModel.endDate, minimumDate: viewModel.startDate)
+                TimeSelectionView(date: $viewModel.endDate, minimumDate: viewModel.startDate)
                     .presentationDetents([.height(440)])
                     .presentationDragIndicator(.hidden)
             case .location:
