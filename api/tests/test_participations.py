@@ -43,11 +43,13 @@ def test_join_unknown_program(client: TestClient) -> None:
 
 
 def test_join_when_not_full(client: TestClient) -> None:
-    # Program 2 (Bondi Beach Cleanup) has capacity 50 and no seeded volunteers.
-    headers = {"Authorization": f"Bearer {_token(client)}"}
+    # Program 2 (Bondi Beach Cleanup) has capacity 50 and no seeded volunteer
+    # rows. Its host (user 1) is counted implicitly, so the count starts at 1; a
+    # fresh volunteer joining takes it to 2.
+    headers = {"Authorization": f"Bearer {_register(client, 'joiner@example.com')}"}
 
     before = client.get("/programs/2/participations", headers=headers).json()
-    assert before["participant_count"] == 0
+    assert before["participant_count"] == 1  # host counted, no rows yet
     assert before["joined"] is False
     assert before["is_full"] is False
 
@@ -55,14 +57,30 @@ def test_join_when_not_full(client: TestClient) -> None:
     assert res.status_code == 201
     body = res.json()
     assert body["program_id"] == 2
-    assert body["participant_count"] == 1
+    assert body["participant_count"] == 2  # host + this volunteer
     assert body["joined"] is True
     assert body["is_full"] is False
 
     after = client.get("/programs/2/participations", headers=headers).json()
-    assert after["participant_count"] == 1
+    assert after["participant_count"] == 2
     assert after["joined"] is True
     assert after["is_full"] is False
+
+
+def test_host_counted_without_participation_row(client: TestClient) -> None:
+    # Regression: programs created before creator auto-enrolment have no host
+    # participation row (seeded programs 2-4 mirror that state). The host must
+    # still be counted, so a lone volunteer reads as 2 (host + them), not 1.
+    detail = client.get("/programs/2").json()
+    assert detail["participant_count"] == 1  # host only, despite zero rows
+
+    volunteer = {"Authorization": f"Bearer {_register(client, 'lone@example.com')}"}
+    assert (
+        client.post("/programs/2/participations", headers=volunteer).status_code == 201
+    )
+
+    after = client.get("/programs/2").json()
+    assert after["participant_count"] == 2  # host (no row) + the volunteer
 
 
 def test_join_twice_conflicts(client: TestClient) -> None:
@@ -109,6 +127,24 @@ def test_join_rejected_when_full(client: TestClient) -> None:
     res = client.post(f"/programs/{program_id}/participations", headers=third)
     assert res.status_code == 409
     assert "full" in res.json()["detail"].lower()
+
+
+def test_list_participants_returns_profiles(client: TestClient) -> None:
+    # Program 1 is seeded with the host plus three members, each with a profile.
+    # The Members row needs name + avatar, so the endpoint must carry those.
+    res = client.get("/programs/1/participants")
+    assert res.status_code == 200
+    rows = res.json()
+    assert len(rows) == 4
+    assert {r["user_id"] for r in rows} == {1, 2, 3, 4}
+    host = next(r for r in rows if r["user_id"] == 1)
+    assert host["first_name"] == "Jane"
+    assert host["last_name"] == "Doe"
+    assert "profile_image_url" in host
+
+
+def test_list_participants_unknown_program(client: TestClient) -> None:
+    assert client.get("/programs/999/participants").status_code == 404
 
 
 def test_leave_frees_a_slot(client: TestClient) -> None:
