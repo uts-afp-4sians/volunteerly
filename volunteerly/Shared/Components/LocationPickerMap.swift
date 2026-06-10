@@ -250,6 +250,23 @@ struct LocationPickerMap: View {
         setSearchText(suggestion.location.name)
         suggestions = []
         moveCamera(to: suggestion.location.coordinate)
+
+        // POI hits sometimes carry no city, leaving the POI's own name in the
+        // city slot. Resolve the real locality so the backend's locations
+        // table doesn't accumulate "Sydney Opera House"-style cities; the POI
+        // name stays as the display string.
+        if suggestion.needsCityResolution {
+            reverseTask?.cancel()
+            reverseTask = Task {
+                guard var resolved = await LocationGeocoding.reverseGeocode(
+                    suggestion.location.coordinate
+                ), !Task.isCancelled else { return }
+                resolved.name = suggestion.location.name
+                resolved.latitude = suggestion.location.latitude
+                resolved.longitude = suggestion.location.longitude
+                picked = resolved
+            }
+        }
     }
 
     // MARK: - Search
@@ -301,13 +318,23 @@ struct LocationSuggestion: Identifiable {
     let title: String
     let subtitle: String?
     let location: PickedLocation
+    /// `true` when the geocoder gave no city and `location.city` is holding
+    /// the POI name; the picker reverse-geocodes the real locality on select.
+    let needsCityResolution: Bool
 }
 
 /// Forward/reverse geocoding helpers shared by the picker. iOS 26 uses the
 /// modern MapKit requests; earlier releases fall back to `CLGeocoder`.
 enum LocationGeocoding {
-    /// The app's launch market; used only when geocoding can't name a country.
-    private static let fallbackCountry = "Australia"
+    /// Last-resort country when the geocoder names none: the device's own
+    /// region first, then the app's launch market.
+    private static var fallbackCountry: String {
+        if let region = Locale.current.region?.identifier,
+           let name = Locale.current.localizedString(forRegionCode: region) {
+            return name
+        }
+        return "Australia"
+    }
 
     static func reverseGeocode(_ coordinate: CLLocationCoordinate2D) async -> PickedLocation? {
         let location = CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
@@ -318,6 +345,22 @@ enum LocationGeocoding {
             return pickedLocation(from: item, at: coordinate)
         } else {
             guard let placemark = try? await CLGeocoder().reverseGeocodeLocation(location).first
+            else { return nil }
+            return pickedLocation(from: placemark, at: coordinate)
+        }
+    }
+
+    /// Resolve a typed place name (e.g. My Page's city field) to a structured
+    /// location, so free-text edits still land as a real `locations` row.
+    static func forwardGeocode(_ query: String) async -> PickedLocation? {
+        if #available(iOS 26.0, *) {
+            guard let request = MKGeocodingRequest(addressString: query),
+                  let item = try? await request.mapItems.first
+            else { return nil }
+            return pickedLocation(from: item, at: item.location.coordinate)
+        } else {
+            guard let placemark = try? await CLGeocoder().geocodeAddressString(query).first,
+                  let coordinate = placemark.location?.coordinate
             else { return nil }
             return pickedLocation(from: placemark, at: coordinate)
         }
@@ -335,12 +378,24 @@ enum LocationGeocoding {
             return LocationSuggestion(
                 title: item.name ?? location.name,
                 subtitle: suggestionSubtitle(from: item),
-                location: location
+                location: location,
+                needsCityResolution: !hasCity(item)
             )
         }
     }
 
     // MARK: - MKMapItem / CLPlacemark mapping
+
+    /// Whether the geocoder named an actual locality for this hit. Without
+    /// one, `pickedLocation` falls back to the POI name for `city` and the
+    /// picker schedules a reverse-geocode to repair it.
+    private static func hasCity(_ item: MKMapItem) -> Bool {
+        if #available(iOS 26.0, *) {
+            return item.addressRepresentations?.cityName != nil
+        } else {
+            return item.placemark.locality != nil
+        }
+    }
 
     private static func suggestionLocation(from item: MKMapItem) -> PickedLocation? {
         if #available(iOS 26.0, *) {

@@ -25,6 +25,14 @@ final class ProfileService {
         try await client.patch("/me/profile", body: update)
     }
 
+    // MARK: Locations
+
+    /// Find-or-create a backend location row for a place picked on the map (or
+    /// geocoded from typed text); the returned id goes into the profile PATCH.
+    func createLocation(_ request: LocationCreateRequest) async throws -> Location {
+        try await client.post("/locations", body: request)
+    }
+
     // MARK: Catalogues
 
     /// The full keyword catalogue, used to resolve interest names → ids on save.

@@ -15,6 +15,10 @@ final class UserProfileStore {
     var displayName: String = ""
     var dateOfBirth: Date?
     var city: String = ""
+    /// Structured pick from the signup map (or a future My Page picker).
+    /// Resolved to a backend `location_id` on save; `nil` means the city text
+    /// is the source of truth and gets forward-geocoded when it changed.
+    var pickedLocation: PickedLocation?
     var instagram: String = ""
     var aboutMe: String = ""
     var personalGoal: String = ""
@@ -57,6 +61,7 @@ final class UserProfileStore {
     /// on MyPage.
     var isDirty: Bool {
         if profileImageData != nil { return true }
+        if pickedLocation != nil { return true }
         guard let snap = snapshot else { return false }
         return snap != currentSnapshot()
     }
@@ -211,6 +216,26 @@ final class UserProfileStore {
 
         var update = buildUpdate()
 
+        // Resolve the location to a backend row so the profile links a real
+        // location_id: a structured map pick wins; otherwise an edited city
+        // text is forward-geocoded. Unchanged city → field omitted (no churn).
+        do {
+            if let picked = pickedLocation {
+                let location = try await service.createLocation(LocationCreateRequest(picked))
+                update.locationId = location.id
+            } else if !city.isEmpty, city != snapshot?.city {
+                guard let geocoded = await LocationGeocoding.forwardGeocode(city) else {
+                    errorMessage = "Couldn't find \"\(city)\" on the map. Try a nearby city name."
+                    return false
+                }
+                let location = try await service.createLocation(LocationCreateRequest(geocoded))
+                update.locationId = location.id
+            }
+        } catch {
+            errorMessage = "Couldn't save your location. \(Self.message(error))"
+            return false
+        }
+
         // Upload profile image when the user has picked a new one.
         if let imageData = profileImageData {
             do {
@@ -244,6 +269,9 @@ final class UserProfileStore {
             apply(saved)
             isHydrated = true
             ProfileCache.save(saved)
+            // The pick is now persisted as the profile's location_id; the
+            // server's embedded location (re-applied above) takes over.
+            pickedLocation = nil
             // Refresh snapshot so `isDirty` returns to false after a successful save.
             snapshot = currentSnapshot()
             return true
@@ -261,6 +289,11 @@ final class UserProfileStore {
             .filter { !$0.isEmpty }
             .joined(separator: " ")
         dateOfBirth = profile.dateOfBirth
+        if let location = profile.location {
+            city = [location.city, location.stateRegion]
+                .compactMap { $0 }
+                .joined(separator: ", ")
+        }
         profileImageURL = profile.profileImageURL
         instagram = profile.instagram ?? ""
         aboutMe = profile.bio ?? ""

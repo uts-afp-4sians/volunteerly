@@ -10,8 +10,10 @@ final class SignupFormViewModel {
     let totalSteps = 6
 
     // Step 2 — Location. The step renders a `LocationPickerMap`, which owns
-    // the geocoding; the form only keeps the resolved city string.
+    // the geocoding; the form keeps the display string plus the structured
+    // pick that becomes the profile's location_id at save time.
     var city = ""
+    var pickedLocation: PickedLocation?
 
     // Step 3 — Interests
     var selectedInterests: Set<String> = []
@@ -95,6 +97,7 @@ final class SignupFormViewModel {
         switch step {
         case 2:
             profileStore.city = city
+            profileStore.pickedLocation = pickedLocation
         case 3:
             // Include every selected interest — both catalog picks and any
             // custom names the user typed via the "Add more" chip. Custom names

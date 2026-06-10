@@ -23,6 +23,7 @@ struct LocationStepView: View {
         }
         .onChange(of: picked) { _, newValue in
             vm.city = newValue?.name ?? ""
+            vm.pickedLocation = newValue
         }
     }
 }

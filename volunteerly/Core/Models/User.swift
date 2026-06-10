@@ -28,6 +28,9 @@ nonisolated struct UserProfile: Codable {
     let instagram: String?
     let keySkills: String?
     let locationId: Int?
+    /// Location embedded like interests — one profile read hydrates the city
+    /// shown on My Page without a second `/locations/{id}` call.
+    var location: Location?
     /// Interests embedded in the profile resource — a single read hydrates the
     /// whole screen, so the client never makes a second `/me/interests` call.
     var interests: [UserInterestDetail] = []
@@ -44,6 +47,7 @@ nonisolated struct UserProfile: Codable {
         case instagram
         case keySkills = "key_skills"
         case locationId = "location_id"
+        case location
         case interests
     }
 
@@ -67,6 +71,7 @@ extension UserProfile {
         instagram = try container.decodeIfPresent(String.self, forKey: .instagram)
         keySkills = try container.decodeIfPresent(String.self, forKey: .keySkills)
         locationId = try container.decodeIfPresent(Int.self, forKey: .locationId)
+        location = try container.decodeIfPresent(Location.self, forKey: .location)
         interests = try container.decodeIfPresent([UserInterestDetail].self, forKey: .interests) ?? []
     }
 }
@@ -86,6 +91,9 @@ nonisolated struct UserProfileUpdate: Codable {
     /// Public CDN URL of the uploaded profile image. Set after a successful
     /// R2 presigned upload; `nil` means no change to the stored URL.
     var profileImageUrl: String?
+    /// Backend row id of the user's location, resolved via `POST /locations`
+    /// before the PATCH. `nil` means no change.
+    var locationId: Int?
     /// Replacement interest set (keyword ids). `nil` leaves interests untouched;
     /// a value (including `[]`) replaces the whole set in the same PATCH.
     var interestKeywordIds: [Int]?
@@ -100,6 +108,7 @@ nonisolated struct UserProfileUpdate: Codable {
         case instagram
         case keySkills = "key_skills"
         case profileImageUrl = "profile_image_url"
+        case locationId = "location_id"
         case interestKeywordIds = "interest_keyword_ids"
     }
 }
