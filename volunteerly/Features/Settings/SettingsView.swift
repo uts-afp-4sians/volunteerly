@@ -63,6 +63,7 @@ struct SettingsView: View {
         }
         .background(Theme.background.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
+        .enableInteractiveSwipeBack()
         .alert("Delete account?", isPresented: $showDeleteConfirmation) {
             Button("Cancel", role: .cancel) {}
             Button("Delete", role: .destructive) { performDelete() }
