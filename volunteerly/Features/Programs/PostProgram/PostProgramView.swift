@@ -174,11 +174,14 @@ struct PostProgramView: View {
                     .presentationDragIndicator(.hidden)
             case .location:
                 // The location sheet carries its own centered title + custom
-                // blue drag handle (Figma 329:1533), so it isn't wrapped in
+                // blue drag handle (Figma 226:685), so it isn't wrapped in
                 // navSheet.
-                RegionSelectionView(selectedRegion: $viewModel.selectedRegion)
-                    .presentationDetents([.fraction(0.9), .large])
-                    .presentationDragIndicator(.hidden)
+                LocationSelectionSheet(
+                    picked: $viewModel.pickedLocation,
+                    regionName: $viewModel.selectedRegion
+                )
+                .presentationDetents([.height(520), .large])
+                .presentationDragIndicator(.hidden)
             case .repeatSelection:
                 // The reoccurrence sheet carries its own title + custom blue
                 // drag handle (Figma 329:1821), so it isn't wrapped in navSheet.

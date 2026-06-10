@@ -27,6 +27,9 @@ final class PostProgramViewModel {
     // MARK: - Details
 
     var selectedRegion: String = ""
+    /// Structured pick from the location sheet; resolved to a backend
+    /// `location_id` at submit time. `selectedRegion` mirrors its display name.
+    var pickedLocation: PickedLocation?
     var startDate: Date
     var endDate: Date
     var selectedRepeat: String = "Never" // Default reoccurrence (Figma 329:1821)
@@ -146,8 +149,19 @@ final class PostProgramViewModel {
                 }
             }
 
+            // Resolve the picked map location to a backend row (find-or-create)
+            // so the program links a real location_id. nil → create falls back
+            // to the server default and edit keeps the existing location.
+            var locationId: Int?
+            if let picked = pickedLocation {
+                let location: Location = try await httpClient.post(
+                    "/locations", body: LocationCreateRequest(picked)
+                )
+                locationId = location.id
+            }
+
             if let programId = editingProgramId {
-                let request = ProgramUpdateRequest(
+                var request = ProgramUpdateRequest(
                     categoryId: selectedCategoryId,
                     programName: name,
                     description: description,
@@ -158,9 +172,10 @@ final class PostProgramViewModel {
                     commitmentDuration: commitmentDuration,
                     bannerImageURL: galleryURLs.first  // nil → backend keeps existing
                 )
+                request.locationId = locationId
                 let _: Program = try await httpClient.patch("/programs/\(programId)", body: request)
             } else {
-                let request = ProgramCreateRequest(
+                var request = ProgramCreateRequest(
                     categoryId: selectedCategoryId,
                     programName: name,
                     description: description,
@@ -172,6 +187,7 @@ final class PostProgramViewModel {
                     bannerImageURL: galleryURLs.first,
                     bannerImageURLs: galleryURLs.isEmpty ? nil : galleryURLs
                 )
+                request.locationId = locationId
                 let _: Program = try await httpClient.post("/programs", body: request)
             }
             return true

@@ -1,5 +1,4 @@
 import SwiftUI
-import MapKit
 import Observation
 
 @MainActor
@@ -10,13 +9,9 @@ final class SignupFormViewModel {
     var step = 2
     let totalSteps = 6
 
-    // Step 2 — Location
+    // Step 2 — Location. The step renders a `LocationPickerMap`, which owns
+    // the geocoding; the form only keeps the resolved city string.
     var city = ""
-    var mapCameraPosition: MapCameraPosition = .automatic
-    var isGeocodingCity = false
-    var isLocatingUser = false
-    var locationError: String?
-    private var hasRequestedLocation = false
 
     // Step 3 — Interests
     var selectedInterests: Set<String> = []
@@ -63,99 +58,6 @@ final class SignupFormViewModel {
     var fallbackCatalog: [Keyword] {
         UserProfileStore.interestCatalog.enumerated().map { idx, entry in
             Keyword(id: -(idx + 1), categoryId: 0, name: entry.name)
-        }
-    }
-
-    func geocodeCity() {
-        let name = city
-        guard !name.isEmpty else { return }
-        locationError = nil
-        isGeocodingCity = true
-        Task {
-            defer { isGeocodingCity = false }
-            if let coord = await Self.forwardGeocode(addressString: name) {
-                withAnimation {
-                    mapCameraPosition = .region(MKCoordinateRegion(
-                        center: coord,
-                        span: MKCoordinateSpan(latitudeDelta: 0.1, longitudeDelta: 0.1)
-                    ))
-                }
-            }
-        }
-    }
-
-    func useCurrentLocation() {
-        guard !hasRequestedLocation else { return }
-        hasRequestedLocation = true
-        isLocatingUser = true
-        locationError = nil
-
-        Task {
-            defer { isLocatingUser = false }
-            guard let coordinate = await LocationProvider.shared.currentCoordinate() else {
-                locationError = "Location unavailable. Allow access in Settings or search for your city."
-                return
-            }
-
-            withAnimation {
-                mapCameraPosition = .region(MKCoordinateRegion(
-                    center: coordinate,
-                    span: MKCoordinateSpan(latitudeDelta: 0.1, longitudeDelta: 0.1)
-                ))
-            }
-
-            guard let resolved = await Self.reverseGeocode(coordinate: coordinate) else {
-                locationError = "We found your location but couldn't identify the city."
-                return
-            }
-
-            city = resolved
-        }
-    }
-
-    func reverseGeocode(coordinate: CLLocationCoordinate2D) {
-        Task {
-            guard let newCity = await Self.reverseGeocode(coordinate: coordinate),
-                  !newCity.isEmpty
-            else {
-                return
-            }
-
-            city = newCity
-        }
-    }
-
-    // MARK: - Geocoding helpers
-    //
-    // iOS 26 introduced `MKGeocodingRequest`/`MKReverseGeocodingRequest`; on
-    // earlier releases we fall back to `CLGeocoder`, which covers our minimum
-    // deployment target (iOS 18.7).
-
-    private static func forwardGeocode(addressString: String) async -> CLLocationCoordinate2D? {
-        if #available(iOS 26.0, *) {
-            guard let request = MKGeocodingRequest(addressString: addressString) else { return nil }
-            return (try? await request.mapItems)?.first?.location.coordinate
-        } else {
-            let placemarks = try? await CLGeocoder().geocodeAddressString(addressString)
-            return placemarks?.first?.location?.coordinate
-        }
-    }
-
-    private static func reverseGeocode(coordinate: CLLocationCoordinate2D) async -> String? {
-        let location = CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
-        if #available(iOS 26.0, *) {
-            guard let request = MKReverseGeocodingRequest(location: location),
-                  let item = try? await request.mapItems.first
-            else {
-                return nil
-            }
-            return item.addressRepresentations?.cityName ?? item.name
-        } else {
-            guard let placemark = try? await CLGeocoder().reverseGeocodeLocation(location).first
-            else {
-                return nil
-            }
-            return placemark.locality ?? placemark.name
         }
     }
 
