@@ -2,8 +2,9 @@ import Foundation
 import Observation
 
 /// The signed-in user's editable profile, backed by the API's `/me/profile`
-/// and `/me/interests` endpoints. The view binds directly to these fields;
-/// `load()` hydrates them from the backend and `save()` persists edits.
+/// endpoint (interests embedded). The view binds directly to these fields;
+/// `load()` hydrates them — instantly from the on-device cache, then silently
+/// revalidating against the backend — and `save()` persists edits.
 @MainActor
 @Observable
 final class UserProfileStore {
@@ -23,6 +24,11 @@ final class UserProfileStore {
     var isLoading = false
     var isSaving = false
     var errorMessage: String?
+
+    /// `true` once the fields hold real data (from cache or network). Drives the
+    /// My Page loading state: a spinner shows only while loading with nothing
+    /// cached yet — a returning user never sees it.
+    var isHydrated = false
 
     private let service: ProfileService
 
@@ -67,23 +73,43 @@ final class UserProfileStore {
 
     // MARK: - Backend sync
 
-    /// Hydrate every field from the backend. Safe to call on each appearance;
-    /// surfaces failures via `errorMessage` rather than throwing.
+    /// Hydrate every field — instantly from the cache, then revalidating against
+    /// the backend. A single `/me/profile` read carries the interests too. Safe
+    /// to call on each appearance; surfaces failures via `errorMessage` only
+    /// when there's no cache to fall back on.
     func load() async {
+        // Cache-first: render the last-saved snapshot immediately so a returning
+        // user sees their profile with no spinner or blank flash.
+        if !isHydrated, let cached = ProfileCache.load() {
+            apply(cached)
+            isHydrated = true
+        }
+
+        // Revalidate in the background (single call — interests are embedded).
         isLoading = true
         errorMessage = nil
         defer { isLoading = false }
         do {
-            async let profile = service.fetchMyProfile()
-            async let interestDetails = service.fetchMyInterests()
-            apply(try await profile)
-            interests = try await interestDetails.map {
-                Interest(emoji: Self.emoji(for: $0.keywordName), name: $0.keywordName)
-            }
+            let profile = try await service.fetchMyProfile()
+            apply(profile)
+            isHydrated = true
+            ProfileCache.save(profile)
         } catch where Self.isCancellation(error) {
             return
         } catch {
-            errorMessage = "Couldn't load your profile. \(Self.message(error))"
+            // With a cached profile already on screen, fail silently and stay on
+            // it; only surface the error when there's nothing to show.
+            if !isHydrated {
+                errorMessage = "Couldn't load your profile. \(Self.message(error))"
+            }
+        }
+    }
+
+    /// Discard unsaved edits by re-applying the cached (last-saved) profile.
+    /// Offline-safe — no network needed.
+    func revertToCache() {
+        if let cached = ProfileCache.load() {
+            apply(cached)
         }
     }
 
@@ -127,8 +153,14 @@ final class UserProfileStore {
         }
 
         do {
-            try await service.updateMyProfile(update)
-            try await service.replaceMyInterests(keywordIds: resolveInterestIds())
+            // Fold the interest replacement into the same PATCH — one round-trip.
+            update.interestKeywordIds = try await resolveInterestIds()
+            let saved = try await service.updateMyProfile(update)
+            // The server is the source of truth post-save: re-hydrate from its
+            // response and refresh the cache so the next launch is instant.
+            apply(saved)
+            isHydrated = true
+            ProfileCache.save(saved)
             return true
         } catch {
             errorMessage = "Couldn't save your changes. \(Self.message(error))"
@@ -148,6 +180,9 @@ final class UserProfileStore {
         personalGoal = profile.goalText ?? ""
         occupation = profile.occupation ?? ""
         keySkills = profile.keySkills ?? ""
+        interests = profile.interests.map {
+            Interest(emoji: Self.emoji(for: $0.keywordName), name: $0.keywordName)
+        }
     }
 
     private func buildUpdate() -> UserProfileUpdate {

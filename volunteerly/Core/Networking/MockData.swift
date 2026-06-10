@@ -41,7 +41,11 @@ enum MockData {
         bio: "I am a Student, I can bring social media management.",
         instagram: "jane.doe",
         keySkills: "Social media, Communication",
-        locationId: 1
+        locationId: 1,
+        interests: [
+            UserInterestDetail(keywordId: 4, keywordName: "Animal Care"),
+            UserInterestDetail(keywordId: 7, keywordName: "Education"),
+        ]
     )
 
     /// A few extra members so the Member board and forum thread show varied
@@ -333,6 +337,7 @@ enum MockData {
             "/programs/7":          programs[6],
             "/users/1":             user,
             "/users/1/profile":     userProfile,
+            "/me/profile":          userProfile,
             "/programs/1/posts":    forumPosts,
             "/categories":          categories,
             "/keywords":            keywords,

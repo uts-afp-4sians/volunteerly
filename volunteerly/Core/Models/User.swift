@@ -28,6 +28,9 @@ nonisolated struct UserProfile: Codable {
     let instagram: String?
     let keySkills: String?
     let locationId: Int?
+    /// Interests embedded in the profile resource — a single read hydrates the
+    /// whole screen, so the client never makes a second `/me/interests` call.
+    var interests: [UserInterestDetail] = []
 
     enum CodingKeys: String, CodingKey {
         case userId = "user_id"
@@ -41,9 +44,31 @@ nonisolated struct UserProfile: Codable {
         case instagram
         case keySkills = "key_skills"
         case locationId = "location_id"
+        case interests
     }
 
     var fullName: String { "\(firstName) \(lastName)" }
+}
+
+extension UserProfile {
+    /// Custom decode (in an extension, so the memberwise initializer is kept)
+    /// that tolerates a missing `interests` key — decoding to `[]` instead of
+    /// throwing. Keeps cached blobs and any not-yet-migrated response decodable.
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        userId = try container.decode(Int.self, forKey: .userId)
+        firstName = try container.decode(String.self, forKey: .firstName)
+        lastName = try container.decode(String.self, forKey: .lastName)
+        dateOfBirth = try container.decodeIfPresent(Date.self, forKey: .dateOfBirth)
+        profileImageURL = try container.decodeIfPresent(String.self, forKey: .profileImageURL)
+        occupation = try container.decodeIfPresent(String.self, forKey: .occupation)
+        goalText = try container.decodeIfPresent(String.self, forKey: .goalText)
+        bio = try container.decodeIfPresent(String.self, forKey: .bio)
+        instagram = try container.decodeIfPresent(String.self, forKey: .instagram)
+        keySkills = try container.decodeIfPresent(String.self, forKey: .keySkills)
+        locationId = try container.decodeIfPresent(Int.self, forKey: .locationId)
+        interests = try container.decodeIfPresent([UserInterestDetail].self, forKey: .interests) ?? []
+    }
 }
 
 /// Partial update body for `PATCH /me/profile`. Optionals that are `nil` are
@@ -60,6 +85,9 @@ nonisolated struct UserProfileUpdate: Codable {
     /// Public CDN URL of the uploaded profile image. Set after a successful
     /// R2 presigned upload; `nil` means no change to the stored URL.
     var profileImageUrl: String?
+    /// Replacement interest set (keyword ids). `nil` leaves interests untouched;
+    /// a value (including `[]`) replaces the whole set in the same PATCH.
+    var interestKeywordIds: [Int]?
 
     enum CodingKeys: String, CodingKey {
         case firstName = "first_name"
@@ -70,10 +98,11 @@ nonisolated struct UserProfileUpdate: Codable {
         case instagram
         case keySkills = "key_skills"
         case profileImageUrl = "profile_image_url"
+        case interestKeywordIds = "interest_keyword_ids"
     }
 }
 
-/// A user's interest joined with its keyword name (`GET /me/interests`).
+/// A user's interest joined with its keyword name, embedded in the profile.
 nonisolated struct UserInterestDetail: Codable, Identifiable {
     let keywordId: Int
     let keywordName: String
@@ -83,14 +112,5 @@ nonisolated struct UserInterestDetail: Codable, Identifiable {
     enum CodingKeys: String, CodingKey {
         case keywordId = "keyword_id"
         case keywordName = "keyword_name"
-    }
-}
-
-/// Replace-set body for `PUT /me/interests`.
-nonisolated struct UserInterestsUpdate: Codable {
-    let keywordIds: [Int]
-
-    enum CodingKeys: String, CodingKey {
-        case keywordIds = "keyword_ids"
     }
 }

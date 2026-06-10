@@ -59,6 +59,16 @@ internal protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /programs/{program_id}/keywords`.
     /// - Remark: Generated from `#/paths//programs/{program_id}/keywords/get(list_program_keywords_programs__program_id__keywords_get)`.
     func list_program_keywords_programs__program_id__keywords_get(_ input: Operations.list_program_keywords_programs__program_id__keywords_get.Input) async throws -> Operations.list_program_keywords_programs__program_id__keywords_get.Output
+    /// List Participants
+    ///
+    /// Active participants of a program with the profile fields the Members row
+    /// renders (name + avatar), oldest join first. Public, like the profile and
+    /// keyword sub-resources. The host appears here only when they hold a row; the
+    /// detail screen draws the host separately from ``creator_user_id``.
+    ///
+    /// - Remark: HTTP `GET /programs/{program_id}/participants`.
+    /// - Remark: Generated from `#/paths//programs/{program_id}/participants/get(list_participants_programs__program_id__participants_get)`.
+    func list_participants_programs__program_id__participants_get(_ input: Operations.list_participants_programs__program_id__participants_get.Input) async throws -> Operations.list_participants_programs__program_id__participants_get.Output
     /// Get Similar Program
     ///
     /// One "nearby" program to suggest on the detail screen.
@@ -219,6 +229,24 @@ extension APIProtocol {
         headers: Operations.list_program_keywords_programs__program_id__keywords_get.Input.Headers = .init()
     ) async throws -> Operations.list_program_keywords_programs__program_id__keywords_get.Output {
         try await list_program_keywords_programs__program_id__keywords_get(Operations.list_program_keywords_programs__program_id__keywords_get.Input(
+            path: path,
+            headers: headers
+        ))
+    }
+    /// List Participants
+    ///
+    /// Active participants of a program with the profile fields the Members row
+    /// renders (name + avatar), oldest join first. Public, like the profile and
+    /// keyword sub-resources. The host appears here only when they hold a row; the
+    /// detail screen draws the host separately from ``creator_user_id``.
+    ///
+    /// - Remark: HTTP `GET /programs/{program_id}/participants`.
+    /// - Remark: Generated from `#/paths//programs/{program_id}/participants/get(list_participants_programs__program_id__participants_get)`.
+    internal func list_participants_programs__program_id__participants_get(
+        path: Operations.list_participants_programs__program_id__participants_get.Input.Path,
+        headers: Operations.list_participants_programs__program_id__participants_get.Input.Headers = .init()
+    ) async throws -> Operations.list_participants_programs__program_id__participants_get.Output {
+        try await list_participants_programs__program_id__participants_get(Operations.list_participants_programs__program_id__participants_get.Input(
             path: path,
             headers: headers
         ))
@@ -695,6 +723,45 @@ internal enum Components {
             internal enum CodingKeys: String, CodingKey {
                 case program_id
                 case keyword_id
+            }
+        }
+        /// A program participant with the profile fields the Members row renders
+        /// (name + avatar). A subset of iOS `UserProfile`, so it decodes into the same
+        /// model client-side.
+        ///
+        /// - Remark: Generated from `#/components/schemas/ProgramParticipantRead`.
+        internal struct ProgramParticipantRead: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/ProgramParticipantRead/user_id`.
+            internal var user_id: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/ProgramParticipantRead/first_name`.
+            internal var first_name: Swift.String
+            /// - Remark: Generated from `#/components/schemas/ProgramParticipantRead/last_name`.
+            internal var last_name: Swift.String
+            /// - Remark: Generated from `#/components/schemas/ProgramParticipantRead/profile_image_url`.
+            internal var profile_image_url: Swift.String?
+            /// Creates a new `ProgramParticipantRead`.
+            ///
+            /// - Parameters:
+            ///   - user_id:
+            ///   - first_name:
+            ///   - last_name:
+            ///   - profile_image_url:
+            internal init(
+                user_id: Swift.Int,
+                first_name: Swift.String,
+                last_name: Swift.String,
+                profile_image_url: Swift.String? = nil
+            ) {
+                self.user_id = user_id
+                self.first_name = first_name
+                self.last_name = last_name
+                self.profile_image_url = profile_image_url
+            }
+            internal enum CodingKeys: String, CodingKey {
+                case user_id
+                case first_name
+                case last_name
+                case profile_image_url
             }
         }
         /// Capacity snapshot for a program from the caller's perspective, used by the
@@ -2453,6 +2520,190 @@ internal enum Operations {
             /// - Throws: An error if `self` is not `.unprocessableContent`.
             /// - SeeAlso: `.unprocessableContent`.
             internal var unprocessableContent: Operations.list_program_keywords_programs__program_id__keywords_get.Output.UnprocessableContent {
+                get throws {
+                    switch self {
+                    case let .unprocessableContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unprocessableContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        internal enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            internal init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            internal var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            internal static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// List Participants
+    ///
+    /// Active participants of a program with the profile fields the Members row
+    /// renders (name + avatar), oldest join first. Public, like the profile and
+    /// keyword sub-resources. The host appears here only when they hold a row; the
+    /// detail screen draws the host separately from ``creator_user_id``.
+    ///
+    /// - Remark: HTTP `GET /programs/{program_id}/participants`.
+    /// - Remark: Generated from `#/paths//programs/{program_id}/participants/get(list_participants_programs__program_id__participants_get)`.
+    internal enum list_participants_programs__program_id__participants_get {
+        internal static let id: Swift.String = "list_participants_programs__program_id__participants_get"
+        internal struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/programs/{program_id}/participants/GET/path`.
+            internal struct Path: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/programs/{program_id}/participants/GET/path/program_id`.
+                internal var program_id: Swift.Int
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - program_id:
+                internal init(program_id: Swift.Int) {
+                    self.program_id = program_id
+                }
+            }
+            internal var path: Operations.list_participants_programs__program_id__participants_get.Input.Path
+            /// - Remark: Generated from `#/paths/programs/{program_id}/participants/GET/header`.
+            internal struct Headers: Sendable, Hashable {
+                internal var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.list_participants_programs__program_id__participants_get.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                internal init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.list_participants_programs__program_id__participants_get.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            internal var headers: Operations.list_participants_programs__program_id__participants_get.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            internal init(
+                path: Operations.list_participants_programs__program_id__participants_get.Input.Path,
+                headers: Operations.list_participants_programs__program_id__participants_get.Input.Headers = .init()
+            ) {
+                self.path = path
+                self.headers = headers
+            }
+        }
+        internal enum Output: Sendable, Hashable {
+            internal struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/programs/{program_id}/participants/GET/responses/200/content`.
+                internal enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/programs/{program_id}/participants/GET/responses/200/content/application\/json`.
+                    case json([Components.Schemas.ProgramParticipantRead])
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    internal var json: [Components.Schemas.ProgramParticipantRead] {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                internal var body: Operations.list_participants_programs__program_id__participants_get.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                internal init(body: Operations.list_participants_programs__program_id__participants_get.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// Successful Response
+            ///
+            /// - Remark: Generated from `#/paths//programs/{program_id}/participants/get(list_participants_programs__program_id__participants_get)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.list_participants_programs__program_id__participants_get.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            internal var ok: Operations.list_participants_programs__program_id__participants_get.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            internal struct UnprocessableContent: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/programs/{program_id}/participants/GET/responses/422/content`.
+                internal enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/programs/{program_id}/participants/GET/responses/422/content/application\/json`.
+                    case json(Components.Schemas.HTTPValidationError)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    internal var json: Components.Schemas.HTTPValidationError {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                internal var body: Operations.list_participants_programs__program_id__participants_get.Output.UnprocessableContent.Body
+                /// Creates a new `UnprocessableContent`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                internal init(body: Operations.list_participants_programs__program_id__participants_get.Output.UnprocessableContent.Body) {
+                    self.body = body
+                }
+            }
+            /// Validation Error
+            ///
+            /// - Remark: Generated from `#/paths//programs/{program_id}/participants/get(list_participants_programs__program_id__participants_get)/responses/422`.
+            ///
+            /// HTTP response code: `422 unprocessableContent`.
+            case unprocessableContent(Operations.list_participants_programs__program_id__participants_get.Output.UnprocessableContent)
+            /// The associated value of the enum case if `self` is `.unprocessableContent`.
+            ///
+            /// - Throws: An error if `self` is not `.unprocessableContent`.
+            /// - SeeAlso: `.unprocessableContent`.
+            internal var unprocessableContent: Operations.list_participants_programs__program_id__participants_get.Output.UnprocessableContent {
                 get throws {
                     switch self {
                     case let .unprocessableContent(response):

@@ -47,6 +47,8 @@ final class AuthService {
     func logout() {
         SessionManager.shared.clearSession()
         LiveHTTPClient.shared.authToken = nil
+        // Drop the cached profile so the next user doesn't briefly see this one.
+        ProfileCache.clear()
     }
 
     /// Re-attach a persisted token to the live client. Call once at launch so a

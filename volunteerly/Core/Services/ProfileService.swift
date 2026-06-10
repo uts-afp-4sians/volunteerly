@@ -1,8 +1,10 @@
 import Foundation
 
-/// Talks to the backend's `/me/profile` and `/me/interests` endpoints for the
-/// signed-in user. Uses the shared `HTTPClient`, so the bearer token attached by
-/// `AuthService` rides along automatically.
+/// Talks to the backend's `/me/profile` endpoint for the signed-in user.
+/// Interests are embedded in that one resource (read) and replaced through the
+/// same `PATCH` (write), so there's no separate interests round-trip. Uses the
+/// shared `HTTPClient`, so the bearer token attached by `AuthService` rides
+/// along automatically.
 final class ProfileService {
     static let shared = ProfileService(client: LiveHTTPClient.shared)
 
@@ -12,7 +14,7 @@ final class ProfileService {
         self.client = client
     }
 
-    // MARK: Profile
+    // MARK: Profile (interests embedded)
 
     func fetchMyProfile() async throws -> UserProfile {
         try await client.get("/me/profile")
@@ -23,11 +25,7 @@ final class ProfileService {
         try await client.patch("/me/profile", body: update)
     }
 
-    // MARK: Interests
-
-    func fetchMyInterests() async throws -> [UserInterestDetail] {
-        try await client.get("/me/interests")
-    }
+    // MARK: Catalogues
 
     /// The full keyword catalogue, used to resolve interest names → ids on save.
     func fetchKeywordCatalog() async throws -> [Keyword] {
@@ -39,10 +37,5 @@ final class ProfileService {
     /// the subset of keywords flagged `is_interest` in the DB.
     func fetchInterestCatalog() async throws -> [Keyword] {
         try await client.get("/interests")
-    }
-
-    @discardableResult
-    func replaceMyInterests(keywordIds: [Int]) async throws -> [UserInterestDetail] {
-        try await client.put("/me/interests", body: UserInterestsUpdate(keywordIds: keywordIds))
     }
 }

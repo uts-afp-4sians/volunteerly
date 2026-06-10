@@ -42,12 +42,21 @@ struct MyPageView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
 
-                profileSection
-                interestsAndGoalsSection
+                if !store.isHydrated && store.isLoading {
+                    // First-ever load with nothing cached: show loading in place
+                    // of a blank form. A returning user is hydrated from cache
+                    // and skips this entirely.
+                    ProgressView()
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 80)
+                } else {
+                    profileSection
+                    interestsAndGoalsSection
 
-                Divider()
+                    Divider()
 
-                editButtons
+                    editButtons
+                }
                 programSection
             }
             .padding(.horizontal, horizontalPadding)
@@ -380,9 +389,9 @@ struct MyPageView: View {
         }
     }
 
-    /// Discard unsaved edits by re-hydrating the profile from the server.
+    /// Discard unsaved edits by re-applying the cached (last-saved) profile.
     private func cancelEdits() {
-        Task { await profileStore.load() }
+        profileStore.revertToCache()
     }
 
     private func performLogout() {
