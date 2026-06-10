@@ -25,7 +25,11 @@ class ProgramCreate(BaseModel):
     max_volunteers: int = Field(ge=1)
     commitment_frequency: CommitmentFrequency | None = None
     commitment_duration: CommitmentDuration | None = None
+    # Ordered banner gallery (up to three). ``banner_image_url`` is kept for
+    # back-compat: when ``banner_image_urls`` is omitted it seeds a one-image
+    # gallery, and either way the first image is mirrored back to it server-side.
     banner_image_url: str | None = None
+    banner_image_urls: list[str] | None = Field(default=None, max_length=3)
     location_id: int | None = None
 
 
@@ -41,6 +45,10 @@ class ProgramRead(BaseModel):
     program_name: str
     description: str
     banner_image_url: str | None = None
+    # Ordered banner gallery the detail screen renders as a carousel. Always
+    # populated by the program endpoints (the first entry equals
+    # ``banner_image_url``); empty when the program has no images.
+    banner_image_urls: list[str] = Field(default_factory=list)
     start_datetime: UTCDateTime
     end_datetime: UTCDateTime
     max_volunteers: int

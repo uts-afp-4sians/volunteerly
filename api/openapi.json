@@ -1813,6 +1813,15 @@
             "nullable": true,
             "type": "string"
           },
+          "banner_image_urls": {
+            "title": "Banner Image Urls",
+            "nullable": true,
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 3
+          },
           "location_id": {
             "title": "Location Id",
             "nullable": true,
@@ -1943,6 +1952,13 @@
             "title": "Banner Image Url",
             "nullable": true,
             "type": "string"
+          },
+          "banner_image_urls": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Banner Image Urls"
           },
           "start_datetime": {
             "type": "string",

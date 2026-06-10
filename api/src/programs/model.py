@@ -63,6 +63,27 @@ class Program(Base):
     )
 
 
+class ProgramImage(Base):
+    """An image in a program's banner gallery (PROGRAM_IMAGE).
+
+    Programs carry an ordered set of banner images (up to three, picked in the
+    "Add images" step). ``sort_order`` fixes the carousel order; the first image
+    (lowest ``sort_order``) is mirrored into ``Program.banner_image_url`` so
+    callers that only render a single banner keep working unchanged."""
+
+    __tablename__ = "program_images"
+
+    image_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    program_id: Mapped[int] = mapped_column(
+        ForeignKey("programs.program_id"), index=True
+    )
+    image_url: Mapped[str] = mapped_column(String(500))
+    sort_order: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+
 class ProgramKeyword(Base):
     """Junction tagging a program with a keyword (PROGRAM_KEYWORD)."""
 
