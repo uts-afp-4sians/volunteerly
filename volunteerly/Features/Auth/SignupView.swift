@@ -247,6 +247,7 @@ struct SignupView: View {
                     .stroke(Theme.border, lineWidth: 1)
             )
     }
+
 }
 
 #Preview {

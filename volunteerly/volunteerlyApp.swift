@@ -31,6 +31,7 @@ struct volunteerlyApp: App {
             }
             .transition(.opacity)
             .animation(.easeInOut(duration: 0.35), value: router.route)
+            .keyboardDismissable()
             .environment(router)
             .environment(profileStore)
         }

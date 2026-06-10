@@ -10,6 +10,12 @@ struct LocationStepView: View {
                 .font(.largeTitle.bold())
                 .foregroundStyle(Theme.textPrimary)
 
+            if let locationError = vm.locationError {
+                Text(locationError)
+                    .font(.footnote)
+                    .foregroundStyle(.red)
+            }
+
             VStack(alignment: .leading, spacing: 8) {
                 HStack(spacing: 3) {
                     Text("City")
@@ -56,6 +62,9 @@ struct LocationStepView: View {
                 .disabled(vm.city.isEmpty || vm.isGeocodingCity)
             }
             .clipShape(RoundedRectangle(cornerRadius: 16))
+        }
+        .task {
+            vm.useCurrentLocation()
         }
     }
 }
