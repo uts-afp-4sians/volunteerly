@@ -14,6 +14,9 @@ final class SignupFormViewModel {
     var city = ""
     var mapCameraPosition: MapCameraPosition = .automatic
     var isGeocodingCity = false
+    var isLocatingUser = false
+    var locationError: String?
+    private var hasRequestedLocation = false
 
     // Step 3 — Interests
     var selectedInterests: Set<String> = []
@@ -23,6 +26,10 @@ final class SignupFormViewModel {
     // Step 4 — Secure your account
     var email = ""
     var password = ""
+    // Inline, server-driven errors surfaced under the step-4 fields. Set when
+    // registration fails with a 409 (email taken) or 422 (validation).
+    var emailFieldError: String?
+    var passwordFieldError: String?
 
     // Step 5 — Goals
     var expectations = ""
@@ -58,6 +65,7 @@ final class SignupFormViewModel {
     func geocodeCity() {
         let name = city
         guard !name.isEmpty, let request = MKGeocodingRequest(addressString: name) else { return }
+        locationError = nil
         isGeocodingCity = true
         Task {
             defer { isGeocodingCity = false }
@@ -69,6 +77,42 @@ final class SignupFormViewModel {
                     ))
                 }
             }
+        }
+    }
+
+    func useCurrentLocation() {
+        guard !hasRequestedLocation else { return }
+        hasRequestedLocation = true
+        isLocatingUser = true
+        locationError = nil
+
+        Task {
+            defer { isLocatingUser = false }
+            guard let coordinate = await LocationProvider.shared.currentCoordinate() else {
+                locationError = "Location unavailable. Allow access in Settings or search for your city."
+                return
+            }
+
+            withAnimation {
+                mapCameraPosition = .region(MKCoordinateRegion(
+                    center: coordinate,
+                    span: MKCoordinateSpan(latitudeDelta: 0.1, longitudeDelta: 0.1)
+                ))
+            }
+
+            guard let request = MKReverseGeocodingRequest(location: CLLocation(
+                latitude: coordinate.latitude,
+                longitude: coordinate.longitude
+            )),
+            let item = try? await request.mapItems.first
+            else {
+                locationError = "We found your location but couldn't identify the city."
+                return
+            }
+
+            city = item.addressRepresentations?.cityName
+                ?? item.name
+                ?? ""
         }
     }
 
@@ -121,9 +165,12 @@ final class SignupFormViewModel {
 
         Task {
             let registration = Task {
+                // Email/password are collected at step 4 (`self.email`/`self.password`).
+                // `basics` only carries the step-1 name fields — its email/password
+                // are empty, so sending them here is what produced the 422s.
                 try await AuthService.shared.register(
-                    email: basics.email,
-                    password: basics.password,
+                    email: email,
+                    password: password,
                     firstName: basics.firstName,
                     lastName: basics.lastName
                 )
@@ -134,9 +181,42 @@ final class SignupFormViewModel {
             do {
                 _ = try await registration.value
                 withAnimation(.easeInOut(duration: 0.35)) { router?.route = .onboarding }
+            } catch let error as APIError {
+                handleRegistrationFailure(error)
             } catch {
                 finalisingError = error.localizedDescription
             }
         }
+    }
+
+    /// Map a failed registration onto the form. Recoverable errors (taken email,
+    /// invalid email/password) jump back to step 4 with inline field messages so
+    /// the user can fix and retry; anything else stays on the finalising screen.
+    private func handleRegistrationFailure(_ error: APIError) {
+        switch error {
+        case .conflict(let message):
+            // 409: email already registered → help text under the email field.
+            emailFieldError = message
+            returnToAccountStep()
+        case .validation(let fields, let message):
+            // 422: surface each field's message under its input.
+            emailFieldError = fields["email"]
+            passwordFieldError = fields["password"]
+            if emailFieldError == nil && passwordFieldError == nil {
+                // Validation failed on a field this step can't edit (e.g. name).
+                finalisingError = message
+            } else {
+                returnToAccountStep()
+            }
+        default:
+            finalisingError = error.localizedDescription
+        }
+    }
+
+    private func returnToAccountStep() {
+        // Allow finalising to re-run once the user advances back through step 6.
+        hasStartedFinalising = false
+        finalisingError = nil
+        withAnimation(.easeInOut(duration: 0.3)) { step = 4 }
     }
 }

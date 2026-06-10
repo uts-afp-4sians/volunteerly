@@ -15,6 +15,12 @@ protocol HTTPClient {
 enum APIError: Error, LocalizedError {
     case invalidURL
     case unauthorized
+    /// 409 — a uniqueness constraint was hit (e.g. email already registered).
+    /// `message` is the server's human-readable explanation.
+    case conflict(message: String)
+    /// 422 — request body failed validation. `fields` maps a field name
+    /// (`email`, `password`, …) to an inline message the form can render.
+    case validation(fields: [String: String], message: String)
     case serverError(Int)
     case decodingFailed(Error)
 
@@ -22,10 +28,30 @@ enum APIError: Error, LocalizedError {
         switch self {
         case .invalidURL:       return "Invalid URL"
         case .unauthorized:     return "Unauthorized. Please log in again."
+        case .conflict(let message): return message
+        case .validation(let fields, let message):
+            // Prefer the specific field messages; fall back to the summary.
+            let joined = fields.values.joined(separator: "\n")
+            return joined.isEmpty ? message : joined
         case .serverError(let code): return "Server error: \(code)"
         case .decodingFailed(let err): return "Decoding failed: \(err.localizedDescription)"
         }
     }
+}
+
+// MARK: - Error body shapes
+
+/// 409 bodies are FastAPI `HTTPException`s: `{ "detail": "Email already…" }`.
+private struct ConflictErrorBody: Decodable {
+    let detail: String?
+    let message: String?
+}
+
+/// 422 bodies use the API's flattened validation shape (see `main.py`):
+/// `{ "error", "message", "fields": { "email": "…" } }`.
+private struct ValidationErrorBody: Decodable {
+    let message: String?
+    let fields: [String: String]?
 }
 
 // MARK: - Live Client
@@ -72,8 +98,8 @@ final class LiveHTTPClient: HTTPClient {
 
     func delete(_ path: String) async throws {
         let request = try makeRequest(path: path, method: "DELETE", body: Optional<String>.none)
-        let (_, response) = try await session.data(for: request)
-        try validate(response)
+        let (data, response) = try await session.data(for: request)
+        try validate(response, data: data)
     }
 
     // MARK: Private
@@ -94,7 +120,7 @@ final class LiveHTTPClient: HTTPClient {
 
     private func perform<T: Decodable>(_ request: URLRequest) async throws -> T {
         let (data, response) = try await session.data(for: request)
-        try validate(response)
+        try validate(response, data: data)
         do {
             return try decoder.decode(T.self, from: data)
         } catch {
@@ -102,11 +128,22 @@ final class LiveHTTPClient: HTTPClient {
         }
     }
 
-    private func validate(_ response: URLResponse) throws {
+    private func validate(_ response: URLResponse, data: Data) throws {
         guard let http = response as? HTTPURLResponse else { return }
         switch http.statusCode {
         case 200...299: break
         case 401: throw APIError.unauthorized
+        case 409:
+            let body = try? JSONDecoder().decode(ConflictErrorBody.self, from: data)
+            throw APIError.conflict(
+                message: body?.detail ?? body?.message ?? "This value is already in use."
+            )
+        case 422:
+            let body = try? JSONDecoder().decode(ValidationErrorBody.self, from: data)
+            throw APIError.validation(
+                fields: body?.fields ?? [:],
+                message: body?.message ?? "Some details need your attention."
+            )
         default: throw APIError.serverError(http.statusCode)
         }
     }

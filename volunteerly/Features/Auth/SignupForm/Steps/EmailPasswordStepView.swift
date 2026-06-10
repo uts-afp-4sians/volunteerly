@@ -11,23 +11,38 @@ struct EmailPasswordStepView: View {
 
             VStack(alignment: .leading, spacing: 20) {
                 fieldColumn(label: "Email", required: true) {
-                    borderedField {
+                    borderedField(isError: vm.emailFieldError != nil) {
                         TextField("", text: $vm.email)
                             .textContentType(.emailAddress)
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled()
                             .keyboardType(.emailAddress)
+                            // Editing clears a stale server error (e.g. "email taken").
+                            .onChange(of: vm.email) { _, _ in vm.emailFieldError = nil }
+                    }
+
+                    if let emailError = vm.emailFieldError {
+                        Text(emailError)
+                            .font(.footnote)
+                            .foregroundStyle(.red)
+                            .padding(.leading, 4)
                     }
                 }
 
                 fieldColumn(label: "Password", required: true) {
-                    borderedField(isError: passwordIsError) {
+                    borderedField(isError: passwordIsError || vm.passwordFieldError != nil) {
                         SecureField("", text: $vm.password)
                             .textContentType(.newPassword)
+                            .onChange(of: vm.password) { _, _ in vm.passwordFieldError = nil }
                     }
 
                     if passwordIsError {
                         Text("Password must be at least \(AuthValidation.minimumPasswordLength) characters")
+                            .font(.footnote)
+                            .foregroundStyle(.red)
+                            .padding(.leading, 4)
+                    } else if let passwordError = vm.passwordFieldError {
+                        Text(passwordError)
                             .font(.footnote)
                             .foregroundStyle(.red)
                             .padding(.leading, 4)
