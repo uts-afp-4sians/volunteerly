@@ -24,6 +24,7 @@ struct volunteerlyApp: App {
             ZStack {
                 switch router.route {
                 case .splash:     SplashView()
+                case .home:       HomeView()
                 case .auth:       AuthFlowView()
                 case .onboarding: WelcomeView()
                 case .main:       MainTabView()

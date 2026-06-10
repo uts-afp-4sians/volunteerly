@@ -26,7 +26,7 @@ struct FloatingTabBar: View {
         HStack(spacing: 4) {
             tabButton(.programs, icon: "magnifyingglass", label: "Programs")
             tabButton(.bookmarks, icon: "bookmark", label: "Bookmarks")
-            tabButton(.myPage, icon: "person.crop.circle", label: "Profile")
+            tabButton(.myPage, icon: "person.crop.circle", label: "My page")
         }
         .padding(.horizontal, 10)
         .frame(height: itemSize)

@@ -53,6 +53,7 @@ struct HomeView: View {
                 .buttonStyle(LandingPrimaryButtonStyle())
 
                 Button {
+                    router?.pendingAuthRoute = .signup
                     router?.route = .auth
                 } label: {
                     Text("Sign Up").frame(maxWidth: .infinity)

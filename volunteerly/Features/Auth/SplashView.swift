@@ -21,7 +21,7 @@ struct SplashView: View {
         .background(Theme.background)
         .task {
             try? await Task.sleep(for: .seconds(2))
-            router?.route = SessionManager.shared.hasSession ? .main : .auth
+            router?.route = SessionManager.shared.hasSession ? .main : .home
         }
     }
 }
