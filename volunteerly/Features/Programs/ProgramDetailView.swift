@@ -344,7 +344,7 @@ struct ProgramDetailView: View {
                 }
             }
 
-            if viewModel.otherMemberCount > 0 {
+            if !viewModel.otherMembers.isEmpty {
                 memberAvatars
             }
         }
@@ -376,26 +376,32 @@ struct ProgramDetailView: View {
             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 
-    /// Up to four member avatars; when there are more, the last slot collapses
-    /// into a "+N" overflow badge pinned to the trailing edge. Placeholder
-    /// circles until participant data is wired through.
+    /// Up to four member avatars from real participant profiles; when there are
+    /// more, the last slot collapses into a "+N" overflow badge pinned to the
+    /// trailing edge. Falls back to the silhouette when a member has no photo.
     private var memberAvatars: some View {
-        let others = viewModel.otherMemberCount
+        let others = viewModel.otherMembers
         let maxVisible = 4
         return HStack(spacing: 18) {
-            if others <= maxVisible {
-                ForEach(0..<others, id: \.self) { _ in
-                    Avatar(source: .placeholder, size: 56)
+            if others.count <= maxVisible {
+                ForEach(others, id: \.userId) { member in
+                    Avatar(url: avatarURL(member), size: 56)
                 }
                 Spacer(minLength: 0)
             } else {
-                ForEach(0..<(maxVisible - 1), id: \.self) { _ in
-                    Avatar(source: .placeholder, size: 56)
+                ForEach(others.prefix(maxVisible - 1), id: \.userId) { member in
+                    Avatar(url: avatarURL(member), size: 56)
                 }
                 Spacer(minLength: 0)
-                overflowBadge(others - (maxVisible - 1))
+                overflowBadge(others.count - (maxVisible - 1))
             }
         }
+    }
+
+    /// A member's avatar URL, or `nil` (silhouette) when they have no photo.
+    private func avatarURL(_ member: UserProfile) -> URL? {
+        guard let url = member.profileImageURL, !url.isEmpty else { return nil }
+        return URL(string: url)
     }
 
     private func overflowBadge(_ count: Int) -> some View {

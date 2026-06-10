@@ -343,6 +343,10 @@ enum MockData {
         for program in programs {
             client.handlers["/programs/\(program.id)/participations"] =
                 participationSummary(for: program)
+            // Member profiles for the avatar row. Program 1 mirrors the seed
+            // (host + three members); the rest have no extra members yet.
+            client.handlers["/programs/\(program.id)/participants"] =
+                program.id == 1 ? memberProfiles : [UserProfile]()
         }
         for location in locations {
             client.handlers["/locations/\(location.id)"] = location
