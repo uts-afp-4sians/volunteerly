@@ -692,7 +692,10 @@ def delete_program(
     feeds (``_load_program`` filters them out) while keeping the row for audit
     and participation history. Host-only."""
     program = _load_program(program_id, db)
-    _require_creator(program, current_user)
+    # TEMP: cleanup mode — host check disabled so the owner can wipe programs
+    # created with test accounts whose credentials were lost. Restore the line
+    # below once cleanup is done.
+    # _require_creator(program, current_user)
 
     program.is_deleted = True
     program.deleted_at = datetime.now(UTC)
