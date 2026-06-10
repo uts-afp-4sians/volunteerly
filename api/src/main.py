@@ -12,7 +12,7 @@ from pydantic import BaseModel
 from sqlalchemy import text
 
 from src.lib.config import settings
-from src.lib.database import session_factory
+from src.lib.database import engine, session_factory
 from src.lib.logging import configure_logging, get_logger
 
 # Configure logging first
@@ -24,6 +24,21 @@ logger = get_logger(__name__)
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Application lifespan handler for startup/shutdown events."""
     logger.info("Starting application", env=settings.PROJECT_ENV)
+    # Micro-migration: databases seeded before the locations dedup index
+    # existed don't get it from create_all (which skips existing tables).
+    # Mirrors uq_locations_city_state_country in src/locations/model.py.
+    try:
+        with engine.begin() as conn:
+            conn.execute(
+                text(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS "
+                    "uq_locations_city_state_country ON locations "
+                    "(lower(city), lower(coalesce(state_region, '')), lower(country))"
+                )
+            )
+    except Exception:
+        # Most likely pre-existing duplicate rows; dedupe manually, then restart.
+        logger.warning("could not ensure locations unique index", exc_info=True)
     yield
     logger.info("Shutting down application")
 

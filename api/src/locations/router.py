@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from src.auth.deps import get_current_user
@@ -51,7 +52,16 @@ def create_location(
         longitude=payload.longitude,
     )
     db.add(location)
-    db.flush()
+    try:
+        db.flush()
+    except IntegrityError:
+        # Lost a find-or-create race: another request inserted the same place
+        # between our SELECT and INSERT (uq_locations_city_state_country).
+        # Roll back the failed insert and return the surviving row.
+        db.rollback()
+        if survivor := db.execute(stmt).scalars().first():
+            return survivor
+        raise
     return location
 
 
