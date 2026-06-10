@@ -40,6 +40,7 @@ struct ProgramDetailView: View {
                 .padding(.top, 8)
         }
         .toolbar(.hidden, for: .navigationBar)
+        .enableInteractiveSwipeBack()
         .task {
             if viewModel.program == nil {
                 await viewModel.load()
