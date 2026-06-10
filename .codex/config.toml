@@ -2,6 +2,9 @@
 command = "npx"
 args = [ "-y", "chrome-devtools-mcp@latest", "--no-usage-statistics", "--isolated" ]
 
+[mcp_servers.figma]
+url = "https://mcp.figma.com/mcp"
+
 [mcp_servers.serena]
 command = "serena"
 args = [ "start-mcp-server", "--context", "codex", "--project", ".", "--open-web-dashboard", "false" ]
@@ -20,4 +23,3 @@ enabled = false
 
 [feedback]
 enabled = false
-
