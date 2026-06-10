@@ -5,7 +5,7 @@ import SwiftUI
 /// A centered "Event reoccurence" title over a stack of single-select DS
 /// `RadioButton` pills (selected = brand-green, others = white outlined),
 /// followed by an italic helper caption. It is presented as a bare sheet with a
-/// custom blue drag handle.
+/// custom grey drag handle (Figma 329:1820).
 struct RepeatSelectionView: View {
     @Binding var selectedRepeat: String
     @Environment(\.dismiss) private var dismiss
@@ -17,7 +17,7 @@ struct RepeatSelectionView: View {
             dragHandle
 
             Text("Event reoccurence")
-                .font(.sectionHeader.weight(.bold))
+                .font(.sectionHeader)
                 .foregroundStyle(Theme.textPrimary)
                 .padding(.top, 8)
                 .padding(.bottom, 20)
@@ -33,7 +33,7 @@ struct RepeatSelectionView: View {
             .padding(.horizontal, 20)
 
             Text("Choose how often this program should hold repeated in person meetings/activities")
-                .font(.bodyText.italic())
+                .font(.labelItalic)
                 .foregroundStyle(Theme.textSecondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 20)
@@ -49,8 +49,8 @@ struct RepeatSelectionView: View {
 
     private var dragHandle: some View {
         Capsule()
-            .fill(Color.secondaryBlue)
-            .frame(width: 56, height: 6)
+            .fill(Color(.systemGray6))
+            .frame(width: 80, height: 6)
     }
 }
 
