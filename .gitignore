@@ -11,3 +11,6 @@ build/
 .agents/state/
 docs/plans/work/
 .DS_Store
+
+.agents/backup/
+.migration-backup/
