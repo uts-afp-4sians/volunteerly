@@ -44,14 +44,26 @@ def update_profile(
     Only fields explicitly set on ``payload`` are written, so omitting a field
     leaves it untouched. ``interest_keyword_ids`` is not a profile column — when
     present it replaces the user's interest set in the same transaction; when
-    omitted the interests are left untouched. Runs in the caller's
+    omitted the interests are left untouched. When no row exists yet (older
+    signup flows skipped the auto-create), this upserts: the profile is
+    created from the patch payload, with empty strings filling the non-null
+    name columns if the caller didn't provide them. Runs in the caller's
     request-scoped transaction.
     """
-    profile = get_profile(db, user_id)
     data = payload.model_dump(exclude_unset=True)
     interest_keyword_ids = data.pop("interest_keyword_ids", None)
-    for field, value in data.items():
-        setattr(profile, field, value)
+    profile = db.get(UserProfile, user_id)
+    if profile is None:
+        profile = UserProfile(
+            user_id=user_id,
+            first_name=data.pop("first_name", ""),
+            last_name=data.pop("last_name", ""),
+            **data,
+        )
+        db.add(profile)
+    else:
+        for field, value in data.items():
+            setattr(profile, field, value)
     if interest_keyword_ids is not None:
         replace_interests(db, user_id, interest_keyword_ids)
     db.flush()
