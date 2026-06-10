@@ -93,7 +93,7 @@ struct NewPostView: View {
             .buttonStyle(.plain)
             .accessibilityLabel("Back")
 
-            Text("New post")
+            Text("New Post")
                 .font(.pageTitle)
                 .foregroundStyle(Theme.textPrimary)
         }
@@ -106,9 +106,9 @@ struct NewPostView: View {
             showingDrafts = true
         } label: {
             HStack(spacing: 8) {
-                Image(systemName: "plus.viewfinder")
-                    .font(.system(size: 14))
-                Text("Drafts \(drafts.count)/\(maxDrafts)")
+                Image(systemName: "plus.square.dashed")
+                    .font(.buttonLabel)
+                Text("Drafts \(drafts.count)")
                     .font(.bodyText)
             }
             .foregroundStyle(Theme.textPrimary)
@@ -129,11 +129,13 @@ struct NewPostView: View {
     private var titleSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             fieldLabel("Title")
-            TextField("e.g. Best moment from your last event", text: $title)
+            TextField(text: $title) {
+                Text("e.g. Best moment from your last event").italic()
+            }
                 .font(.bodyText)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 14)
-                .background(Color(.systemGray6), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .background(Color(.systemGray6), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
             helper(text: titleHelper.text, isError: titleHelper.isError)
         }
     }
@@ -148,7 +150,7 @@ struct NewPostView: View {
                 .frame(minHeight: 120, alignment: .topLeading)
                 .scrollContentBackground(.hidden)
                 .padding(10)
-                .background(Color(.systemGray6), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .background(Color(.systemGray6), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
                 .overlay(alignment: .topLeading) {
                     if postBody.isEmpty {
                         Text("Share what's on your mind...")
@@ -178,7 +180,7 @@ struct NewPostView: View {
             fieldLabel("Add images")
             PhotosPicker(selection: $photoItem, matching: .images) {
                 ZStack {
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
                         .fill(Color(.systemGray6))
                     if let photoImage {
                         photoImage
@@ -197,7 +199,7 @@ struct NewPostView: View {
                     }
                 }
                 .frame(height: 200)
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
             }
             .buttonStyle(.plain)
         }
@@ -249,7 +251,7 @@ struct NewPostView: View {
 
     private func fieldLabel(_ text: String) -> some View {
         Text(text)
-            .font(.bodyStrong)
+            .font(.bodyText)
             .foregroundStyle(Theme.textPrimary)
     }
 
