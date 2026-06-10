@@ -23,6 +23,10 @@ final class ProgramDetailViewModel {
     /// Live participation snapshot from `GET /programs/{id}/participations`.
     var participantCount = 0
     var isFull = false
+
+    /// Member profiles from `GET /programs/{id}/participants`, driving the
+    /// avatar row. The host is drawn separately, so they're filtered out here.
+    var participants: [UserProfile] = []
     /// In-flight guard so a double-tap can't fire two join/leave requests.
     var isJoining = false
 
@@ -30,8 +34,11 @@ final class ProgramDetailViewModel {
     /// either the caller has joined (so they can leave) or a slot is free.
     var canToggleJoin: Bool { !isJoining && (isJoined || !isFull) }
 
-    /// Members other than the host, used to drive the avatar row.
-    var otherMemberCount: Int { Swift.max(0, participantCount - 1) }
+    /// Members other than the host, used to drive the avatar row (the host is
+    /// drawn separately). Empty until the participant profiles have loaded.
+    var otherMembers: [UserProfile] {
+        participants.filter { $0.userId != program?.creatorUserId }
+    }
 
     private var participationsPath: String { "/programs/\(programId)/participations" }
 
@@ -63,9 +70,13 @@ final class ProgramDetailViewModel {
             // `joined` is per-user, so it stays an authed lookup on the
             // participation sub-resource (the counter already came with detail).
             async let participation: ProgramParticipationSummary = httpClient.get(participationsPath)
+            // Member profiles (name + avatar) for the Members row; supplementary,
+            // so a failure leaves the row empty rather than blanking the screen.
+            async let participants: [UserProfile] = httpClient.get("/programs/\(programId)/participants")
             self.host = try? await host
             self.location = try? await location
             self.category = (try? await categories)?.first { $0.id == program.categoryId }
+            self.participants = (try? await participants) ?? []
 
             if let similar = try? await similar {
                 self.similarProgram = similar.program
@@ -82,6 +93,13 @@ final class ProgramDetailViewModel {
         }
 
         isLoading = false
+    }
+
+    /// Re-fetch the member profiles so the avatar row reflects a join/leave.
+    private func reloadParticipants() async {
+        if let updated: [UserProfile] = try? await httpClient.get("/programs/\(programId)/participants") {
+            participants = updated
+        }
     }
 
     private func apply(_ summary: ProgramParticipationSummary) {
@@ -107,12 +125,14 @@ final class ProgramDetailViewModel {
                 participantCount = Swift.max(0, participantCount - 1)
                 isFull = false
                 isJoined = false
+                await reloadParticipants()
                 return false
             } else {
                 let summary: ProgramParticipationSummary = try await httpClient.post(
                     participationsPath, body: EmptyBody()
                 )
                 apply(summary)
+                await reloadParticipants()
                 return summary.joined
             }
         } catch {
