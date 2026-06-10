@@ -19,9 +19,10 @@ final class PostProgramViewModel {
     var commitmentFrequency: CommitmentFrequency?
     var commitmentDuration: CommitmentDuration?
 
-    /// Banner image bytes, decoded by the picker in the view and uploaded to R2
-    /// on submit. The preview `Image` stays view-side since it isn't submitted.
-    var bannerImageData: Data?
+    /// Banner image bytes in pick order, decoded by the picker in the view and
+    /// uploaded to R2 on submit (up to three; the first is the banner). The
+    /// preview `Image`s stay view-side since they aren't submitted.
+    var bannerImageData: [Data] = []
 
     // MARK: - Details
 
@@ -47,7 +48,7 @@ final class PostProgramViewModel {
         !name.isEmpty
             || !description.isEmpty
             || !selectedRegion.isEmpty
-            || bannerImageData != nil
+            || !bannerImageData.isEmpty
             || maxVolunteers != Self.defaultMaxVolunteers
             || commitmentFrequency != nil
             || commitmentDuration != nil
@@ -103,9 +104,14 @@ final class PostProgramViewModel {
         defer { isSubmitting = false }
 
         do {
-            var bannerURL: String? = nil
-            if let data = bannerImageData {
-                bannerURL = try await UploadService.upload(data: data, kind: .program_banner)
+            // Upload each picked photo to R2 in order. A nil result means the
+            // backend has no R2 bucket (local dev) — skip it so the gallery only
+            // carries real URLs. The first surviving URL is the legacy banner.
+            var galleryURLs: [String] = []
+            for data in bannerImageData {
+                if let url = try await UploadService.upload(data: data, kind: .program_banner) {
+                    galleryURLs.append(url)
+                }
             }
 
             let request = ProgramCreateRequest(
@@ -117,7 +123,8 @@ final class PostProgramViewModel {
                 maxVolunteers: maxVolunteers,
                 commitmentFrequency: commitmentFrequency,
                 commitmentDuration: commitmentDuration,
-                bannerImageURL: bannerURL
+                bannerImageURL: galleryURLs.first,
+                bannerImageURLs: galleryURLs.isEmpty ? nil : galleryURLs
             )
             let _: Program = try await httpClient.post("/programs", body: request)
             return true

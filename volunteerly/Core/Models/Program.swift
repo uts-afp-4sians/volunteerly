@@ -8,6 +8,11 @@ nonisolated struct Program: Identifiable, Codable {
     let name: String
     let description: String
     let bannerImageURL: String?
+    /// Ordered banner gallery the detail screen renders as a carousel. The
+    /// program endpoints always send it (first entry == `bannerImageURL`);
+    /// optional here so legacy/mock payloads that omit it still decode — use
+    /// `galleryImageURLs` to read it with the single-banner fallback applied.
+    var bannerImageURLs: [String]? = nil
     let startDatetime: Date
     let endDatetime: Date
     let maxVolunteers: Int
@@ -35,6 +40,7 @@ nonisolated struct Program: Identifiable, Codable {
         case name = "program_name"
         case description
         case bannerImageURL = "banner_image_url"
+        case bannerImageURLs = "banner_image_urls"
         case startDatetime = "start_datetime"
         case endDatetime = "end_datetime"
         case maxVolunteers = "max_volunteers"
@@ -47,6 +53,19 @@ nonisolated struct Program: Identifiable, Codable {
         case participantCount = "participant_count"
         case isFull = "is_full"
         case distanceKm = "distance_km"
+    }
+
+    /// Ordered banner images for the carousel. Falls back to the single
+    /// `bannerImageURL` for legacy/mock payloads that predate the gallery, so
+    /// callers always get a usable list (empty when there are no images).
+    var galleryImageURLs: [String] {
+        if let urls = bannerImageURLs, !urls.isEmpty {
+            return urls.filter { !$0.isEmpty }
+        }
+        if let single = bannerImageURL, !single.isEmpty {
+            return [single]
+        }
+        return []
     }
 }
 
@@ -62,6 +81,9 @@ nonisolated struct ProgramCreateRequest: Encodable {
     var commitmentFrequency: CommitmentFrequency? = nil
     var commitmentDuration: CommitmentDuration? = nil
     var bannerImageURL: String? = nil
+    /// Ordered banner gallery (up to three). When set, the server stores the
+    /// full list and mirrors the first image back to `banner_image_url`.
+    var bannerImageURLs: [String]? = nil
     var locationId: Int? = nil
 
     enum CodingKeys: String, CodingKey {
@@ -74,6 +96,7 @@ nonisolated struct ProgramCreateRequest: Encodable {
         case commitmentFrequency = "commitment_frequency"
         case commitmentDuration = "commitment_duration"
         case bannerImageURL = "banner_image_url"
+        case bannerImageURLs = "banner_image_urls"
         case locationId = "location_id"
     }
 }

@@ -239,19 +239,19 @@ struct PostProgramView: View {
     // MARK: - Photo picker plumbing
 
     /// Decode the picked items into displayable images, preserving pick order.
-    /// The first photo doubles as the program banner (uploaded on submit); the
-    /// rest are preview-only until `/programs` accepts a media gallery.
+    /// All photos (up to `maxPhotos`) are uploaded as the program's banner
+    /// gallery on submit; the first doubles as the legacy single banner.
     func loadPhotos(_ items: [PhotosPickerItem]) async {
         var images: [Image] = []
-        var bannerData: Data?
+        var photoData: [Data] = []
         for item in items.prefix(maxPhotos) {
             guard let data = try? await item.loadTransferable(type: Data.self),
                   let uiImage = UIImage(data: data) else { continue }
-            if bannerData == nil { bannerData = data }  // first valid photo = banner
+            photoData.append(data)
             images.append(Image(uiImage: uiImage))
         }
         photoImages = images
-        viewModel.bannerImageData = bannerData
+        viewModel.bannerImageData = photoData
     }
 
     func removePhoto(at index: Int) {

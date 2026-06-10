@@ -107,6 +107,11 @@ enum MockData {
             name: "Centennial Park Tree Planting",
             description: "Join us for a morning of tree planting in Centennial Park to restore native bushland.",
             bannerImageURL: "https://picsum.photos/seed/prog1/800/400",
+            bannerImageURLs: [
+                "https://picsum.photos/seed/prog1/800/400",
+                "https://picsum.photos/seed/prog1b/800/400",
+                "https://picsum.photos/seed/prog1c/800/400",
+            ],
             startDatetime: ISO8601DateFormatter().date(from: "2026-07-01T08:00:00Z")!,
             endDatetime: ISO8601DateFormatter().date(from: "2026-07-01T12:00:00Z")!,
             maxVolunteers: 30,

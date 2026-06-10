@@ -649,6 +649,8 @@ internal enum Components {
             internal var commitment_duration: Components.Schemas.ProgramCreate.commitment_durationPayload?
             /// - Remark: Generated from `#/components/schemas/ProgramCreate/banner_image_url`.
             internal var banner_image_url: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/ProgramCreate/banner_image_urls`.
+            internal var banner_image_urls: [Swift.String]?
             /// - Remark: Generated from `#/components/schemas/ProgramCreate/location_id`.
             internal var location_id: Swift.Int?
             /// Creates a new `ProgramCreate`.
@@ -663,6 +665,7 @@ internal enum Components {
             ///   - commitment_frequency:
             ///   - commitment_duration:
             ///   - banner_image_url:
+            ///   - banner_image_urls:
             ///   - location_id:
             internal init(
                 category_id: Swift.Int,
@@ -674,6 +677,7 @@ internal enum Components {
                 commitment_frequency: Components.Schemas.ProgramCreate.commitment_frequencyPayload? = nil,
                 commitment_duration: Components.Schemas.ProgramCreate.commitment_durationPayload? = nil,
                 banner_image_url: Swift.String? = nil,
+                banner_image_urls: [Swift.String]? = nil,
                 location_id: Swift.Int? = nil
             ) {
                 self.category_id = category_id
@@ -685,6 +689,7 @@ internal enum Components {
                 self.commitment_frequency = commitment_frequency
                 self.commitment_duration = commitment_duration
                 self.banner_image_url = banner_image_url
+                self.banner_image_urls = banner_image_urls
                 self.location_id = location_id
             }
             internal enum CodingKeys: String, CodingKey {
@@ -697,6 +702,7 @@ internal enum Components {
                 case commitment_frequency
                 case commitment_duration
                 case banner_image_url
+                case banner_image_urls
                 case location_id
             }
         }
@@ -826,6 +832,8 @@ internal enum Components {
             internal var description: Swift.String
             /// - Remark: Generated from `#/components/schemas/ProgramRead/banner_image_url`.
             internal var banner_image_url: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/ProgramRead/banner_image_urls`.
+            internal var banner_image_urls: [Swift.String]?
             /// - Remark: Generated from `#/components/schemas/ProgramRead/start_datetime`.
             internal var start_datetime: Swift.String
             /// - Remark: Generated from `#/components/schemas/ProgramRead/end_datetime`.
@@ -896,6 +904,7 @@ internal enum Components {
             ///   - program_name:
             ///   - description:
             ///   - banner_image_url:
+            ///   - banner_image_urls:
             ///   - start_datetime:
             ///   - end_datetime:
             ///   - max_volunteers:
@@ -916,6 +925,7 @@ internal enum Components {
                 program_name: Swift.String,
                 description: Swift.String,
                 banner_image_url: Swift.String? = nil,
+                banner_image_urls: [Swift.String]? = nil,
                 start_datetime: Swift.String,
                 end_datetime: Swift.String,
                 max_volunteers: Swift.Int,
@@ -936,6 +946,7 @@ internal enum Components {
                 self.program_name = program_name
                 self.description = description
                 self.banner_image_url = banner_image_url
+                self.banner_image_urls = banner_image_urls
                 self.start_datetime = start_datetime
                 self.end_datetime = end_datetime
                 self.max_volunteers = max_volunteers
@@ -957,6 +968,7 @@ internal enum Components {
                 case program_name
                 case description
                 case banner_image_url
+                case banner_image_urls
                 case start_datetime
                 case end_datetime
                 case max_volunteers
