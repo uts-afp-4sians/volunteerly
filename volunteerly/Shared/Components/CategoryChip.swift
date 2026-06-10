@@ -46,10 +46,39 @@ struct CategoryChip: View {
     }
 }
 
+/// Loading placeholder that mirrors `CategoryChip`'s layout (50×50 tile + label
+/// bar) so the category row keeps its size while categories are fetched. Pulses
+/// gently, and stays static when Reduce Motion is on (HIG).
+struct CategoryChipSkeleton: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var pulsing = false
+
+    var body: some View {
+        VStack(spacing: 6) {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color(.systemGray5))
+                .frame(width: 50, height: 50)
+
+            RoundedRectangle(cornerRadius: 4, style: .continuous)
+                .fill(Color(.systemGray5))
+                .frame(width: 40, height: 11)
+        }
+        .frame(width: 56)
+        .opacity(pulsing ? 0.45 : 1)
+        .animation(
+            reduceMotion ? nil : .easeInOut(duration: 0.8).repeatForever(autoreverses: true),
+            value: pulsing
+        )
+        .onAppear { pulsing = true }
+    }
+}
+
 #Preview {
     HStack {
         CategoryChip(category: MockData.categories[0], isSelected: false, action: {})
         CategoryChip(category: MockData.categories[1], isSelected: true, action: {})
+        CategoryChipSkeleton()
+        CategoryChipSkeleton()
     }
     .padding()
 }

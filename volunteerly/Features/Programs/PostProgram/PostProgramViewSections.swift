@@ -73,12 +73,20 @@ extension PostProgramView {
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
-                    ForEach(viewModel.categories) { category in
-                        CategoryChip(
-                            category: category,
-                            isSelected: viewModel.selectedCategoryId == category.id
-                        ) {
-                            viewModel.selectedCategoryId = category.id
+                    // Categories load asynchronously — show placeholder chips so the
+                    // row keeps its height and reads as loading rather than empty.
+                    if viewModel.categories.isEmpty && viewModel.isLoadingCategories {
+                        ForEach(0..<6, id: \.self) { _ in
+                            CategoryChipSkeleton()
+                        }
+                    } else {
+                        ForEach(viewModel.categories) { category in
+                            CategoryChip(
+                                category: category,
+                                isSelected: viewModel.selectedCategoryId == category.id
+                            ) {
+                                viewModel.selectedCategoryId = category.id
+                            }
                         }
                     }
                 }

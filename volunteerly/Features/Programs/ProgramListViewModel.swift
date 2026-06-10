@@ -8,6 +8,7 @@ final class ProgramListViewModel {
     var programs: [Program] = []
     var categories: [ProgramCategory] = []
     var isLoading = false
+    var isLoadingCategories = false
     var errorMessage: String?
     var searchQuery = ""
     var selectedCategoryId: Int?
@@ -143,22 +144,28 @@ final class ProgramListViewModel {
         resolveLocationIfNeeded()
     }
 
-    /// Fetches programs (and categories on first load) with the current filters
-    /// and `userCoordinate`. Records a failure in `errorMessage` and otherwise
-    /// clears it; the existing list is left untouched on error.
+    /// Fetches programs with the current filters and `userCoordinate`. Records a
+    /// failure in `errorMessage` and otherwise clears it; the existing list is
+    /// left untouched on error.
     private func fetchPrograms() async {
         do {
-            async let programs: [Program] = httpClient.get(programsPath)
-            // Categories only need to load once.
-            if categories.isEmpty {
-                async let categories: [ProgramCategory] = httpClient.get("/categories")
-                self.categories = try await categories
-            }
-            self.programs = try await programs
+            self.programs = try await httpClient.get(programsPath)
             self.errorMessage = nil
         } catch {
             self.errorMessage = error.localizedDescription
         }
+    }
+
+    /// Loads the category catalog on its own track. Categories are a separate
+    /// resource from the program list and only need fetching once, so a category
+    /// outage must not blank the list, and the list reloading on every
+    /// search/filter must not refetch them. Failure leaves the row empty rather
+    /// than surfacing a blocking error over the (still usable) program list.
+    func loadCategories() async {
+        guard categories.isEmpty else { return }
+        isLoadingCategories = true
+        defer { isLoadingCategories = false }
+        categories = (try? await httpClient.get("/categories")) ?? []
     }
 
     /// Resolves the device coordinate at most once and, on success, re-fetches

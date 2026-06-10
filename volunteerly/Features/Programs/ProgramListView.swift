@@ -35,13 +35,20 @@ struct ProgramListView: View {
         .background(Color(.systemBackground))
         .toolbar(.hidden, for: .navigationBar)
         .task {
+            // Categories load independently of the program list so a category
+            // outage can't blank the list. Run both concurrently, then resolve
+            // interests once the catalog is in.
+            async let categoriesLoad: Void = viewModel.loadCategories()
             if viewModel.programs.isEmpty {
                 await viewModel.load()
             }
+            await categoriesLoad
             viewModel.applyUserInterests(profileStore.interests.map(\.name))
         }
         .refreshable {
+            async let categoriesLoad: Void = viewModel.loadCategories()
             await viewModel.load()
+            await categoriesLoad
             viewModel.applyUserInterests(profileStore.interests.map(\.name))
         }
         .onChange(of: profileStore.interests) { _, _ in
@@ -118,13 +125,21 @@ struct ProgramListView: View {
     private var categoryRow: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 17) {
-                ForEach(viewModel.categories) { category in
-                    CategoryChip(
-                        category: category,
-                        isSelected: viewModel.selectedCategoryId == category.id
-                    ) {
-                        viewModel.toggleCategory(category.id)
-                        Task { await viewModel.load() }
+                // Categories load on their own track — show placeholder chips so
+                // the filter row keeps its height instead of collapsing.
+                if viewModel.categories.isEmpty && viewModel.isLoadingCategories {
+                    ForEach(0..<6, id: \.self) { _ in
+                        CategoryChipSkeleton()
+                    }
+                } else {
+                    ForEach(viewModel.categories) { category in
+                        CategoryChip(
+                            category: category,
+                            isSelected: viewModel.selectedCategoryId == category.id
+                        ) {
+                            viewModel.toggleCategory(category.id)
+                            Task { await viewModel.load() }
+                        }
                     }
                 }
             }

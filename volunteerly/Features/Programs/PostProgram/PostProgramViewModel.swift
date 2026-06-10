@@ -34,6 +34,7 @@ final class PostProgramViewModel {
     // MARK: - Network-backed state
 
     var categories: [ProgramCategory] = []
+    var isLoadingCategories = false
     var isSubmitting = false
     var errorMessage: String?
 
@@ -81,6 +82,8 @@ final class PostProgramViewModel {
     }
 
     func loadCategories() async {
+        isLoadingCategories = true
+        defer { isLoadingCategories = false }
         do {
             let cats: [ProgramCategory] = try await httpClient.get("/categories")
             categories = cats
