@@ -214,9 +214,101 @@ struct ProgramDetailView: View {
                 }
             }
 
+            scheduleLocationCard(program)
+
             mapCard
         }
     }
+
+    // MARK: Schedule + location (Figma nodes 389:1062 time, 389:1067 place)
+
+    /// Two stacked caption rows — date/time then location — each an olive
+    /// `brand` icon beside a primary line and a muted second line, split by a
+    /// hairline. Matches the Figma "Label/Caption · 12 Regular" spec.
+    private func scheduleLocationCard(_ program: Program) -> some View {
+        VStack(spacing: 0) {
+            infoRow(
+                icon: "IconSchedule",
+                primary: Self.dateFormatter.string(from: program.startDatetime),
+                secondary: timeRangeText(program)
+            )
+            .padding(.vertical, 14)
+
+            Rectangle()
+                .fill(Theme.divider)
+                .frame(height: 1)
+
+            infoRow(
+                icon: "IconLocationOn",
+                primary: locationPrimary,
+                secondary: locationSecondary
+            )
+            .padding(.vertical, 14)
+        }
+    }
+
+    /// One caption row: a 24pt olive icon and a two-line label (primary +
+    /// secondary), vertically centred against the icon.
+    private func infoRow(icon: String, primary: String, secondary: String) -> some View {
+        HStack(spacing: 12) {
+            Image(icon)
+                .renderingMode(.template)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 24, height: 24)
+                .foregroundStyle(Color.brand)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(primary)
+                    .font(.captionText)
+                    .foregroundStyle(Theme.textPrimary)
+                if !secondary.isEmpty {
+                    Text(secondary)
+                        .font(.captionText)
+                        .foregroundStyle(Theme.black700)
+                }
+            }
+
+            Spacer(minLength: 0)
+        }
+    }
+
+    /// "7:00pm - 9:00pm" — lowercase am/pm to match the Figma caption.
+    private func timeRangeText(_ program: Program) -> String {
+        let formatter = Self.timeFormatter
+        return "\(formatter.string(from: program.startDatetime)) - "
+            + formatter.string(from: program.endDatetime)
+    }
+
+    /// Venue line — the city, or a placeholder when the location hasn't loaded.
+    private var locationPrimary: String {
+        viewModel.location?.city ?? "Location TBC"
+    }
+
+    /// Region/country beneath the city; empty (row collapses to one line) when
+    /// the program has no location yet.
+    private var locationSecondary: String {
+        guard let location = viewModel.location else { return "" }
+        if let region = location.stateRegion {
+            return "\(region), \(location.country)"
+        }
+        return location.country
+    }
+
+    /// "Thursday 11 Jun 2026". Static so the formatter isn't rebuilt per render.
+    private static let dateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEEE d MMM yyyy"
+        return formatter
+    }()
+
+    private static let timeFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "h:mma"
+        formatter.amSymbol = "am"
+        formatter.pmSymbol = "pm"
+        return formatter
+    }()
 
     /// Category pill(s) — gray rounded capsule with an emoji + label, matching
     /// the Figma chips (node 343:1288). The data model carries a single category
