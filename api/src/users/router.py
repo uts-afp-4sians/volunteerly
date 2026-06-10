@@ -3,13 +3,10 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from src.auth.deps import get_current_user
-from src.categories.model import Keyword
 from src.lib.database import get_db
 from src.users.model import User, UserInterest, UserProfile
 from src.users.schema import (
-    UserInterestDetail,
     UserInterestRead,
-    UserInterestsUpdate,
     UserProfileRead,
     UserProfileUpdate,
     UserRead,
@@ -18,8 +15,7 @@ from src.users.service import (
     ProfileNotFound,
     UnknownKeyword,
     get_profile,
-    list_interests,
-    replace_interests,
+    read_profile_with_interests,
     update_profile,
 )
 
@@ -33,13 +29,14 @@ router = APIRouter(tags=["users"])
 def get_my_profile(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-) -> UserProfile:
+) -> UserProfileRead:
     try:
-        return get_profile(db, current_user.user_id)
+        profile = get_profile(db, current_user.user_id)
     except ProfileNotFound:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found"
         ) from None
+    return read_profile_with_interests(db, profile)
 
 
 @router.patch("/me/profile", response_model=UserProfileRead)
@@ -47,35 +44,18 @@ def update_my_profile(
     payload: UserProfileUpdate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-) -> UserProfile:
+) -> UserProfileRead:
     try:
-        return update_profile(db, current_user.user_id, payload)
+        profile = update_profile(db, current_user.user_id, payload)
     except ProfileNotFound:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found"
         ) from None
-
-
-@router.get("/me/interests", response_model=list[UserInterestDetail])
-def get_my_interests(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-) -> list[Keyword]:
-    return list_interests(db, current_user.user_id)
-
-
-@router.put("/me/interests", response_model=list[UserInterestDetail])
-def update_my_interests(
-    payload: UserInterestsUpdate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-) -> list[Keyword]:
-    try:
-        return replace_interests(db, current_user.user_id, payload.keyword_ids)
     except UnknownKeyword as exc:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)
         ) from None
+    return read_profile_with_interests(db, profile)
 
 
 # MARK: - Public reads ("/users/{user_id}")

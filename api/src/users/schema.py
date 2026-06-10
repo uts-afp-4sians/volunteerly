@@ -15,42 +15,6 @@ class UserRead(BaseModel):
     created_at: UTCDateTime
 
 
-class UserProfileRead(BaseModel):
-    """Wire shape matching iOS `UserProfile`."""
-
-    model_config = ConfigDict(from_attributes=True)
-
-    user_id: int
-    first_name: str
-    last_name: str
-    date_of_birth: UTCDateTime | None = None
-    profile_image_url: str | None = None
-    occupation: str | None = None
-    goal_text: str | None = None
-    bio: str | None = None
-    instagram: str | None = None
-    key_skills: str | None = None
-    location_id: int | None = None
-
-
-class UserProfileUpdate(BaseModel):
-    """Partial update for the signed-in user's profile (`PATCH /me/profile`).
-
-    Every field is optional; only fields explicitly present in the request body
-    are written, so a client can update a single field without clobbering the
-    rest. Use ``model_dump(exclude_unset=True)`` to honour that contract.
-    """
-
-    first_name: str | None = Field(default=None, min_length=1, max_length=255)
-    last_name: str | None = Field(default=None, max_length=255)
-    profile_image_url: str | None = Field(default=None, max_length=500)
-    occupation: str | None = Field(default=None, max_length=255)
-    goal_text: str | None = Field(default=None, max_length=1000)
-    bio: str | None = Field(default=None, max_length=1000)
-    instagram: str | None = Field(default=None, max_length=255)
-    key_skills: str | None = Field(default=None, max_length=500)
-
-
 class UserInterestRead(BaseModel):
     """Wire shape matching iOS `UserInterest`."""
 
@@ -69,7 +33,48 @@ class UserInterestDetail(BaseModel):
     keyword_name: str
 
 
-class UserInterestsUpdate(BaseModel):
-    """Replace the signed-in user's interest set (`PUT /me/interests`)."""
+class UserProfileRead(BaseModel):
+    """Wire shape matching iOS `UserProfile`.
 
-    keyword_ids: list[int] = Field(default_factory=list)
+    Interests are embedded here (rather than served from a separate
+    ``/me/interests`` resource) so a single profile read hydrates the whole
+    screen and caches as one object.
+    """
+
+    model_config = ConfigDict(from_attributes=True)
+
+    user_id: int
+    first_name: str
+    last_name: str
+    date_of_birth: UTCDateTime | None = None
+    profile_image_url: str | None = None
+    occupation: str | None = None
+    goal_text: str | None = None
+    bio: str | None = None
+    instagram: str | None = None
+    key_skills: str | None = None
+    location_id: int | None = None
+    interests: list[UserInterestDetail] = Field(default_factory=list)
+
+
+class UserProfileUpdate(BaseModel):
+    """Partial update for the signed-in user's profile (`PATCH /me/profile`).
+
+    Every field is optional; only fields explicitly present in the request body
+    are written, so a client can update a single field without clobbering the
+    rest. Use ``model_dump(exclude_unset=True)`` to honour that contract.
+
+    ``interest_keyword_ids`` folds the interest write into the same request: when
+    present it replaces the user's whole interest set; when omitted the existing
+    interests are left untouched.
+    """
+
+    first_name: str | None = Field(default=None, min_length=1, max_length=255)
+    last_name: str | None = Field(default=None, max_length=255)
+    profile_image_url: str | None = Field(default=None, max_length=500)
+    occupation: str | None = Field(default=None, max_length=255)
+    goal_text: str | None = Field(default=None, max_length=1000)
+    bio: str | None = Field(default=None, max_length=1000)
+    instagram: str | None = Field(default=None, max_length=255)
+    key_skills: str | None = Field(default=None, max_length=500)
+    interest_keyword_ids: list[int] | None = Field(default=None)

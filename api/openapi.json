@@ -1087,84 +1087,6 @@
         ]
       }
     },
-    "/me/interests": {
-      "get": {
-        "tags": [
-          "users"
-        ],
-        "summary": "Get My Interests",
-        "operationId": "get_my_interests_me_interests_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/UserInterestDetail"
-                  },
-                  "type": "array",
-                  "title": "Response Get My Interests Me Interests Get"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ]
-      },
-      "put": {
-        "tags": [
-          "users"
-        ],
-        "summary": "Update My Interests",
-        "operationId": "update_my_interests_me_interests_put",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UserInterestsUpdate"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/UserInterestDetail"
-                  },
-                  "type": "array",
-                  "title": "Response Update My Interests Me Interests Put"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ]
-      }
-    },
     "/users/{user_id}": {
       "get": {
         "tags": [
@@ -2251,20 +2173,6 @@
         "title": "UserInterestRead",
         "description": "Wire shape matching iOS `UserInterest`."
       },
-      "UserInterestsUpdate": {
-        "properties": {
-          "keyword_ids": {
-            "items": {
-              "type": "integer"
-            },
-            "type": "array",
-            "title": "Keyword Ids"
-          }
-        },
-        "type": "object",
-        "title": "UserInterestsUpdate",
-        "description": "Replace the signed-in user's interest set (`PUT /me/interests`)."
-      },
       "UserProfileRead": {
         "properties": {
           "user_id": {
@@ -2318,6 +2226,13 @@
             "title": "Location Id",
             "nullable": true,
             "type": "integer"
+          },
+          "interests": {
+            "items": {
+              "$ref": "#/components/schemas/UserInterestDetail"
+            },
+            "type": "array",
+            "title": "Interests"
           }
         },
         "type": "object",
@@ -2327,7 +2242,7 @@
           "last_name"
         ],
         "title": "UserProfileRead",
-        "description": "Wire shape matching iOS `UserProfile`."
+        "description": "Wire shape matching iOS `UserProfile`.\n\nInterests are embedded here (rather than served from a separate\n``/me/interests`` resource) so a single profile read hydrates the whole\nscreen and caches as one object."
       },
       "UserProfileUpdate": {
         "properties": {
@@ -2379,11 +2294,19 @@
             "nullable": true,
             "type": "string",
             "maxLength": 500
+          },
+          "interest_keyword_ids": {
+            "title": "Interest Keyword Ids",
+            "nullable": true,
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
           }
         },
         "type": "object",
         "title": "UserProfileUpdate",
-        "description": "Partial update for the signed-in user's profile (`PATCH /me/profile`).\n\nEvery field is optional; only fields explicitly present in the request body\nare written, so a client can update a single field without clobbering the\nrest. Use ``model_dump(exclude_unset=True)`` to honour that contract."
+        "description": "Partial update for the signed-in user's profile (`PATCH /me/profile`).\n\nEvery field is optional; only fields explicitly present in the request body\nare written, so a client can update a single field without clobbering the\nrest. Use ``model_dump(exclude_unset=True)`` to honour that contract.\n\n``interest_keyword_ids`` folds the interest write into the same request: when\npresent it replaces the user's whole interest set; when omitted the existing\ninterests are left untouched."
       },
       "UserRead": {
         "properties": {
