@@ -8,8 +8,8 @@ struct FloatingTabBar: View {
     var body: some View {
         HStack(spacing: 0) {
             tabButton(.programs, icon: "magnifyingglass", label: "Programs")
-            tabButton(.myPrograms, icon: "rectangle.stack.fill", label: "My Programs")
-            tabButton(.profile, icon: "person.crop.circle.fill", label: "Profile")
+            tabButton(.bookmarks, icon: "rectangle.stack.fill", label: "My Programs")
+            tabButton(.myPage, icon: "person.crop.circle.fill", label: "Profile")
         }
         .frame(width: 200, height: 52)
         .background(
