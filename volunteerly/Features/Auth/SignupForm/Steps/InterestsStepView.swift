@@ -7,11 +7,11 @@ struct InterestsStepView: View {
         VStack(alignment: .leading, spacing: 24) {
             VStack(alignment: .leading, spacing: 8) {
                 Text("What are your interests?")
-                    .font(.pageTitle)
-                    .foregroundStyle(Theme.textPrimary)
+                    .largeTitleStyle()
                 Text("Pick at least two of the following")
-                    .font(.labelItalic)
-                    .foregroundStyle(Theme.textSecondary)
+                    .font(.bodyText)
+                    .italic()
+                    .foregroundStyle(Theme.textMeta)
             }
 
             if vm.isLoadingInterests {
@@ -46,13 +46,17 @@ struct InterestsStepView: View {
         } label: {
             HStack(spacing: 6) {
                 Text(emoji)
-                Text(name).font(.buttonLabel)
+                Text(name).font(.captionText)
             }
             .foregroundStyle(selected ? .white : Theme.textPrimary)
             .padding(.horizontal, 16)
-            .padding(.vertical, 14)
-            .background(selected ? Theme.forestLight : Color(.systemGray5))
-            .clipShape(Capsule())
+            .padding(.vertical, 15)
+            .background(selected ? Theme.brandSelected : Theme.surface, in: Capsule())
+            .overlay {
+                if !selected {
+                    Capsule().stroke(Theme.divider, lineWidth: 1)
+                }
+            }
         }
         .buttonStyle(.plain)
     }

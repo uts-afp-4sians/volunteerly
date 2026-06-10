@@ -6,33 +6,27 @@ struct GoalsStepView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 28) {
             Text("What are your\ncurrent goals?")
-                .font(.pageTitle)
-                .foregroundStyle(Theme.textPrimary)
+                .largeTitleStyle()
 
             VStack(alignment: .leading, spacing: 10) {
-                HStack(spacing: 3) {
-                    Text("What are you hoping to get out of this?")
-                        .font(.bodyText)
-                        .foregroundStyle(Theme.textPrimary)
-                    Text("*").requiredFieldStyle()
-                }
+                FieldLabel(text: "What are you hoping to get out of this?", required: true)
                 ZStack(alignment: .topLeading) {
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color(.systemGray6))
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .fill(Theme.surface)
                     if vm.expectations.isEmpty {
                         Text("e.g. Meet people who care about the\nsame social justice programs as I do")
                             .font(.bodyText)
                             .italic()
-                            .foregroundStyle(Theme.textSecondary)
-                            .padding(.horizontal, 14)
-                            .padding(.top, 14)
+                            .foregroundStyle(Theme.placeholder)
+                            .padding(.horizontal, 17)
+                            .padding(.top, 17)
                             .allowsHitTesting(false)
                     }
                     TextField("", text: $vm.expectations, axis: .vertical)
                         .font(.bodyText)
                         .lineLimit(3...)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 14)
+                        .padding(.horizontal, 17)
+                        .padding(.vertical, 17)
                 }
                 .frame(minHeight: 92)
             }
@@ -56,12 +50,12 @@ struct GoalsStepView: View {
 
     private var optionalDivider: some View {
         HStack(spacing: 12) {
-            Rectangle().fill(Theme.border).frame(height: 1)
+            Rectangle().fill(Theme.divider).frame(height: 1)
             Text("Optional")
                 .font(.labelItalic)
-                .foregroundStyle(Theme.textSecondary)
+                .foregroundStyle(Theme.placeholder)
                 .fixedSize()
-            Rectangle().fill(Theme.border).frame(height: 1)
+            Rectangle().fill(Theme.divider).frame(height: 1)
         }
     }
 
@@ -75,17 +69,17 @@ struct GoalsStepView: View {
                     Text(placeholder)
                         .font(.bodyText)
                         .italic()
-                        .foregroundStyle(Theme.textSecondary)
-                        .padding(.horizontal, 14)
+                        .foregroundStyle(Theme.placeholder)
+                        .padding(.horizontal, 17)
                         .allowsHitTesting(false)
                 }
                 TextField("", text: text)
                     .font(.bodyText)
-                    .padding(.horizontal, 14)
+                    .padding(.horizontal, 17)
             }
-            .frame(height: 52)
-            .background(Color(.systemGray6))
-            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .frame(height: 54)
+            .background(Theme.surface)
+            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         }
     }
 }
