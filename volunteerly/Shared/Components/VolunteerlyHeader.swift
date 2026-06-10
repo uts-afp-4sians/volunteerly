@@ -28,14 +28,15 @@ struct VolunteerlyHeader: View {
 
             Spacer()
 
-            // Value-based navigation routes through the stack's
-            // `navigationDestination(for: ProfileRoute.self)` so the destination
-            // is built in the stack's environment (consistent with MyProgramsView).
-            NavigationLink(value: ProfileRoute()) {
+            // The avatar selects the My page tab rather than pushing a screen,
+            // now that My page is a top-level tab.
+            Button {
+                tabRouter?.selectedTab = .myPage
+            } label: {
                 Avatar(source: .placeholder, size: 32)
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("Profile settings")
+            .accessibilityLabel("My page")
         }
     }
 }
