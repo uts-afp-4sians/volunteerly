@@ -19,9 +19,11 @@ struct CategoryChip: View {
                             .foregroundStyle(isSelected ? Color.white : Color.primary)
                     )
 
+                // Figma 190:639: every category label stays #1f1f1f regular —
+                // selection is signalled by the green tile, not the label.
                 Text(category.name)
-                    .font(.system(size: 11, weight: isSelected ? .medium : .regular))
-                    .foregroundStyle(isSelected ? Color.brand : .primary)
+                    .font(.system(size: 11, weight: .regular))
+                    .foregroundStyle(.primary)
                     .lineLimit(1)
             }
             .frame(width: 56)
