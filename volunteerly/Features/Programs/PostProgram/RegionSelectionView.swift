@@ -303,16 +303,31 @@ struct RegionSelectionView: View {
 
         let location = CLLocation(latitude: center.latitude, longitude: center.longitude)
         Task {
+            guard let name = await reverseGeocodedName(for: location), !name.isEmpty else { return }
+            pickedName = name
+            searchText = name
+        }
+    }
+
+    /// Reverse-geocode a location to a short, human-readable name. iOS 26 uses
+    /// `MKReverseGeocodingRequest`; earlier releases fall back to `CLGeocoder`.
+    private func reverseGeocodedName(for location: CLLocation) async -> String? {
+        if #available(iOS 26.0, *) {
             guard let request = MKReverseGeocodingRequest(location: location),
-                  let items = try? await request.mapItems,
-                  let item = items.first else { return }
-            let name = item.address?.shortAddress
+                  let item = try? await request.mapItems.first
+            else {
+                return nil
+            }
+            return item.address?.shortAddress
                 ?? item.addressRepresentations?.cityName
                 ?? item.name
-            if let name, !name.isEmpty {
-                pickedName = name
-                searchText = name
+        } else {
+            guard let placemark = try? await CLGeocoder().reverseGeocodeLocation(location).first
+            else {
+                return nil
             }
+            let parts = [placemark.locality, placemark.administrativeArea].compactMap { $0 }
+            return parts.isEmpty ? placemark.name : parts.joined(separator: ", ")
         }
     }
 
@@ -341,15 +356,22 @@ struct LocationSearchResult: Identifiable {
 
     init(_ mapItem: MKMapItem) {
         self.title = mapItem.name ?? "Unknown location"
-        // Build a readable secondary line from the modern address representation.
-        if let full = mapItem.address?.fullAddress, !full.isEmpty {
-            self.subtitle = full
+        if #available(iOS 26.0, *) {
+            // Build a readable secondary line from the modern address representation.
+            if let full = mapItem.address?.fullAddress, !full.isEmpty {
+                self.subtitle = full
+            } else {
+                let repr = mapItem.addressRepresentations
+                let parts = [repr?.cityName, repr?.regionName].compactMap { $0 }
+                self.subtitle = parts.isEmpty ? nil : parts.joined(separator: ", ")
+            }
+            self.coordinate = Coordinate(mapItem.location.coordinate)
         } else {
-            let repr = mapItem.addressRepresentations
-            let parts = [repr?.cityName, repr?.regionName].compactMap { $0 }
+            let placemark = mapItem.placemark
+            let parts = [placemark.locality, placemark.administrativeArea].compactMap { $0 }
             self.subtitle = parts.isEmpty ? nil : parts.joined(separator: ", ")
+            self.coordinate = Coordinate(placemark.coordinate)
         }
-        self.coordinate = Coordinate(mapItem.location.coordinate)
     }
 }
 
@@ -404,35 +426,38 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
         Task { @MainActor [weak self] in
             guard let self = self else { return }
             self.currentCoordinate = Coordinate(coordinate)
-            
-            // MapKit's MKReverseGeocodingRequest to replace deprecated CLGeocoder
-            guard let request = MKReverseGeocodingRequest(location: location) else {
-                self.errorMessage = "Could not create geocoding request."
-                self.isLocating = false
-                return
-            }
-            do {
-                let mapItems = try await request.mapItems
-                if let mapItem = mapItems.first {
-                    if let short = mapItem.address?.shortAddress, !short.isEmpty {
-                        self.currentLocationName = short
-                    } else if let city = mapItem.addressRepresentations?.cityName, !city.isEmpty {
-                        self.currentLocationName = city
-                    } else if let full = mapItem.address?.fullAddress, !full.isEmpty {
-                        self.currentLocationName = full
-                    } else {
-                        self.errorMessage = "Could not resolve location."
-                    }
-                } else {
-                    self.errorMessage = "No location items found."
-                }
-            } catch {
-                self.errorMessage = "Error detecting location: \(error.localizedDescription)"
+
+            if let name = await Self.reverseGeocodedName(for: location) {
+                self.currentLocationName = name
+            } else {
+                self.errorMessage = "Could not resolve location."
             }
             self.isLocating = false
         }
     }
-    
+
+    /// Reverse-geocode a location to a short name. iOS 26 uses
+    /// `MKReverseGeocodingRequest`; earlier releases fall back to `CLGeocoder`.
+    static func reverseGeocodedName(for location: CLLocation) async -> String? {
+        if #available(iOS 26.0, *) {
+            guard let request = MKReverseGeocodingRequest(location: location),
+                  let item = try? await request.mapItems.first
+            else {
+                return nil
+            }
+            return item.address?.shortAddress
+                ?? item.addressRepresentations?.cityName
+                ?? item.address?.fullAddress
+        } else {
+            guard let placemark = try? await CLGeocoder().reverseGeocodeLocation(location).first
+            else {
+                return nil
+            }
+            let parts = [placemark.locality, placemark.administrativeArea].compactMap { $0 }
+            return parts.isEmpty ? placemark.name : parts.joined(separator: ", ")
+        }
+    }
+
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
         isLocating = false
         errorMessage = "Error: \(error.localizedDescription)"
