@@ -152,13 +152,29 @@ final class ProgramListViewModel {
             // Categories only need to load once.
             if categories.isEmpty {
                 async let categories: [ProgramCategory] = httpClient.get("/categories")
-                self.categories = try await categories
+                self.categories = Self.augmenting(try await categories)
             }
             self.programs = try await programs
             self.errorMessage = nil
         } catch {
             self.errorMessage = error.localizedDescription
         }
+    }
+
+    /// Client-side category extras. The backend seed only covers eight
+    /// categories — Sport and Technology are appended here so they're
+    /// selectable on the chip row. The synthetic ids are negative so they
+    /// never collide with a real ``category_id`` from the API.
+    private static func augmenting(_ remote: [ProgramCategory]) -> [ProgramCategory] {
+        var list = remote
+        let known = Set(list.map { $0.name.lowercased() })
+        if !known.contains("sport") && !known.contains("sports") {
+            list.append(ProgramCategory(id: -1, name: "Sport"))
+        }
+        if !known.contains("technology") {
+            list.append(ProgramCategory(id: -2, name: "Technology"))
+        }
+        return list
     }
 
     /// Resolves the device coordinate at most once and, on success, re-fetches

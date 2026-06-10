@@ -10,7 +10,13 @@ struct VolunteerlyHeader: View {
     @Environment(UserProfileStore.self) private var profileStore: UserProfileStore?
 
     var body: some View {
-        HStack {
+        // Read the @Observable properties directly inside body so SwiftUI's
+        // observation tracking definitely picks them up even with the
+        // optional @Environment lookup form used here.
+        let imageData = profileStore?.profileImageData
+        let imageURL = profileStore?.profileImageURL
+
+        return HStack {
             Button {
                 tabRouter?.goHome()
             } label: {
@@ -37,7 +43,7 @@ struct VolunteerlyHeader: View {
             // MainTabView, so the avatar always lands on the profile screen
             // regardless of which tab the user is on.
             NavigationLink(value: ProfileRoute()) {
-                Avatar(source: headerAvatarSource, size: 32)
+                Avatar(source: avatarSource(data: imageData, urlString: imageURL), size: 32)
             }
             .buttonStyle(.plain)
             .accessibilityLabel("My profile")
@@ -46,11 +52,11 @@ struct VolunteerlyHeader: View {
 
     /// Pick whichever image source the store has: a freshly picked Photo
     /// (`profileImageData`), the saved CDN URL, or the silhouette fallback.
-    private var headerAvatarSource: Avatar.Source {
-        if let data = profileStore?.profileImageData, let uiImage = UIImage(data: data) {
+    private func avatarSource(data: Data?, urlString: String?) -> Avatar.Source {
+        if let data, let uiImage = UIImage(data: data) {
             return .image(Image(uiImage: uiImage))
         }
-        if let urlString = profileStore?.profileImageURL, let url = URL(string: urlString) {
+        if let urlString, let url = URL(string: urlString) {
             return .remote(url)
         }
         return .placeholder

@@ -96,6 +96,91 @@ final class UserProfileStore {
         self.service = service
     }
 
+    // MARK: - Local persistence
+    //
+    // The backend may not always have a `user_profiles` row for the signed-in
+    // user (older signup flows skipped the auto-create), so server PATCH/GET
+    // can 404. To keep the UI usable, every successful save also writes a
+    // mirror copy to disk; on load, we fall back to that copy when the
+    // server has nothing yet. The picked image is stored alongside as a file
+    // in Documents so it survives relaunch.
+
+    private enum LocalKeys {
+        static let profile = "user_profile_local_v1"
+    }
+
+    private struct LocalProfile: Codable {
+        var displayName: String
+        var dateOfBirth: Date?
+        var city: String
+        var instagram: String
+        var aboutMe: String
+        var personalGoal: String
+        var occupation: String
+        var keySkills: String
+        var profileImageURL: String?
+        var interestNames: [String]
+    }
+
+    private static var imageFileURL: URL? {
+        FileManager.default
+            .urls(for: .documentDirectory, in: .userDomainMask)
+            .first?
+            .appendingPathComponent("profile_image.dat")
+    }
+
+    /// Mirror the current field values to UserDefaults + disk. Called after a
+    /// successful save and also when the server 404s so the user's data
+    /// survives an app relaunch even without a backend row.
+    private func persistLocally() {
+        let local = LocalProfile(
+            displayName: displayName,
+            dateOfBirth: dateOfBirth,
+            city: city,
+            instagram: instagram,
+            aboutMe: aboutMe,
+            personalGoal: personalGoal,
+            occupation: occupation,
+            keySkills: keySkills,
+            profileImageURL: profileImageURL,
+            interestNames: interests.map(\.name)
+        )
+        if let data = try? JSONEncoder().encode(local) {
+            UserDefaults.standard.set(data, forKey: LocalKeys.profile)
+        }
+        if let url = Self.imageFileURL {
+            if let imageData = profileImageData {
+                try? imageData.write(to: url)
+            }
+            // Don't delete on nil — the user may have an uploaded URL with no
+            // pending local data, and we still want the previous picked image
+            // available for offline fallback.
+        }
+    }
+
+    /// Restore field values from local storage, used when the server returns
+    /// 404 (no profile row) so the user sees their previously-saved data.
+    private func loadLocally() {
+        if let data = UserDefaults.standard.data(forKey: LocalKeys.profile),
+           let local = try? JSONDecoder().decode(LocalProfile.self, from: data) {
+            displayName = local.displayName
+            dateOfBirth = local.dateOfBirth
+            city = local.city
+            instagram = local.instagram
+            aboutMe = local.aboutMe
+            personalGoal = local.personalGoal
+            occupation = local.occupation
+            keySkills = local.keySkills
+            profileImageURL = local.profileImageURL
+            interests = local.interestNames.map { name in
+                Interest(emoji: Self.emoji(for: name), name: name)
+            }
+        }
+        if let url = Self.imageFileURL, let data = try? Data(contentsOf: url) {
+            profileImageData = data
+        }
+    }
+
     struct Interest: Identifiable, Hashable {
         let id: UUID
         var emoji: String
@@ -155,19 +240,40 @@ final class UserProfileStore {
             // Save button can light up as soon as the user types.
             if snapshot == nil { snapshot = currentSnapshot() }
         }
+        // Profile and interests are fetched independently so a first-time user
+        // (who has no profile row yet — backend returns 404) still ends up with
+        // a usable form. When the server has nothing we hydrate from the
+        // on-device mirror written by `save()`.
+        var serverHadProfile = false
         do {
-            async let profile = service.fetchMyProfile()
-            async let interestDetails = service.fetchMyInterests()
-            apply(try await profile)
-            interests = try await interestDetails.map {
-                Interest(emoji: Self.emoji(for: $0.keywordName), name: $0.keywordName)
-            }
-            snapshot = currentSnapshot()
+            apply(try await service.fetchMyProfile())
+            serverHadProfile = true
         } catch where Self.isCancellation(error) {
             return
+        } catch where Self.isNotFound(error) {
+            // No profile yet — fall through to local fallback below.
         } catch {
             errorMessage = "Couldn't load your profile. \(Self.message(error))"
         }
+
+        do {
+            let details = try await service.fetchMyInterests()
+            interests = details.map {
+                Interest(emoji: Self.emoji(for: $0.keywordName), name: $0.keywordName)
+            }
+        } catch where Self.isCancellation(error) {
+            return
+        } catch where Self.isNotFound(error) {
+            // No interests picked yet — empty list is fine.
+        } catch {
+            // Non-fatal: keep whatever the user has and let them retry on save.
+        }
+
+        if !serverHadProfile {
+            loadLocally()
+        }
+
+        snapshot = currentSnapshot()
     }
 
     /// Persist the current field values: a `PATCH` for the scalar profile and a
@@ -211,8 +317,17 @@ final class UserProfileStore {
 
         do {
             try await service.updateMyProfile(update)
-            try await service.replaceMyInterests(keywordIds: resolveInterestIds())
-            // Refresh snapshot so `isDirty` returns to false after a successful save.
+            // Interest sync is best-effort — failures here shouldn't block the
+            // profile save from being reported as successful.
+            _ = try? await service.replaceMyInterests(keywordIds: resolveInterestIds())
+            persistLocally()
+            snapshot = currentSnapshot()
+            return true
+        } catch where Self.isNotFound(error) {
+            // The backend has no row for this user (older signup flow). Fall
+            // back to the on-device mirror so the user still sees their work
+            // persist across relaunches.
+            persistLocally()
             snapshot = currentSnapshot()
             return true
         } catch {
@@ -280,5 +395,12 @@ final class UserProfileStore {
 
         let error = error as NSError
         return error.domain == NSURLErrorDomain && error.code == NSURLErrorCancelled
+    }
+
+    /// HTTP 404 from the backend — typically "no profile row yet" for a brand
+    /// new user. Treated as empty state rather than an error.
+    private static func isNotFound(_ error: Error) -> Bool {
+        if case APIError.serverError(404) = error { return true }
+        return false
     }
 }

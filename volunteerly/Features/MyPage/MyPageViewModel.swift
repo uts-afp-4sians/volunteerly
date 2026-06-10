@@ -55,20 +55,27 @@ final class MyPageViewModel {
         return list.sorted { $0.startDatetime < $1.startDatetime }
     }
 
-    /// Currently joined, not-yet-finished programs, soonest first.
+    /// Currently joined, not-yet-finished programs, soonest first. Only
+    /// programs the user has actually joined (tracked client-side in
+    /// `JoinedProgramsStore`) are included.
     var activePrograms: [Program] {
+        let joined = JoinedProgramsStore.shared.ids
         let now = Date.now
         let list = filtered { program in
-            program.endDatetime >= now && (program.status == .open || program.status == .full)
+            joined.contains(program.id)
+                && program.endDatetime >= now
+                && (program.status == .open || program.status == .full)
         }
         return list.sorted { $0.startDatetime < $1.startDatetime }
     }
 
-    /// Programs that have already taken place (or were closed/cancelled).
+    /// Joined programs that have already taken place (or were closed/cancelled).
     var pastPrograms: [Program] {
+        let joined = JoinedProgramsStore.shared.ids
         let now = Date.now
         let list = filtered { program in
-            program.endDatetime < now || program.status == .closed || program.status == .cancelled
+            joined.contains(program.id)
+                && (program.endDatetime < now || program.status == .closed || program.status == .cancelled)
         }
         return list.sorted { $0.startDatetime > $1.startDatetime }
     }

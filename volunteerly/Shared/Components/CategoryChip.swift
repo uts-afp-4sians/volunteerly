@@ -33,15 +33,17 @@ struct CategoryChip: View {
 
     static func symbolName(for category: String) -> String {
         switch category.lowercased() {
-        case "environment": "leaf.fill"
-        case "community":   "person.3.fill"
-        case "education":   "book.fill"
-        case "health":      "heart.fill"
-        case "animals":     "pawprint.fill"
-        case "seniors":     "figure.roll"
-        case "food":        "fork.knife"
-        case "arts":        "paintpalette.fill"
-        default:            "square.grid.2x2.fill"
+        case "environment":         "leaf.fill"
+        case "community":           "person.3.fill"
+        case "education":           "book.fill"
+        case "health":              "heart.fill"
+        case "animals":             "pawprint.fill"
+        case "seniors":             "figure.roll"
+        case "food":                "fork.knife"
+        case "arts":                "paintpalette.fill"
+        case "sport", "sports":     "figure.run"
+        case "technology", "tech":  "laptopcomputer"
+        default:                    "square.grid.2x2.fill"
         }
     }
 }

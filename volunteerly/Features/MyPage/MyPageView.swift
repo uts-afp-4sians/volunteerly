@@ -11,9 +11,8 @@ struct MyPageView: View {
     // Optional — logout flips the root route to .auth, tearing this view down
     // during an animated switch, when a non-optional lookup would `fatalError`.
     @Environment(AppRouter.self) private var router: AppRouter?
-    // Optional so previews that don't inject a router still render (logo tap no-ops).
-    @Environment(TabRouter.self) private var tabRouter: TabRouter?
     @Environment(UserProfileStore.self) private var profileStore
+    @Environment(\.dismiss) private var dismiss
     @State private var viewModel: MyPageViewModel
 
     @State private var profileItem: PhotosPickerItem?
@@ -21,6 +20,9 @@ struct MyPageView: View {
     @State private var showDOBPicker = false
     @State private var editingName: String?
     @State private var didLoad = false
+    /// `true` for the moment after a successful save and until the user edits
+    /// anything else, swapping the Save button's label to "Saved!" as feedback.
+    @State private var justSaved = false
 
     private let horizontalPadding: CGFloat = 20
     private static let dangerColor = Color(red: 0xD9 / 255, green: 0x29 / 255, blue: 0x29 / 255)
@@ -34,7 +36,7 @@ struct MyPageView: View {
 
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                headerRow
+                backRow
                 titleRow
 
                 if let error = store.errorMessage {
@@ -82,47 +84,19 @@ struct MyPageView: View {
 
     // MARK: - Header
 
-    /// Branding wordmark (taps home) with a trailing Log Out pill — matching the
-    /// Figma top bar where logout lives in the header instead of the form footer.
-    private var headerRow: some View {
-        HStack {
-            Button {
-                tabRouter?.goHome()
-            } label: {
-                HStack(spacing: 0) {
-                    Image(.logo)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 30, height: 30)
-                    Image(.volunteerlyTitle)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(maxWidth: 130, maxHeight: 36)
-                        .padding(.leading, -6)
-                }
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Volunteerly, go to home")
-
-            Spacer()
+    /// Back chip on its own row at the top, leading into the "My Page" title.
+    private var backRow: some View {
+        Button {
+            dismiss()
+        } label: {
+            Image(systemName: "arrow.left")
+                .font(.system(size: 16, weight: .bold))
+                .foregroundStyle(Color.textPrimary)
+                .frame(width: 32, height: 32)
+                .background(Color(.systemGray6), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
         }
-        // Match VolunteerlyHeader's row height. The wordmark image's intrinsic
-        // 36pt cap drives the row height there; we mirror it here so the title
-        // renders at the same size and the logo lines up with the other tabs.
-        .frame(height: 36)
-        // Float Log Out as an overlay so its taller pill can't grow the logo row.
-        .overlay(alignment: .trailing) {
-            Button(action: performLogout) {
-                Text("Log Out")
-                    .font(.buttonLabel)
-                    .foregroundStyle(Color.textPrimary)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
-                    .background(Color(.systemGray4).opacity(0.87), in: Capsule())
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Log out")
-        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Back")
     }
 
     private var titleRow: some View {
@@ -165,24 +139,19 @@ struct MyPageView: View {
                     Task { store.profileImageData = try? await newItem?.loadTransferable(type: Data.self) }
                 }
 
-                // Name is read-only and centered; the pencil button sits
-                // directly below it to keep the name truly centred on screen.
-                Text(store.displayName.isEmpty ? "Your name" : store.displayName)
-                    .font(.bodyStrong)
-                    .foregroundStyle(store.displayName.isEmpty ? Theme.textSecondary : Color.textPrimary)
-                    .padding(.top, 6)
+                // Pencil sits immediately to the left of the name; a hidden
+                // copy on the right balances the row so the name itself is
+                // visually centred on the screen.
+                HStack(spacing: 10) {
+                    pencilButton
 
-                Button {
-                    editingName = store.displayName
-                } label: {
-                    Image(systemName: "pencil")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundStyle(Theme.forest)
-                        .padding(6)
-                        .background(Theme.forest.opacity(0.1), in: Circle())
+                    Text(store.displayName.isEmpty ? "Your name" : store.displayName)
+                        .font(.bodyStrong)
+                        .foregroundStyle(store.displayName.isEmpty ? Theme.textSecondary : Color.textPrimary)
+
+                    pencilButton.hidden()
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Edit name")
+                .padding(.top, 6)
             }
             .frame(maxWidth: .infinity)
 
@@ -222,6 +191,23 @@ struct MyPageView: View {
         .sheet(isPresented: $showDOBPicker) {
             dateOfBirthSheet
         }
+    }
+
+    /// Brand-green pencil pill that opens the name-edit alert. Used twice in
+    /// the name row — once visible on the left, once hidden on the right to
+    /// keep the name optically centred.
+    private var pencilButton: some View {
+        Button {
+            editingName = profileStore.displayName
+        } label: {
+            Image(systemName: "pencil")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundStyle(Theme.forest)
+                .padding(6)
+                .background(Theme.forest.opacity(0.1), in: Circle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Edit name")
     }
 
     /// Single-line input styled to match the existing instagram / city fields.
@@ -397,16 +383,27 @@ struct MyPageView: View {
     /// Figma footer pair that replaces the single "Save my info" button.
     private var editButtons: some View {
         Button {
-            Task { await profileStore.save() }
+            Task {
+                if await profileStore.save() {
+                    justSaved = true
+                }
+            }
         } label: {
             if profileStore.isSaving {
                 ProgressView().tint(Color.onBrand)
+            } else if justSaved && !profileStore.isDirty {
+                Text("Saved!")
             } else {
                 Text("Save changes")
             }
         }
         .buttonStyle(PrimaryActionButtonStyle())
         .disabled(profileStore.isLoading || profileStore.isSaving || !profileStore.isDirty)
+        .onChange(of: profileStore.isDirty) { _, dirty in
+            // Any new edit clears the "Saved!" confirmation so the button can
+            // light up again as "Save changes".
+            if dirty { justSaved = false }
+        }
     }
 
     // MARK: - My program
@@ -466,7 +463,7 @@ struct MyPageView: View {
     }
 
     private var emptyState: some View {
-        Text("No programs yet")
+        Text("You haven't joined any program yet.")
             .font(.labelItalic)
             .foregroundStyle(Theme.textSecondary)
             .frame(maxWidth: .infinity, alignment: .center)
@@ -510,12 +507,6 @@ struct MyPageView: View {
         }
     }
 
-    private func performLogout() {
-        AuthService.shared.logout()
-        withAnimation(.easeInOut(duration: 0.35)) {
-            router?.route = .auth
-        }
-    }
 }
 
 /// A single program row in the My program list: thumbnail + name.

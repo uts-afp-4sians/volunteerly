@@ -106,6 +106,9 @@ final class ProgramDetailViewModel {
         participantCount = summary.participantCount
         isFull = summary.isFull
         isJoined = summary.joined
+        // Mirror the server's verdict into the on-device joined set so MyPage
+        // can list this program (or stop listing it) without an extra fetch.
+        JoinedProgramsStore.shared.setJoined(summary.joined, programId: programId)
     }
 
     func toggleBookmark() { isBookmarked.toggle() }
@@ -125,6 +128,7 @@ final class ProgramDetailViewModel {
                 participantCount = Swift.max(0, participantCount - 1)
                 isFull = false
                 isJoined = false
+                JoinedProgramsStore.shared.setJoined(false, programId: programId)
                 await reloadParticipants()
                 return false
             } else {
