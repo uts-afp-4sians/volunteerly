@@ -39,6 +39,15 @@ struct ProgramDetailView: View {
                 .padding(.horizontal, horizontalPadding)
                 .padding(.top, 8)
         }
+        .safeAreaInset(edge: .bottom) {
+            if let program = viewModel.program {
+                joinBar(program)
+                    .padding(.horizontal, horizontalPadding)
+                    .padding(.top, 12)
+                    .padding(.bottom, 16)
+                    .background(Color.white)
+            }
+        }
         .toolbar(.hidden, for: .navigationBar)
         .enableInteractiveSwipeBack()
         .task {
@@ -50,8 +59,9 @@ struct ProgramDetailView: View {
             if let program = viewModel.program {
                 ProgramJoinedView(
                     program: program,
-                    goal: viewModel.category?.name,
-                    teammateCount: program.maxVolunteers,
+                    teamName: viewModel.category?.name,
+                    members: viewModel.allMembers,
+                    participantCount: viewModel.participantCount,
                     onCheckTeamBoard: { showJoinedConfirmation = false },
                     onFindOtherOpportunities: {
                         showJoinedConfirmation = false
@@ -150,7 +160,6 @@ struct ProgramDetailView: View {
                 } else if let similar = viewModel.similarProgram {
                     similarSection(similar)
                 }
-                joinBar(program)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         } else {
@@ -166,102 +175,74 @@ struct ProgramDetailView: View {
         VStack(alignment: .leading, spacing: 24) {
             VStack(alignment: .leading, spacing: 16) {
                 Text(program.name)
-                    .font(.pageTitle)
+                    .font(.sectionTitle)
+                    .tracking(-0.3)
                     .foregroundStyle(Theme.textPrimary)
                     .fixedSize(horizontal: false, vertical: true)
 
                 if let category = viewModel.category {
-                    categoryChip(category)
+                    categoryChips(category)
                 }
-            }
-
-            VStack(alignment: .leading, spacing: 12) {
-                infoBox(
-                    icon: "clock",
-                    title: dayText(program.startDatetime),
-                    subtitle: timeRange(program)
-                )
-                infoBox(
-                    icon: "mappin.and.ellipse",
-                    title: viewModel.location?.city ?? "Location to be announced",
-                    subtitle: locationSubtitle
-                )
             }
 
             mapCard
         }
     }
 
-    private func categoryChip(_ category: ProgramCategory) -> some View {
-        HStack(spacing: 8) {
-            Image(systemName: CategoryChip.symbolName(for: category.name))
-                .font(.system(size: 14))
-            Text(category.name)
-                .font(.bodyText)
+    /// Category pill(s) — gray rounded capsule with an emoji + label, matching
+    /// the Figma chips (node 343:1288). The data model carries a single category
+    /// today, so one pill renders; `FlowLayout` wraps cleanly if more are added.
+    private func categoryChips(_ category: ProgramCategory) -> some View {
+        FlowLayout(spacing: 9) {
+            chip(emoji: Self.categoryEmoji(for: category.name), title: category.name)
         }
+    }
+
+    private func chip(emoji: String, title: String) -> some View {
+        HStack(spacing: 6) {
+            Text(emoji)
+            Text(title)
+        }
+        .font(.bodyText)
         .foregroundStyle(Theme.textPrimary)
-        .padding(.horizontal, 14)
-        .padding(.vertical, 8)
-        .background(Color(.systemGray6), in: Capsule())
+        .padding(10)
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 
-    /// Outlined information box used for the schedule and location summaries.
-    private func infoBox(icon: String, title: String, subtitle: String?) -> some View {
-        HStack(alignment: .center, spacing: 14) {
-            Image(systemName: icon)
-                .font(.system(size: 16))
-                .foregroundStyle(Theme.textPrimary)
-                .frame(width: 20)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(.bodyText)
-                    .foregroundStyle(Theme.textPrimary)
-                if let subtitle, !subtitle.isEmpty {
-                    Text(subtitle)
-                        .font(.bodyText)
-                        .foregroundStyle(Theme.textPrimary)
-                }
-            }
-            Spacer(minLength: 0)
+    /// Emoji glyph paired with a category, mirroring the Figma chips. Matched on
+    /// substrings so "Community Building" resolves the same as "Community".
+    static func categoryEmoji(for category: String) -> String {
+        let name = category.lowercased()
+        switch true {
+        case name.contains("environment"): return "🌱"
+        case name.contains("community"):   return "👥"
+        case name.contains("education"):   return "📚"
+        case name.contains("health"):      return "❤️"
+        case name.contains("animal"):      return "🐾"
+        case name.contains("senior"):      return "🧓"
+        case name.contains("food"):        return "🍽️"
+        case name.contains("art"):         return "🎨"
+        default:                           return "🏷️"
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .overlay(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .strokeBorder(Theme.border, lineWidth: 1)
-        )
     }
 
-    private var locationSubtitle: String? {
-        guard let location = viewModel.location else { return nil }
-        let parts = [location.stateRegion, location.country].compactMap { $0 }
-        return parts.isEmpty ? nil : parts.joined(separator: ", ")
-    }
+    // MARK: Map
 
-    // MARK: Map + View Location
-
-    /// Map preview with the green "View Location" action fused to its lower edge,
-    /// the two clipped together as a single rounded card.
+    /// Map preview as a single rounded card (Figma node 390:1124): 211pt tall,
+    /// 30pt corners and no fused "View Location" button — per the design system
+    /// the card itself is the action, so tapping it opens Maps. Falls back to a
+    /// neutral placeholder with a map glyph when the program has no coordinates.
     private var mapCard: some View {
-        VStack(spacing: 0) {
+        Button {
+            openInMaps()
+        } label: {
             mapTile
-                .frame(height: 179)
-
-            Button {
-                openInMaps()
-            } label: {
-                Text("View Location")
-                    .font(.buttonLabel)
-                    .foregroundStyle(Color.onBrand)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 18)
-                    .background(Color.brand)
-            }
-            .buttonStyle(.plain)
-            .disabled(locationCoordinate == nil)
+                .frame(height: 211)
+                .frame(maxWidth: .infinity)
+                .clipShape(RoundedRectangle(cornerRadius: 30, style: .continuous))
         }
-        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .buttonStyle(.plain)
+        .disabled(locationCoordinate == nil)
     }
 
     @ViewBuilder
@@ -278,12 +259,12 @@ struct ProgramDetailView: View {
             .allowsHitTesting(false)
         } else {
             Rectangle()
-                .fill(Color(.systemGray6))
+                .fill(Theme.surface)
                 .frame(maxWidth: .infinity)
                 .overlay(
-                    Image(systemName: "map")
+                    Image(systemName: "map.fill")
                         .font(.system(size: 28))
-                        .foregroundStyle(Color(uiColor: .systemGray3))
+                        .foregroundStyle(Theme.black300)
                 )
         }
     }
@@ -311,17 +292,21 @@ struct ProgramDetailView: View {
 
     private func descriptionSection(_ program: Program) -> some View {
         VStack(alignment: .leading, spacing: 16) {
-            sectionHeader("Description")
+            // Figma node 343:1312 — "Description" is a plain 16 Regular label
+            // here, not a section title.
+            Text("Description")
+                .font(.bodyText)
+                .foregroundStyle(Theme.textPrimary)
             Text(program.description)
                 .font(.bodyText)
                 .italic()
                 .foregroundStyle(Theme.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(16)
+                .padding(17)
                 .background(
                     RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .fill(Color(.systemGray6))
+                        .fill(Theme.surface)
                 )
         }
     }
@@ -332,17 +317,7 @@ struct ProgramDetailView: View {
         VStack(alignment: .leading, spacing: 24) {
             sectionHeader("Members")
 
-            VStack(alignment: .leading, spacing: 10) {
-                hostAvatar
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(viewModel.host?.fullName ?? "Host name")
-                        .font(.bodyStrong)
-                        .foregroundStyle(Theme.textPrimary)
-                    Text(hostBio)
-                        .font(.bodyText)
-                        .foregroundStyle(Theme.textSecondary)
-                }
-            }
+            hostCard
 
             if !viewModel.otherMembers.isEmpty {
                 memberAvatars
@@ -354,26 +329,31 @@ struct ProgramDetailView: View {
         viewModel.host?.occupation ?? viewModel.host?.goalText ?? "Host"
     }
 
-    /// Rounded-square host avatar, falling back to the person silhouette when no
-    /// profile image is available.
-    private var hostAvatar: some View {
-        let size: CGFloat = 96
-        return RoundedRectangle(cornerRadius: 16, style: .continuous)
-            .fill(Color(red: 245 / 255, green: 245 / 255, blue: 245 / 255))
-            .frame(width: size, height: size)
-            .overlay {
-                AsyncImage(url: URL(string: viewModel.host?.profileImageURL ?? "")) { image in
-                    image.resizable().aspectRatio(contentMode: .fill)
-                } placeholder: {
-                    Image(systemName: "person.fill")
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .foregroundStyle(Color(uiColor: .systemGray3))
-                        .frame(width: size * 0.55)
-                        .offset(y: size * 0.13)
-                }
+    /// Host as a centered white card with a soft shadow (Figma node 343:1348):
+    /// 114×126, circular avatar, name in bold and role beneath.
+    private var hostCard: some View {
+        VStack(spacing: 8) {
+            Avatar(url: hostAvatarURL, size: 56)
+            VStack(spacing: 2) {
+                Text(viewModel.host?.fullName ?? "Host name")
+                    .font(.bodyStrong)
+                    .foregroundStyle(Theme.textPrimary)
+                Text(hostBio)
+                    .font(.subheadText)
+                    .foregroundStyle(Theme.black500)
             }
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .multilineTextAlignment(.center)
+        }
+        .padding(.horizontal, 8)
+        .frame(width: 114, height: 126)
+        .background(Color.white, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .shadow(color: Color.black.opacity(0.05), radius: 30, x: 30, y: -30)
+    }
+
+    /// The host's profile photo URL, or `nil` so `Avatar` shows its silhouette.
+    private var hostAvatarURL: URL? {
+        guard let url = viewModel.host?.profileImageURL, !url.isEmpty else { return nil }
+        return URL(string: url)
     }
 
     /// Up to four member avatars from real participant profiles; when there are
@@ -457,25 +437,6 @@ struct ProgramDetailView: View {
             .font(.sectionHeader)
             .bold()
             .foregroundStyle(Theme.textPrimary)
-    }
-
-    private func dayText(_ date: Date) -> String {
-        Self.dayFormatter.string(from: date)
-    }
-
-    /// "Thursday 11 June 2026" — day-first, full month, no commas, matching the
-    /// schedule box in the Figma design.
-    private static let dayFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_AU")
-        formatter.dateFormat = "EEEE d MMMM yyyy"
-        return formatter
-    }()
-
-    private func timeRange(_ program: Program) -> String {
-        let start = program.startDatetime.formatted(date: .omitted, time: .shortened)
-        let end = program.endDatetime.formatted(date: .omitted, time: .shortened)
-        return "\(start) - \(end)"
     }
 }
 
