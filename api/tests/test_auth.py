@@ -90,6 +90,45 @@ def test_register_rejects_short_password(client: TestClient) -> None:
         },
     )
     assert res.status_code == 422
+    # The handler flattens pydantic's nested `detail` into `{field: message}`
+    # so the mobile form can render the message inline under the password input.
+    body = res.json()
+    assert body["error"] == "validation_error"
+    assert "password" in body["fields"]
+
+
+def test_register_invalid_email_returns_field_error(client: TestClient) -> None:
+    res = client.post(
+        "/auth/register",
+        json={
+            "email": "not-an-email",
+            "password": "password123",
+            "first_name": "Bad",
+            "last_name": "Email",
+        },
+    )
+    assert res.status_code == 422
+    body = res.json()
+    assert body["fields"]["email"] == "Enter a valid email address."
+
+
+def test_register_empty_email_and_password_returns_both_fields(
+    client: TestClient,
+) -> None:
+    # Mirrors the original iOS bug: an empty email + empty password were posted.
+    res = client.post(
+        "/auth/register",
+        json={
+            "email": "",
+            "password": "",
+            "first_name": "Empty",
+            "last_name": "Fields",
+        },
+    )
+    assert res.status_code == 422
+    fields = res.json()["fields"]
+    assert "email" in fields
+    assert "password" in fields
 
 
 def test_me_with_token(client: TestClient) -> None:

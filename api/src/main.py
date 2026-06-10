@@ -5,6 +5,7 @@ from uuid import uuid4
 
 import structlog
 from fastapi import FastAPI, HTTPException, Request, Response, status
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -78,6 +79,57 @@ async def global_exception_handler(request: Request, exc: Exception) -> JSONResp
             else str(exc),
             request_id=request_id,
         ).model_dump(),
+    )
+
+
+# Human-readable copy for the fields a client form can actually correct. The
+# raw pydantic messages ("value is not a valid email address: ...") are too
+# noisy to drop straight into a sign-up form, so map the known ones; anything
+# unmapped falls back to the pydantic message.
+_FRIENDLY_FIELD_MESSAGES: dict[str, str] = {
+    "email": "Enter a valid email address.",
+    "password": "Password must be at least 8 characters.",
+    "first_name": "First name is required.",
+    "last_name": "Last name is required.",
+}
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(
+    request: Request, exc: RequestValidationError
+) -> JSONResponse:
+    """Return a flat, field-keyed 422 the mobile form can render inline.
+
+    FastAPI's default 422 body nests a `detail` list of pydantic errors that is
+    awkward to surface in UI. We collapse it to `{field: message}` and log the
+    offending field names (never the values, so passwords don't leak).
+    """
+    request_id = request.headers.get("X-Request-ID")
+    fields: dict[str, str] = {}
+    for err in exc.errors():
+        # loc looks like ("body", "email"); the field is the last path segment.
+        loc = [str(part) for part in err.get("loc", ()) if part != "body"]
+        field = loc[-1] if loc else "body"
+        fields.setdefault(
+            field,
+            _FRIENDLY_FIELD_MESSAGES.get(field, err.get("msg", "Invalid value.")),
+        )
+
+    logger.warning(
+        "Request validation failed",
+        request_id=request_id,
+        path=request.url.path,
+        method=request.method,
+        fields=list(fields.keys()),
+    )
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        content={
+            "error": "validation_error",
+            "message": "Some details need your attention.",
+            "fields": fields,
+            "request_id": request_id,
+        },
     )
 
 
