@@ -54,6 +54,23 @@ internal protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /programs/{program_id}`.
     /// - Remark: Generated from `#/paths//programs/{program_id}/get(get_program_programs__program_id__get)`.
     func get_program_programs__program_id__get(_ input: Operations.get_program_programs__program_id__get.Input) async throws -> Operations.get_program_programs__program_id__get.Output
+    /// Update Program
+    ///
+    /// Partial update of a program. Only fields set in ``payload`` are touched.
+    /// Host-only: returns 403 if the caller isn't the program's creator.
+    ///
+    /// - Remark: HTTP `PATCH /programs/{program_id}`.
+    /// - Remark: Generated from `#/paths//programs/{program_id}/patch(update_program_programs__program_id__patch)`.
+    func update_program_programs__program_id__patch(_ input: Operations.update_program_programs__program_id__patch.Input) async throws -> Operations.update_program_programs__program_id__patch.Output
+    /// Delete Program
+    ///
+    /// Soft-delete a program. Sets ``is_deleted=True`` so it stops appearing in
+    /// feeds (``_load_program`` filters them out) while keeping the row for audit
+    /// and participation history. Host-only.
+    ///
+    /// - Remark: HTTP `DELETE /programs/{program_id}`.
+    /// - Remark: Generated from `#/paths//programs/{program_id}/delete(delete_program_programs__program_id__delete)`.
+    func delete_program_programs__program_id__delete(_ input: Operations.delete_program_programs__program_id__delete.Input) async throws -> Operations.delete_program_programs__program_id__delete.Output
     /// List Program Keywords
     ///
     /// - Remark: HTTP `GET /programs/{program_id}/keywords`.
@@ -216,6 +233,41 @@ extension APIProtocol {
         headers: Operations.get_program_programs__program_id__get.Input.Headers = .init()
     ) async throws -> Operations.get_program_programs__program_id__get.Output {
         try await get_program_programs__program_id__get(Operations.get_program_programs__program_id__get.Input(
+            path: path,
+            headers: headers
+        ))
+    }
+    /// Update Program
+    ///
+    /// Partial update of a program. Only fields set in ``payload`` are touched.
+    /// Host-only: returns 403 if the caller isn't the program's creator.
+    ///
+    /// - Remark: HTTP `PATCH /programs/{program_id}`.
+    /// - Remark: Generated from `#/paths//programs/{program_id}/patch(update_program_programs__program_id__patch)`.
+    internal func update_program_programs__program_id__patch(
+        path: Operations.update_program_programs__program_id__patch.Input.Path,
+        headers: Operations.update_program_programs__program_id__patch.Input.Headers = .init(),
+        body: Operations.update_program_programs__program_id__patch.Input.Body
+    ) async throws -> Operations.update_program_programs__program_id__patch.Output {
+        try await update_program_programs__program_id__patch(Operations.update_program_programs__program_id__patch.Input(
+            path: path,
+            headers: headers,
+            body: body
+        ))
+    }
+    /// Delete Program
+    ///
+    /// Soft-delete a program. Sets ``is_deleted=True`` so it stops appearing in
+    /// feeds (``_load_program`` filters them out) while keeping the row for audit
+    /// and participation history. Host-only.
+    ///
+    /// - Remark: HTTP `DELETE /programs/{program_id}`.
+    /// - Remark: Generated from `#/paths//programs/{program_id}/delete(delete_program_programs__program_id__delete)`.
+    internal func delete_program_programs__program_id__delete(
+        path: Operations.delete_program_programs__program_id__delete.Input.Path,
+        headers: Operations.delete_program_programs__program_id__delete.Input.Headers = .init()
+    ) async throws -> Operations.delete_program_programs__program_id__delete.Output {
+        try await delete_program_programs__program_id__delete(Operations.delete_program_programs__program_id__delete.Input(
             path: path,
             headers: headers
         ))
@@ -992,6 +1044,117 @@ internal enum Components {
             case full = "full"
             case closed = "closed"
             case cancelled = "cancelled"
+        }
+        /// Partial update body for ``PATCH /programs/{program_id}``. Every field is
+        /// optional; only fields explicitly set are applied. The caller must be the
+        /// program's creator (enforced in the route).
+        ///
+        /// - Remark: Generated from `#/components/schemas/ProgramUpdate`.
+        internal struct ProgramUpdate: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/ProgramUpdate/category_id`.
+            internal var category_id: Swift.Int?
+            /// - Remark: Generated from `#/components/schemas/ProgramUpdate/program_name`.
+            internal var program_name: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/ProgramUpdate/description`.
+            internal var description: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/ProgramUpdate/start_datetime`.
+            internal var start_datetime: Foundation.Date?
+            /// - Remark: Generated from `#/components/schemas/ProgramUpdate/end_datetime`.
+            internal var end_datetime: Foundation.Date?
+            /// - Remark: Generated from `#/components/schemas/ProgramUpdate/max_volunteers`.
+            internal var max_volunteers: Swift.Int?
+            /// - Remark: Generated from `#/components/schemas/ProgramUpdate/commitment_frequency`.
+            internal struct commitment_frequencyPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/ProgramUpdate/commitment_frequency/value1`.
+                internal var value1: Components.Schemas.CommitmentFrequency
+                /// Creates a new `commitment_frequencyPayload`.
+                ///
+                /// - Parameters:
+                ///   - value1:
+                internal init(value1: Components.Schemas.CommitmentFrequency) {
+                    self.value1 = value1
+                }
+                internal init(from decoder: any Swift.Decoder) throws {
+                    self.value1 = try decoder.decodeFromSingleValueContainer()
+                }
+                internal func encode(to encoder: any Swift.Encoder) throws {
+                    try encoder.encodeToSingleValueContainer(self.value1)
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/ProgramUpdate/commitment_frequency`.
+            internal var commitment_frequency: Components.Schemas.ProgramUpdate.commitment_frequencyPayload?
+            /// - Remark: Generated from `#/components/schemas/ProgramUpdate/commitment_duration`.
+            internal struct commitment_durationPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/ProgramUpdate/commitment_duration/value1`.
+                internal var value1: Components.Schemas.CommitmentDuration
+                /// Creates a new `commitment_durationPayload`.
+                ///
+                /// - Parameters:
+                ///   - value1:
+                internal init(value1: Components.Schemas.CommitmentDuration) {
+                    self.value1 = value1
+                }
+                internal init(from decoder: any Swift.Decoder) throws {
+                    self.value1 = try decoder.decodeFromSingleValueContainer()
+                }
+                internal func encode(to encoder: any Swift.Encoder) throws {
+                    try encoder.encodeToSingleValueContainer(self.value1)
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/ProgramUpdate/commitment_duration`.
+            internal var commitment_duration: Components.Schemas.ProgramUpdate.commitment_durationPayload?
+            /// - Remark: Generated from `#/components/schemas/ProgramUpdate/banner_image_url`.
+            internal var banner_image_url: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/ProgramUpdate/location_id`.
+            internal var location_id: Swift.Int?
+            /// Creates a new `ProgramUpdate`.
+            ///
+            /// - Parameters:
+            ///   - category_id:
+            ///   - program_name:
+            ///   - description:
+            ///   - start_datetime:
+            ///   - end_datetime:
+            ///   - max_volunteers:
+            ///   - commitment_frequency:
+            ///   - commitment_duration:
+            ///   - banner_image_url:
+            ///   - location_id:
+            internal init(
+                category_id: Swift.Int? = nil,
+                program_name: Swift.String? = nil,
+                description: Swift.String? = nil,
+                start_datetime: Foundation.Date? = nil,
+                end_datetime: Foundation.Date? = nil,
+                max_volunteers: Swift.Int? = nil,
+                commitment_frequency: Components.Schemas.ProgramUpdate.commitment_frequencyPayload? = nil,
+                commitment_duration: Components.Schemas.ProgramUpdate.commitment_durationPayload? = nil,
+                banner_image_url: Swift.String? = nil,
+                location_id: Swift.Int? = nil
+            ) {
+                self.category_id = category_id
+                self.program_name = program_name
+                self.description = description
+                self.start_datetime = start_datetime
+                self.end_datetime = end_datetime
+                self.max_volunteers = max_volunteers
+                self.commitment_frequency = commitment_frequency
+                self.commitment_duration = commitment_duration
+                self.banner_image_url = banner_image_url
+                self.location_id = location_id
+            }
+            internal enum CodingKeys: String, CodingKey {
+                case category_id
+                case program_name
+                case description
+                case start_datetime
+                case end_datetime
+                case max_volunteers
+                case commitment_frequency
+                case commitment_duration
+                case banner_image_url
+                case location_id
+            }
         }
         /// Sign-up payload: creates a `User` plus its `UserProfile`.
         ///
@@ -2353,6 +2516,364 @@ internal enum Operations {
             /// - Throws: An error if `self` is not `.unprocessableContent`.
             /// - SeeAlso: `.unprocessableContent`.
             internal var unprocessableContent: Operations.get_program_programs__program_id__get.Output.UnprocessableContent {
+                get throws {
+                    switch self {
+                    case let .unprocessableContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unprocessableContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        internal enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            internal init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            internal var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            internal static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Update Program
+    ///
+    /// Partial update of a program. Only fields set in ``payload`` are touched.
+    /// Host-only: returns 403 if the caller isn't the program's creator.
+    ///
+    /// - Remark: HTTP `PATCH /programs/{program_id}`.
+    /// - Remark: Generated from `#/paths//programs/{program_id}/patch(update_program_programs__program_id__patch)`.
+    internal enum update_program_programs__program_id__patch {
+        internal static let id: Swift.String = "update_program_programs__program_id__patch"
+        internal struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/programs/{program_id}/PATCH/path`.
+            internal struct Path: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/programs/{program_id}/PATCH/path/program_id`.
+                internal var program_id: Swift.Int
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - program_id:
+                internal init(program_id: Swift.Int) {
+                    self.program_id = program_id
+                }
+            }
+            internal var path: Operations.update_program_programs__program_id__patch.Input.Path
+            /// - Remark: Generated from `#/paths/programs/{program_id}/PATCH/header`.
+            internal struct Headers: Sendable, Hashable {
+                internal var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.update_program_programs__program_id__patch.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                internal init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.update_program_programs__program_id__patch.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            internal var headers: Operations.update_program_programs__program_id__patch.Input.Headers
+            /// - Remark: Generated from `#/paths/programs/{program_id}/PATCH/requestBody`.
+            internal enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/programs/{program_id}/PATCH/requestBody/content/application\/json`.
+                case json(Components.Schemas.ProgramUpdate)
+            }
+            internal var body: Operations.update_program_programs__program_id__patch.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            ///   - body:
+            internal init(
+                path: Operations.update_program_programs__program_id__patch.Input.Path,
+                headers: Operations.update_program_programs__program_id__patch.Input.Headers = .init(),
+                body: Operations.update_program_programs__program_id__patch.Input.Body
+            ) {
+                self.path = path
+                self.headers = headers
+                self.body = body
+            }
+        }
+        internal enum Output: Sendable, Hashable {
+            internal struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/programs/{program_id}/PATCH/responses/200/content`.
+                internal enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/programs/{program_id}/PATCH/responses/200/content/application\/json`.
+                    case json(Components.Schemas.ProgramRead)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    internal var json: Components.Schemas.ProgramRead {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                internal var body: Operations.update_program_programs__program_id__patch.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                internal init(body: Operations.update_program_programs__program_id__patch.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// Successful Response
+            ///
+            /// - Remark: Generated from `#/paths//programs/{program_id}/patch(update_program_programs__program_id__patch)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.update_program_programs__program_id__patch.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            internal var ok: Operations.update_program_programs__program_id__patch.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            internal struct UnprocessableContent: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/programs/{program_id}/PATCH/responses/422/content`.
+                internal enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/programs/{program_id}/PATCH/responses/422/content/application\/json`.
+                    case json(Components.Schemas.HTTPValidationError)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    internal var json: Components.Schemas.HTTPValidationError {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                internal var body: Operations.update_program_programs__program_id__patch.Output.UnprocessableContent.Body
+                /// Creates a new `UnprocessableContent`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                internal init(body: Operations.update_program_programs__program_id__patch.Output.UnprocessableContent.Body) {
+                    self.body = body
+                }
+            }
+            /// Validation Error
+            ///
+            /// - Remark: Generated from `#/paths//programs/{program_id}/patch(update_program_programs__program_id__patch)/responses/422`.
+            ///
+            /// HTTP response code: `422 unprocessableContent`.
+            case unprocessableContent(Operations.update_program_programs__program_id__patch.Output.UnprocessableContent)
+            /// The associated value of the enum case if `self` is `.unprocessableContent`.
+            ///
+            /// - Throws: An error if `self` is not `.unprocessableContent`.
+            /// - SeeAlso: `.unprocessableContent`.
+            internal var unprocessableContent: Operations.update_program_programs__program_id__patch.Output.UnprocessableContent {
+                get throws {
+                    switch self {
+                    case let .unprocessableContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unprocessableContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        internal enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            internal init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            internal var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            internal static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Delete Program
+    ///
+    /// Soft-delete a program. Sets ``is_deleted=True`` so it stops appearing in
+    /// feeds (``_load_program`` filters them out) while keeping the row for audit
+    /// and participation history. Host-only.
+    ///
+    /// - Remark: HTTP `DELETE /programs/{program_id}`.
+    /// - Remark: Generated from `#/paths//programs/{program_id}/delete(delete_program_programs__program_id__delete)`.
+    internal enum delete_program_programs__program_id__delete {
+        internal static let id: Swift.String = "delete_program_programs__program_id__delete"
+        internal struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/programs/{program_id}/DELETE/path`.
+            internal struct Path: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/programs/{program_id}/DELETE/path/program_id`.
+                internal var program_id: Swift.Int
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - program_id:
+                internal init(program_id: Swift.Int) {
+                    self.program_id = program_id
+                }
+            }
+            internal var path: Operations.delete_program_programs__program_id__delete.Input.Path
+            /// - Remark: Generated from `#/paths/programs/{program_id}/DELETE/header`.
+            internal struct Headers: Sendable, Hashable {
+                internal var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.delete_program_programs__program_id__delete.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                internal init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.delete_program_programs__program_id__delete.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            internal var headers: Operations.delete_program_programs__program_id__delete.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            internal init(
+                path: Operations.delete_program_programs__program_id__delete.Input.Path,
+                headers: Operations.delete_program_programs__program_id__delete.Input.Headers = .init()
+            ) {
+                self.path = path
+                self.headers = headers
+            }
+        }
+        internal enum Output: Sendable, Hashable {
+            internal struct NoContent: Sendable, Hashable {
+                /// Creates a new `NoContent`.
+                internal init() {}
+            }
+            /// Successful Response
+            ///
+            /// - Remark: Generated from `#/paths//programs/{program_id}/delete(delete_program_programs__program_id__delete)/responses/204`.
+            ///
+            /// HTTP response code: `204 noContent`.
+            case noContent(Operations.delete_program_programs__program_id__delete.Output.NoContent)
+            /// Successful Response
+            ///
+            /// - Remark: Generated from `#/paths//programs/{program_id}/delete(delete_program_programs__program_id__delete)/responses/204`.
+            ///
+            /// HTTP response code: `204 noContent`.
+            internal static var noContent: Self {
+                .noContent(.init())
+            }
+            /// The associated value of the enum case if `self` is `.noContent`.
+            ///
+            /// - Throws: An error if `self` is not `.noContent`.
+            /// - SeeAlso: `.noContent`.
+            internal var noContent: Operations.delete_program_programs__program_id__delete.Output.NoContent {
+                get throws {
+                    switch self {
+                    case let .noContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "noContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            internal struct UnprocessableContent: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/programs/{program_id}/DELETE/responses/422/content`.
+                internal enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/programs/{program_id}/DELETE/responses/422/content/application\/json`.
+                    case json(Components.Schemas.HTTPValidationError)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    internal var json: Components.Schemas.HTTPValidationError {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                internal var body: Operations.delete_program_programs__program_id__delete.Output.UnprocessableContent.Body
+                /// Creates a new `UnprocessableContent`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                internal init(body: Operations.delete_program_programs__program_id__delete.Output.UnprocessableContent.Body) {
+                    self.body = body
+                }
+            }
+            /// Validation Error
+            ///
+            /// - Remark: Generated from `#/paths//programs/{program_id}/delete(delete_program_programs__program_id__delete)/responses/422`.
+            ///
+            /// HTTP response code: `422 unprocessableContent`.
+            case unprocessableContent(Operations.delete_program_programs__program_id__delete.Output.UnprocessableContent)
+            /// The associated value of the enum case if `self` is `.unprocessableContent`.
+            ///
+            /// - Throws: An error if `self` is not `.unprocessableContent`.
+            /// - SeeAlso: `.unprocessableContent`.
+            internal var unprocessableContent: Operations.delete_program_programs__program_id__delete.Output.UnprocessableContent {
                 get throws {
                     switch self {
                     case let .unprocessableContent(response):

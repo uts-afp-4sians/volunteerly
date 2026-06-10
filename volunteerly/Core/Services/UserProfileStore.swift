@@ -8,6 +8,10 @@ import Observation
 @MainActor
 @Observable
 final class UserProfileStore {
+    /// The signed-in user's row id. Hydrated from `GET /me/profile` on load.
+    /// `nil` until the first successful fetch; views that need host-only gating
+    /// should compare against this and fall back to "non-host" when nil.
+    var currentUserId: Int?
     var displayName: String = ""
     var dateOfBirth: Date?
     var city: String = ""
@@ -252,6 +256,7 @@ final class UserProfileStore {
     // MARK: - Mapping
 
     private func apply(_ profile: UserProfile) {
+        currentUserId = profile.userId
         displayName = [profile.firstName, profile.lastName]
             .filter { !$0.isEmpty }
             .joined(separator: " ")

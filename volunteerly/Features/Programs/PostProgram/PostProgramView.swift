@@ -8,7 +8,8 @@ struct PostProgramView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State var viewModel: PostProgramViewModel
-    /// Called after a program is successfully created, so the caller can refresh.
+    /// Called after a program is successfully saved (create OR edit) so the
+    /// caller can refresh feeds / pop the detail.
     private let onCreated: () -> Void
 
     init(
@@ -16,6 +17,17 @@ struct PostProgramView: View {
         onCreated: @escaping () -> Void = {}
     ) {
         _viewModel = State(initialValue: PostProgramViewModel(httpClient: httpClient))
+        self.onCreated = onCreated
+    }
+
+    /// Edit-mode initialiser — pre-populates the form from an existing program
+    /// and switches `submit()` to PATCH /programs/{id}.
+    init(
+        editing program: Program,
+        httpClient: HTTPClient = LiveHTTPClient.shared,
+        onCreated: @escaping () -> Void = {}
+    ) {
+        _viewModel = State(initialValue: PostProgramViewModel(editing: program, httpClient: httpClient))
         self.onCreated = onCreated
     }
 

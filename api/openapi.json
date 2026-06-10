@@ -389,6 +389,101 @@
             }
           }
         }
+      },
+      "patch": {
+        "tags": [
+          "programs"
+        ],
+        "summary": "Update Program",
+        "description": "Partial update of a program. Only fields set in ``payload`` are touched.\nHost-only: returns 403 if the caller isn't the program's creator.",
+        "operationId": "update_program_programs__program_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "program_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Program Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProgramUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProgramRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "programs"
+        ],
+        "summary": "Delete Program",
+        "description": "Soft-delete a program. Sets ``is_deleted=True`` so it stops appearing in\nfeeds (``_load_program`` filters them out) while keeping the row for audit\nand participation history. Host-only.",
+        "operationId": "delete_program_programs__program_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "program_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Program Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/programs/{program_id}/keywords": {
@@ -2049,6 +2144,75 @@
         ],
         "title": "ProgramStatus",
         "description": "Lifecycle status of a program (wire values match iOS ProgramStatus)."
+      },
+      "ProgramUpdate": {
+        "properties": {
+          "category_id": {
+            "title": "Category Id",
+            "nullable": true,
+            "type": "integer"
+          },
+          "program_name": {
+            "title": "Program Name",
+            "nullable": true,
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1
+          },
+          "description": {
+            "title": "Description",
+            "nullable": true,
+            "type": "string",
+            "minLength": 1
+          },
+          "start_datetime": {
+            "title": "Start Datetime",
+            "nullable": true,
+            "type": "string",
+            "format": "date-time"
+          },
+          "end_datetime": {
+            "title": "End Datetime",
+            "nullable": true,
+            "type": "string",
+            "format": "date-time"
+          },
+          "max_volunteers": {
+            "title": "Max Volunteers",
+            "nullable": true,
+            "type": "integer",
+            "minimum": 1.0
+          },
+          "commitment_frequency": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CommitmentFrequency"
+              }
+            ]
+          },
+          "commitment_duration": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CommitmentDuration"
+              }
+            ]
+          },
+          "banner_image_url": {
+            "title": "Banner Image Url",
+            "nullable": true,
+            "type": "string"
+          },
+          "location_id": {
+            "title": "Location Id",
+            "nullable": true,
+            "type": "integer"
+          }
+        },
+        "type": "object",
+        "title": "ProgramUpdate",
+        "description": "Partial update body for ``PATCH /programs/{program_id}``. Every field is\noptional; only fields explicitly set are applied. The caller must be the\nprogram's creator (enforced in the route)."
       },
       "RegisterRequest": {
         "properties": {

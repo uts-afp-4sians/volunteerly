@@ -23,7 +23,9 @@ struct MainTabView: View {
                     floatingBar(showsPostButton: true)
                 }
                 .navigationDestination(for: Int.self) { programId in
-                    ProgramDetailView(programId: programId)
+                    ProgramDetailView(programId: programId) {
+                        programRefreshID += 1
+                    }
                 }
                 .navigationDestination(for: SettingsRoute.self) { _ in
                     SettingsView()
@@ -45,7 +47,9 @@ struct MainTabView: View {
             BookmarksView()
                 .safeAreaInset(edge: .bottom) { floatingBar() }
                 .navigationDestination(for: Int.self) { programId in
-                    ProgramDetailView(programId: programId)
+                    ProgramDetailView(programId: programId) {
+                        programRefreshID += 1
+                    }
                 }
                 .navigationDestination(for: SettingsRoute.self) { _ in
                     SettingsView()
@@ -59,7 +63,9 @@ struct MainTabView: View {
             MyPageView()
                 .safeAreaInset(edge: .bottom) { floatingBar() }
                 .navigationDestination(for: Int.self) { programId in
-                    ProgramDetailView(programId: programId)
+                    ProgramDetailView(programId: programId) {
+                        programRefreshID += 1
+                    }
                 }
                 .navigationDestination(for: SettingsRoute.self) { _ in
                     SettingsView()

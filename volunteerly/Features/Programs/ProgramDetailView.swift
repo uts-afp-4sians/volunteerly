@@ -7,17 +7,38 @@ struct ProgramDetailView: View {
     @State private var viewModel: ProgramDetailViewModel
     @State private var showJoinedConfirmation = false
     @State private var bannerSelection = 0
+    @State private var showEditSheet = false
+    @State private var showDeleteAlert = false
+    @State private var isDeleting = false
+    @State private var deleteError: String?
     @Environment(\.dismiss) private var dismiss
+    @Environment(UserProfileStore.self) private var profileStore: UserProfileStore?
 
     private let httpClient: HTTPClient
     private let horizontalPadding: CGFloat = 20
+    /// Called after a successful edit or delete so the caller (program list,
+    /// bookmarks) can refresh.
+    private let onChanged: () -> Void
 
-    init(programId: Int, httpClient: HTTPClient = LiveHTTPClient.shared) {
+    init(
+        programId: Int,
+        httpClient: HTTPClient = LiveHTTPClient.shared,
+        onChanged: @escaping () -> Void = {}
+    ) {
         self.programId = programId
         self.httpClient = httpClient
+        self.onChanged = onChanged
         _viewModel = State(
             initialValue: ProgramDetailViewModel(programId: programId, httpClient: httpClient)
         )
+    }
+
+    /// Whether the signed-in user is the program's creator. Drives the
+    /// host-only menu in the top-right (Edit + Delete).
+    private var isHost: Bool {
+        guard let program = viewModel.program, let me = profileStore?.currentUserId
+        else { return false }
+        return program.creatorUserId == me
     }
 
     var body: some View {
@@ -69,6 +90,59 @@ struct ProgramDetailView: View {
                         dismiss()
                     }
                 )
+            }
+        }
+        .sheet(isPresented: $showEditSheet) {
+            if let program = viewModel.program {
+                NavigationStack {
+                    PostProgramView(
+                        editing: program,
+                        httpClient: httpClient,
+                        onCreated: {
+                            showEditSheet = false
+                            onChanged()
+                            Task { await viewModel.load() }
+                        }
+                    )
+                }
+            }
+        }
+        .confirmationDialog(
+            "Delete this program?",
+            isPresented: $showDeleteAlert,
+            titleVisibility: .visible
+        ) {
+            Button("Delete", role: .destructive) { performDelete() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This permanently removes the program from feeds. Volunteers who joined will see it disappear from their lists.")
+        }
+        .alert(
+            "Couldn't delete program",
+            isPresented: Binding(
+                get: { deleteError != nil },
+                set: { if !$0 { deleteError = nil } }
+            )
+        ) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(deleteError ?? "")
+        }
+    }
+
+    /// Host-only soft delete: calls `DELETE /programs/{id}`, pops the screen
+    /// back to the list, then fires `onChanged()` so the parent reloads.
+    private func performDelete() {
+        guard !isDeleting else { return }
+        isDeleting = true
+        Task {
+            do {
+                try await httpClient.delete("/programs/\(programId)")
+                onChanged()
+                dismiss()
+            } catch {
+                deleteError = error.localizedDescription
+                isDeleting = false
             }
         }
     }
@@ -133,8 +207,32 @@ struct ProgramDetailView: View {
                 circleButton(systemName: viewModel.isBookmarked ? "bookmark.fill" : "bookmark") {
                     viewModel.toggleBookmark()
                 }
+                if isHost {
+                    hostMenu
+                }
             }
         }
+    }
+
+    /// Gear-icon menu shown only when the signed-in user is the program's
+    /// creator. Edit pre-fills the post-program form; Delete soft-deletes after
+    /// a confirmation alert.
+    private var hostMenu: some View {
+        Menu {
+            Button {
+                showEditSheet = true
+            } label: {
+                SwiftUI.Label("Edit program", systemImage: "pencil")
+            }
+            Button(role: .destructive) {
+                showDeleteAlert = true
+            } label: {
+                SwiftUI.Label("Delete program", systemImage: "trash")
+            }
+        } label: {
+            circleIcon(systemName: "ellipsis")
+        }
+        .accessibilityLabel("Host options")
     }
 
     /// Share the program via the system share sheet. Disabled until the program
