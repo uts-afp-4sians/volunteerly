@@ -33,13 +33,13 @@ struct HomeView: View {
                 .resizable()
                 .scaledToFit()
                 .frame(maxWidth: 320, maxHeight: 110)
-                .padding(.top, -24)
+                .padding(.top, -48)
 
             Text("\u{201C}Where purpose meets people\u{201D}")
                 .font(.bodyStrong.italic())
                 .foregroundStyle(Color.onBrand)
                 .multilineTextAlignment(.center)
-                .padding(.top, 12)
+                .padding(.top, -4)
                 .padding(.horizontal, 24)
 
             Spacer(minLength: 16)
@@ -59,6 +59,17 @@ struct HomeView: View {
                     Text("Sign Up").frame(maxWidth: .infinity)
                 }
                 .buttonStyle(LandingSecondaryButtonStyle())
+
+                Button {
+                    router?.pendingAuthRoute = .resetPassword
+                    router?.route = .auth
+                } label: {
+                    Text("Forgot password?")
+                        .font(.bodyText)
+                        .underline()
+                        .foregroundStyle(Color.onBrand)
+                }
+                .padding(.top, 4)
             }
             .padding(.horizontal, 32)
             .padding(.bottom, 60)
@@ -145,6 +156,9 @@ private struct LandingSecondaryButtonStyle: ButtonStyle {
                 RoundedRectangle(cornerRadius: 30, style: .continuous)
                     .strokeBorder(Color.accentYellowLight, lineWidth: 1.5)
             )
+            // Make the full rounded rectangle hit-testable, not just the
+            // stroked border + label glyphs.
+            .contentShape(RoundedRectangle(cornerRadius: 30, style: .continuous))
             .opacity(configuration.isPressed ? 0.7 : 1)
             .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
     }

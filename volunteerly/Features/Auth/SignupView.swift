@@ -8,6 +8,10 @@ struct SignupView: View {
         case instagram
     }
 
+    // Optional — see WelcomeView: an animated route switch can re-evaluate this
+    // view outside the `.environment(router)` scope.
+    @Environment(AppRouter.self) private var router: AppRouter?
+
     @State private var firstName = ""
     @State private var lastName = ""
     @State private var dateOfBirth = Date()
@@ -67,8 +71,21 @@ struct SignupView: View {
         .background(Theme.background.ignoresSafeArea())
         .scrollDismissesKeyboard(.interactively)
         .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(true)
         .toolbarBackground(Theme.background, for: .navigationBar)
         .tint(Theme.forest)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button {
+                    router?.route = .home
+                } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.body.weight(.semibold))
+                        .foregroundStyle(Theme.textPrimary)
+                }
+                .accessibilityLabel("Back to home")
+            }
+        }
     }
 
     // MARK: Name row
@@ -200,11 +217,33 @@ struct SignupView: View {
                 .font(.bodyText)
                 .foregroundStyle(Theme.textPrimary)
             borderedTextField {
-                TextField("", text: $instagram)
-                    .textContentType(.username)
-                    .autocorrectionDisabled()
-                    .textInputAutocapitalization(.never)
-                    .focused($focusedField, equals: .instagram)
+                HStack(spacing: 10) {
+                    Button(action: openInstagram) {
+                        Image(systemName: "camera.fill")
+                            .font(.body)
+                            .foregroundStyle(Theme.textPrimary)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Open Instagram to copy your username")
+
+                    TextField("", text: $instagram)
+                        .textContentType(.username)
+                        .autocorrectionDisabled()
+                        .textInputAutocapitalization(.never)
+                        .focused($focusedField, equals: .instagram)
+                }
+            }
+        }
+    }
+
+    /// Opens the Instagram app (deep link), falling back to the web in Safari
+    /// if Instagram isn't installed. The text field stays editable so the user
+    /// can paste their `@handle` back in once they've copied it from Instagram.
+    private func openInstagram() {
+        guard let appURL = URL(string: "instagram://app") else { return }
+        UIApplication.shared.open(appURL) { success in
+            if !success, let webURL = URL(string: "https://www.instagram.com/") {
+                UIApplication.shared.open(webURL)
             }
         }
     }
