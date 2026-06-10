@@ -14,6 +14,7 @@ PROGRAM_KEYS = {
     "program_name",
     "description",
     "banner_image_url",
+    "banner_image_urls",
     "start_datetime",
     "end_datetime",
     "max_volunteers",
@@ -99,8 +100,8 @@ def test_list_keywords(client: TestClient) -> None:
     res = client.get("/keywords")
     assert res.status_code == 200
     body = res.json()
-    # 3 program-tagging keywords + 9 profile interest keywords.
-    assert len(body) == 12
+    # 3 program-tagging keywords + 19 profile interest keywords.
+    assert len(body) == 22
     assert set(body[0].keys()) == {"keyword_id", "category_id", "keyword_name"}
     assert body[0] == {
         "keyword_id": 1,
@@ -116,9 +117,9 @@ def test_list_interests(client: TestClient) -> None:
     res = client.get("/interests")
     assert res.status_code == 200
     body = res.json()
-    # Only the 9 profile-interest keywords (is_interest=True) — program-tagging
+    # Only the 19 profile-interest keywords (is_interest=True) — program-tagging
     # keywords like "Tree Planting" are excluded.
-    assert len(body) == 9
+    assert len(body) == 19
     assert set(body[0].keys()) == {"keyword_id", "category_id", "keyword_name"}
     names = [row["keyword_name"] for row in body]
     assert names == [
@@ -131,6 +132,16 @@ def test_list_interests(client: TestClient) -> None:
         "Food",
         "Social Justice",
         "Technology",
+        "Children & Youth",
+        "Health",
+        "Mental Health",
+        "Disability Support",
+        "Homelessness",
+        "Literacy",
+        "Disaster Relief",
+        "Sports",
+        "Music",
+        "Refugees",
     ]
     assert "Tree Planting" not in names
 
@@ -168,6 +179,7 @@ def test_get_user_profile(client: TestClient) -> None:
         "instagram",
         "key_skills",
         "location_id",
+        "location",
         "interests",
     }
     assert body["first_name"] == "Jane"

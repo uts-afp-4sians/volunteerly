@@ -22,6 +22,7 @@ PROFILE_KEYS = {
     "instagram",
     "key_skills",
     "location_id",
+    "location",
     "interests",
 }
 
