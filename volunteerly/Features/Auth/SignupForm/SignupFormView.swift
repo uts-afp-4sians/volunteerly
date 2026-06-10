@@ -26,7 +26,6 @@ struct SignupFormView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.bottom, 16)
             }
-
             if vm.step < 6 {
                 nextButton
             }
@@ -52,6 +51,7 @@ struct SignupFormView: View {
                     }
                 }
             }
+
         }
         .toolbarBackground(Theme.background, for: .navigationBar)
         .tint(Theme.forest)
