@@ -1,4 +1,5 @@
 import math
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy import func, or_, select
@@ -27,6 +28,7 @@ from src.programs.schema import (
     ProgramParticipantRead,
     ProgramParticipationSummary,
     ProgramRead,
+    ProgramUpdate,
     SimilarProgramRead,
 )
 from src.users.model import User, UserProfile
@@ -607,4 +609,91 @@ def leave_program(
     if program.status == ProgramStatus.FULL:
         program.status = ProgramStatus.OPEN
 
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+# Host-only management — only the program's creator can edit or delete it.
+
+
+def _require_creator(program: Program, current_user: User) -> None:
+    if program.creator_user_id != current_user.user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only the program's host can perform this action.",
+        )
+
+
+@router.patch("/programs/{program_id}", response_model=ProgramRead)
+def update_program(
+    program_id: int,
+    payload: ProgramUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> ProgramRead:
+    """Partial update of a program. Only fields set in ``payload`` are touched.
+    Host-only: returns 403 if the caller isn't the program's creator."""
+    program = _load_program(program_id, db)
+    _require_creator(program, current_user)
+
+    # If either datetime is updated, validate the resulting pair is consistent.
+    new_start = payload.start_datetime or program.start_datetime
+    new_end = payload.end_datetime or program.end_datetime
+    if new_end <= new_start:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="end_datetime must be after start_datetime",
+        )
+
+    if (
+        payload.category_id is not None
+        and db.get(ProgramCategory, payload.category_id) is None
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Category not found"
+        )
+
+    if (
+        payload.location_id is not None
+        and db.get(Location, payload.location_id) is None
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Location not found"
+        )
+
+    # Apply only the fields the caller actually set (PATCH semantics).
+    update_fields = payload.model_dump(exclude_unset=True)
+    for field, value in update_fields.items():
+        setattr(program, field, value)
+
+    # Capacity may have dropped below current occupancy — clamp the FULL flag.
+    count = _participant_count(program, db)
+    if count < program.max_volunteers and program.status == ProgramStatus.FULL:
+        program.status = ProgramStatus.OPEN
+    elif count >= program.max_volunteers and program.status == ProgramStatus.OPEN:
+        program.status = ProgramStatus.FULL
+
+    db.flush()
+    read = ProgramRead.model_validate(program)
+    read.participant_count = count
+    read.is_full = count >= program.max_volunteers
+    return read
+
+
+@router.delete(
+    "/programs/{program_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def delete_program(
+    program_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Response:
+    """Soft-delete a program. Sets ``is_deleted=True`` so it stops appearing in
+    feeds (``_load_program`` filters them out) while keeping the row for audit
+    and participation history. Host-only."""
+    program = _load_program(program_id, db)
+    _require_creator(program, current_user)
+
+    program.is_deleted = True
+    program.deleted_at = datetime.now(UTC)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
