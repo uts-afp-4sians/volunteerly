@@ -20,10 +20,22 @@ struct LoginView: View {
             signupPrompt
         }
         .padding(.horizontal, 24)
-        .padding(.top, 56)
+        .padding(.top, 16)
         .padding(.bottom, 32)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(Theme.background.ignoresSafeArea())
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button {
+                    router?.route = .home
+                } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.body.weight(.semibold))
+                        .foregroundStyle(Theme.textPrimary)
+                }
+                .accessibilityLabel("Back to home")
+            }
+        }
     }
 
     // MARK: Sections

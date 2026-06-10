@@ -7,21 +7,19 @@ struct SplashView: View {
     @Environment(AppRouter.self) var router: AppRouter?
 
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 24) {
             Image(.logo)
                 .resizable()
                 .scaledToFit()
                 .frame(width: 140, height: 140)
-            
-            Text("Volunteerly")
-                .font(.pageTitle)
-                .foregroundStyle(Theme.textPrimary)
+
+            FadingTailSpinner(color: Theme.forest, size: 44, lineWidth: 5)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Theme.background)
         .task {
             try? await Task.sleep(for: .seconds(2))
-            router?.route = SessionManager.shared.hasSession ? .main : .auth
+            router?.route = SessionManager.shared.hasSession ? .main : .home
         }
     }
 }

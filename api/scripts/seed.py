@@ -178,6 +178,53 @@ def _rows() -> list[Base]:
         Keyword(
             keyword_id=12, category_id=4, keyword_name="Technology", is_interest=True
         ),
+        # Extra interests added on the iOS picker — mirrored here so they have
+        # real keyword IDs and round-trip through `/me/interests`.
+        Keyword(
+            keyword_id=13,
+            category_id=2,
+            keyword_name="Children & Youth",
+            is_interest=True,
+        ),
+        Keyword(
+            keyword_id=14, category_id=4, keyword_name="Health", is_interest=True
+        ),
+        Keyword(
+            keyword_id=15,
+            category_id=4,
+            keyword_name="Mental Health",
+            is_interest=True,
+        ),
+        Keyword(
+            keyword_id=16,
+            category_id=4,
+            keyword_name="Disability Support",
+            is_interest=True,
+        ),
+        Keyword(
+            keyword_id=17,
+            category_id=2,
+            keyword_name="Homelessness",
+            is_interest=True,
+        ),
+        Keyword(
+            keyword_id=18, category_id=3, keyword_name="Literacy", is_interest=True
+        ),
+        Keyword(
+            keyword_id=19,
+            category_id=2,
+            keyword_name="Disaster Relief",
+            is_interest=True,
+        ),
+        Keyword(
+            keyword_id=20, category_id=2, keyword_name="Sports", is_interest=True
+        ),
+        Keyword(
+            keyword_id=21, category_id=8, keyword_name="Music", is_interest=True
+        ),
+        Keyword(
+            keyword_id=22, category_id=2, keyword_name="Refugees", is_interest=True
+        ),
     ]
     programs = [
         Program(

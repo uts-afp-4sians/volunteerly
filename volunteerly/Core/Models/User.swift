@@ -77,6 +77,7 @@ extension UserProfile {
 nonisolated struct UserProfileUpdate: Codable {
     var firstName: String?
     var lastName: String?
+    var dateOfBirth: Date?
     var occupation: String?
     var goalText: String?
     var bio: String?
@@ -92,6 +93,7 @@ nonisolated struct UserProfileUpdate: Codable {
     enum CodingKeys: String, CodingKey {
         case firstName = "first_name"
         case lastName = "last_name"
+        case dateOfBirth = "date_of_birth"
         case occupation
         case goalText = "goal_text"
         case bio

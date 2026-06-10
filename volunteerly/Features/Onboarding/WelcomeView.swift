@@ -16,23 +16,22 @@ struct WelcomeView: View {
     private let autoAdvanceDelay: Duration = .seconds(3)
 
     var body: some View {
-        Text("Your teammates are\nwaiting for you")
-            .font(.pageTitle)
-            .foregroundStyle(Theme.textPrimary)
-            .multilineTextAlignment(.center)
-            .padding(.horizontal, 24)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Theme.background.ignoresSafeArea())
-            .contentShape(Rectangle())
-            .onTapGesture { advance() }
-            .task {
-                try? await Task.sleep(for: autoAdvanceDelay)
-                advance()
-            }
-            .accessibilityElement()
-            .accessibilityLabel("Your teammates are waiting for you")
-            .accessibilityHint("Tap to continue to programs")
-            .accessibilityAddTraits(.isButton)
+        ZStack {
+            ScrollingBackground()
+                .ignoresSafeArea()
+
+            FadingTailSpinner(color: Theme.forest, size: 44, lineWidth: 5)
+        }
+        .contentShape(Rectangle())
+        .onTapGesture { advance() }
+        .task {
+            try? await Task.sleep(for: autoAdvanceDelay)
+            advance()
+        }
+        .accessibilityElement()
+        .accessibilityLabel("Loading your programs")
+        .accessibilityHint("Tap to continue to programs")
+        .accessibilityAddTraits(.isButton)
     }
 
     private func advance() {

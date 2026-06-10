@@ -47,12 +47,32 @@ struct EmailPasswordStepView: View {
                             .padding(.leading, 4)
                     }
                 }
+
+                fieldColumn(label: "Confirm password", required: true) {
+                    borderedField(isError: passwordMismatchIsError) {
+                        SecureField("", text: $vm.passwordConfirmation)
+                            .textContentType(.newPassword)
+                    }
+
+                    if passwordMismatchIsError {
+                        Text("Passwords don't match")
+                            .font(.footnote)
+                            .foregroundStyle(.red)
+                            .padding(.leading, 4)
+                    }
+                }
             }
         }
     }
 
     private var passwordIsError: Bool {
         !vm.password.isEmpty && !AuthValidation.isValidPassword(vm.password)
+    }
+
+    /// Only flag a mismatch once the user has typed something in the
+    /// confirmation field — otherwise the error would appear on landing.
+    private var passwordMismatchIsError: Bool {
+        !vm.passwordConfirmation.isEmpty && vm.password != vm.passwordConfirmation
     }
 
     private func fieldColumn<Content: View>(
