@@ -2,7 +2,7 @@ import math
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
-from sqlalchemy import func, or_, select
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.orm import Session
 
 from src.auth.deps import get_current_user
@@ -287,6 +287,58 @@ def list_programs(
         loc = locations.get(program.location_id)
         if loc is not None and loc.latitude is not None and loc.longitude is not None:
             read.distance_km = _haversine_coords(lat, lng, loc.latitude, loc.longitude)
+        reads.append(read)
+    return reads
+
+
+@router.get("/me/programs", response_model=list[ProgramRead])
+def list_my_programs(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> list[ProgramRead]:
+    """Programs the caller is part of, backing My Page's "My programs" list.
+
+    A program qualifies when the caller holds an active (pending/approved)
+    participation, or created it before creator auto-enrolment existed and so
+    holds no participation row at all — a withdrawn row means they left on
+    purpose (mirrors ``_creator_has_row``). Soft-deleted programs are excluded.
+    Rows carry the same capacity/banner enrichment as ``GET /programs``."""
+    my_active = select(ProgramParticipation.program_id).where(
+        ProgramParticipation.user_id == current_user.user_id,
+        ProgramParticipation.participation_status.in_(_ACTIVE_PARTICIPATION),
+    )
+    my_any = select(ProgramParticipation.program_id).where(
+        ProgramParticipation.user_id == current_user.user_id
+    )
+    programs = list(
+        db.execute(
+            select(Program)
+            .where(
+                Program.is_deleted.is_(False),
+                or_(
+                    Program.program_id.in_(my_active),
+                    and_(
+                        Program.creator_user_id == current_user.user_id,
+                        Program.program_id.not_in(my_any),
+                    ),
+                ),
+            )
+            .order_by(Program.start_datetime, Program.program_id)
+        )
+        .scalars()
+        .all()
+    )
+
+    counts = _participant_counts(programs, db)
+    images = _program_images([p.program_id for p in programs], db)
+
+    reads: list[ProgramRead] = []
+    for program in programs:
+        read = ProgramRead.model_validate(program)
+        count = counts.get(program.program_id, 0)
+        read.participant_count = count
+        read.is_full = count >= program.max_volunteers
+        _hydrate_images(read, images.get(program.program_id, []))
         reads.append(read)
     return reads
 

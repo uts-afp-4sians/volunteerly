@@ -349,6 +349,37 @@
         }
       }
     },
+    "/me/programs": {
+      "get": {
+        "tags": [
+          "programs"
+        ],
+        "summary": "List My Programs",
+        "description": "Programs the caller is part of, backing My Page's \"My programs\" list.\n\nA program qualifies when the caller holds an active (pending/approved)\nparticipation, or created it before creator auto-enrolment existed and so\nholds no participation row at all \u2014 a withdrawn row means they left on\npurpose (mirrors ``_creator_has_row``). Soft-deleted programs are excluded.\nRows carry the same capacity/banner enrichment as ``GET /programs``.",
+        "operationId": "list_my_programs_me_programs_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProgramRead"
+                  },
+                  "type": "array",
+                  "title": "Response List My Programs Me Programs Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/programs/{program_id}": {
       "get": {
         "tags": [
