@@ -1411,6 +1411,51 @@
             }
           }
         }
+      },
+      "post": {
+        "tags": [
+          "locations"
+        ],
+        "summary": "Create Location",
+        "description": "Find-or-create a location. Reuses an existing row when city, state and\ncountry match case-insensitively (backfilling missing coordinates), so the\ntable doesn't accumulate duplicates as users pick places on the map.",
+        "operationId": "create_location_locations_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LocationCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LocationRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
       }
     },
     "/locations/{location_id}": {
@@ -1751,6 +1796,49 @@
         ],
         "title": "KeywordRead",
         "description": "Wire shape matching iOS `Keyword`."
+      },
+      "LocationCreate": {
+        "properties": {
+          "city": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "City"
+          },
+          "state_region": {
+            "title": "State Region",
+            "nullable": true,
+            "type": "string",
+            "maxLength": 255
+          },
+          "country": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Country"
+          },
+          "latitude": {
+            "title": "Latitude",
+            "nullable": true,
+            "type": "number",
+            "maximum": 90.0,
+            "minimum": -90.0
+          },
+          "longitude": {
+            "title": "Longitude",
+            "nullable": true,
+            "type": "number",
+            "maximum": 180.0,
+            "minimum": -180.0
+          }
+        },
+        "type": "object",
+        "required": [
+          "city",
+          "country"
+        ],
+        "title": "LocationCreate",
+        "description": "Body for ``POST /locations`` \u2014 find-or-create a location picked on the\nclient's map. Matching is case-insensitive on city/state/country."
       },
       "LocationRead": {
         "properties": {
