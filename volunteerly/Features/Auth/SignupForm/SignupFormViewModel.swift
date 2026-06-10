@@ -116,6 +116,27 @@ final class SignupFormViewModel {
         }
     }
 
+    func reverseGeocode(coordinate: CLLocationCoordinate2D) {
+        Task {
+            guard let request = MKReverseGeocodingRequest(location: CLLocation(
+                latitude: coordinate.latitude,
+                longitude: coordinate.longitude
+            )),
+            let item = try? await request.mapItems.first
+            else {
+                return
+            }
+
+            let newCity = item.addressRepresentations?.cityName
+                ?? item.name
+                ?? ""
+                
+            if !newCity.isEmpty {
+                city = newCity
+            }
+        }
+    }
+
     func loadInterests(force: Bool = false) async {
         guard force || interestCatalog.isEmpty else { return }
         isLoadingInterests = true

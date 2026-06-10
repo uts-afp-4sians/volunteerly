@@ -38,8 +38,17 @@ struct LocationStepView: View {
 
             VStack(spacing: 0) {
                 Map(position: $vm.mapCameraPosition)
+                    .onMapCameraChange(frequency: .onEnd) { context in
+                        vm.reverseGeocode(coordinate: context.region.center)
+                    }
+                    .overlay(alignment: .center) {
+                        Image(systemName: "mappin.circle.fill")
+                            .font(.title)
+                            .foregroundStyle(Theme.forest)
+                            .background(Circle().fill(.white).padding(4))
+                            .offset(y: -15)
+                    }
                     .frame(height: 280)
-                    .disabled(true)
 
                 Button {
                     vm.geocodeCity()
@@ -51,7 +60,7 @@ struct LocationStepView: View {
                                 .tint(.white)
                                 .controlSize(.small)
                         }
-                        Text(vm.isGeocodingCity ? "Searching…" : "Select location")
+                        Text(vm.isGeocodingCity ? "Searching…" : "Search location")
                             .font(.headline)
                             .foregroundStyle(.white)
                     }
