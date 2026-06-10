@@ -2,6 +2,12 @@ import SwiftUI
 import PhotosUI
 
 struct SignupView: View {
+    private enum Field: Hashable {
+        case firstName
+        case lastName
+        case instagram
+    }
+
     @State private var firstName = ""
     @State private var lastName = ""
     @State private var dateOfBirth = Date()
@@ -10,6 +16,7 @@ struct SignupView: View {
     @State private var profileItem: PhotosPickerItem?
     @State private var profileImageData: Data?
     @State private var instagram = ""
+    @FocusState private var focusedField: Field?
 
     private let totalSteps = 4
     private let currentStep = 1
@@ -72,12 +79,14 @@ struct SignupView: View {
                 borderedTextField {
                     TextField("", text: $firstName)
                         .textContentType(.givenName)
+                        .focused($focusedField, equals: .firstName)
                 }
             }
             fieldColumn(label: "Last name", required: true) {
                 borderedTextField {
                     TextField("", text: $lastName)
                         .textContentType(.familyName)
+                        .focused($focusedField, equals: .lastName)
                 }
             }
         }
@@ -87,7 +96,10 @@ struct SignupView: View {
 
     private var dateOfBirthField: some View {
         fieldColumn(label: "Date of birth (DD/MM/YYYY)", required: true) {
-            Button { showDOBPicker = true } label: {
+            Button {
+                focusedField = nil
+                showDOBPicker = true
+            } label: {
                 HStack(spacing: 8) {
                     dobBox(dobDay)
                     dobBox(dobMonth)
@@ -95,7 +107,9 @@ struct SignupView: View {
                 }
             }
             .buttonStyle(.plain)
-            .sheet(isPresented: $showDOBPicker) {
+            .sheet(isPresented: $showDOBPicker, onDismiss: {
+                focusedField = nil
+            }) {
                 VStack(spacing: 0) {
                     DatePicker(
                         "",
@@ -190,6 +204,7 @@ struct SignupView: View {
                     .textContentType(.username)
                     .autocorrectionDisabled()
                     .textInputAutocapitalization(.never)
+                    .focused($focusedField, equals: .instagram)
             }
         }
     }
