@@ -68,10 +68,9 @@ struct SignupFormView: View {
         default:
             VStack(alignment: .leading, spacing: 12) {
                 Text("Step \(vm.step)")
-                    .font(.largeTitle.bold())
-                    .foregroundStyle(Theme.textPrimary)
+                    .largeTitleStyle()
                 Text("Coming soon")
-                    .foregroundStyle(Theme.textSecondary)
+                    .bodyStyle()
             }
         }
     }
@@ -83,12 +82,7 @@ struct SignupFormView: View {
             }
         } label: {
             Text(vm.step == 5 ? "Find your people!" : "Next")
-                .font(.buttonLabel)
-                .foregroundStyle(vm.canAdvance ? .white : Theme.textSecondary)
-                .frame(maxWidth: .infinity)
-                .frame(height: 54)
-                .background(vm.canAdvance ? Theme.forest : Theme.border)
-                .clipShape(RoundedRectangle(cornerRadius: 27))
+                .primaryActionButtonStyle(enabled: vm.canAdvance)
         }
         .disabled(!vm.canAdvance)
     }

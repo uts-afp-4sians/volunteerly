@@ -6,8 +6,7 @@ struct EmailPasswordStepView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 28) {
             Text("Secure your account")
-                .font(.pageTitle)
-                .foregroundStyle(Theme.textPrimary)
+                .largeTitleStyle()
 
             VStack(alignment: .leading, spacing: 20) {
                 fieldColumn(label: "Email", required: true) {
@@ -23,8 +22,8 @@ struct EmailPasswordStepView: View {
 
                     if let emailError = vm.emailFieldError {
                         Text(emailError)
-                            .font(.footnote)
-                            .foregroundStyle(.red)
+                            .font(.subheadText)
+                            .foregroundStyle(Color.fieldError)
                             .padding(.leading, 4)
                     }
                 }
@@ -38,13 +37,13 @@ struct EmailPasswordStepView: View {
 
                     if passwordIsError {
                         Text("Password must be at least \(AuthValidation.minimumPasswordLength) characters")
-                            .font(.footnote)
-                            .foregroundStyle(.red)
+                            .font(.subheadText)
+                            .foregroundStyle(Color.fieldError)
                             .padding(.leading, 4)
                     } else if let passwordError = vm.passwordFieldError {
                         Text(passwordError)
-                            .font(.footnote)
-                            .foregroundStyle(.red)
+                            .font(.subheadText)
+                            .foregroundStyle(Color.fieldError)
                             .padding(.leading, 4)
                     }
                 }
@@ -62,12 +61,7 @@ struct EmailPasswordStepView: View {
         @ViewBuilder content: () -> Content
     ) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 3) {
-                Text(label)
-                    .font(.bodyText)
-                    .foregroundStyle(Theme.textPrimary)
-                if required { Text("*").requiredFieldStyle() }
-            }
+            FieldLabel(text: label, required: required)
             content()
         }
     }
@@ -77,12 +71,12 @@ struct EmailPasswordStepView: View {
         @ViewBuilder content: () -> Content
     ) -> some View {
         content()
-            .font(.bodyText)
-            .frame(height: 52)
-            .padding(.horizontal, 14)
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(isError ? Color.red : Theme.border, lineWidth: 1)
-            )
+            .formFieldSurface()
+            .overlay {
+                if isError {
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .stroke(Color.fieldError, lineWidth: 1)
+                }
+            }
     }
 }

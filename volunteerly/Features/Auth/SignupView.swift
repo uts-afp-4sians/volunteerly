@@ -18,7 +18,10 @@ struct SignupView: View {
     @State private var instagram = ""
     @FocusState private var focusedField: Field?
 
-    private let totalSteps = 4
+    // 6-step signup flow (this intro screen is step 1; the SignupForm covers 2–6).
+    // Keep the denominator aligned with SignupFormViewModel.totalSteps so the
+    // ProgressBar advances consistently across the whole flow.
+    private let totalSteps = 6
     private let currentStep = 1
 
     private static let monthAbbreviations = [
@@ -49,8 +52,7 @@ struct SignupView: View {
                 ProgressBar(progress: Double(currentStep) / Double(totalSteps))
 
                 Text("Let's introduce\nyourself")
-                    .font(.pageTitle)
-                    .foregroundStyle(Theme.textPrimary)
+                    .largeTitleStyle()
 
                 nameRow
                 dateOfBirthField
@@ -128,12 +130,7 @@ struct SignupView: View {
                         showDOBPicker = false
                     } label: {
                         Text("Done")
-                            .font(.buttonLabel)
-                            .foregroundStyle(.white)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 50)
-                            .background(Theme.forest)
-                            .clipShape(RoundedRectangle(cornerRadius: 25))
+                            .primaryActionButtonStyle()
                     }
                     .padding(.horizontal, 24)
                     .padding(.vertical, 20)
@@ -147,12 +144,12 @@ struct SignupView: View {
     private func dobBox(_ value: String) -> some View {
         Text(value)
             .font(.bodyText)
-            .foregroundStyle(dobSet ? Theme.textPrimary : Theme.textSecondary)
+            .foregroundStyle(dobSet ? Theme.textPrimary : Theme.placeholder)
             .frame(maxWidth: .infinity)
-            .frame(height: 52)
+            .frame(height: 53)
             .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(Theme.border, lineWidth: 1)
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(Theme.divider, lineWidth: 1)
             )
     }
 
@@ -170,7 +167,7 @@ struct SignupView: View {
 
             Text("Let's put a face to your name - upload a profile picture here!")
                 .font(.bodyText)
-                .foregroundStyle(Theme.textSecondary)
+                .foregroundStyle(Theme.textMeta)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
@@ -184,10 +181,10 @@ struct SignupView: View {
                 .clipShape(Circle())
         } else {
             ZStack {
-                Circle().fill(Color(.systemGray6))
+                Circle().fill(Theme.surface)
                 Image(systemName: "camera")
-                    .font(.title2)
-                    .foregroundStyle(Theme.textSecondary)
+                    .font(.cardTitle)
+                    .foregroundStyle(Theme.placeholder)
             }
         }
     }
@@ -219,12 +216,7 @@ struct SignupView: View {
             password: ""
         ))) {
             Text("Next")
-                .font(.buttonLabel)
-                .foregroundStyle(.white)
-                .frame(maxWidth: .infinity)
-                .frame(height: 54)
-                .background(canContinue ? Theme.forest : Theme.forest.opacity(0.4))
-                .clipShape(RoundedRectangle(cornerRadius: 27))
+                .primaryActionButtonStyle(enabled: canContinue)
         }
         .disabled(!canContinue)
     }
@@ -237,30 +229,13 @@ struct SignupView: View {
 
     private func fieldColumn<Content: View>(label: String, required: Bool, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 3) {
-                Text(label)
-                    .font(.bodyText)
-                    .foregroundStyle(Theme.textPrimary)
-                if required {
-                    Text("*")
-                        .requiredFieldStyle()
-                }
-            }
+            FieldLabel(text: label, required: required)
             content()
         }
     }
 
     private func borderedTextField<Content: View>(@ViewBuilder content: () -> Content) -> some View {
-        content()
-            .font(.bodyText)
-            .padding(.horizontal, 14)
-            .frame(height: 52)
-            .background(Theme.card)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(Theme.border, lineWidth: 1)
-            )
+        content().formFieldSurface()
     }
 
 }

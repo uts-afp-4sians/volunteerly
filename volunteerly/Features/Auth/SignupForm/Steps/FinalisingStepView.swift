@@ -12,30 +12,23 @@ struct FinalisingStepView: View {
                 ProgressView()
                     .progressViewStyle(.circular)
                     .scaleEffect(1.6)
-                    .tint(Theme.forest)
+                    .tint(Theme.brandPrimary)
 
-                VStack(spacing: 8) {
-                    Text("Setting up your profile")
-                        .font(.title2.bold())
-                        .foregroundStyle(Theme.textPrimary)
-                    Text("Matching you with opportunities that fit your interests…")
-                        .font(.body)
-                        .foregroundStyle(Theme.textSecondary)
-                        .multilineTextAlignment(.center)
-                }
-                .frame(maxWidth: .infinity)
+                // Figma Loading Screen (node 211:1261) — Title 24 Bold, centred.
+                Text("Your teammates are\nwaiting for you...")
+                    .titleStyle()
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: .infinity)
             } else {
                 Image(systemName: "exclamationmark.triangle.fill")
-                    .font(.system(size: 44))
-                    .foregroundStyle(.red)
+                    .font(.pageTitle)
+                    .foregroundStyle(Color.fieldError)
 
                 VStack(spacing: 8) {
                     Text("Couldn't create your account")
-                        .font(.title2.bold())
-                        .foregroundStyle(Theme.textPrimary)
+                        .titleStyle()
                     Text(vm.finalisingError ?? "")
-                        .font(.body)
-                        .foregroundStyle(Theme.textSecondary)
+                        .bodyStyle()
                         .multilineTextAlignment(.center)
                 }
                 .frame(maxWidth: .infinity)
@@ -46,12 +39,7 @@ struct FinalisingStepView: View {
                     vm.startFinalisingIfNeeded(router: router)
                 } label: {
                     Text("Try again")
-                        .font(.headline)
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 54)
-                        .background(Theme.forest)
-                        .clipShape(RoundedRectangle(cornerRadius: 24))
+                        .primaryActionButtonStyle()
                 }
                 .padding(.horizontal, 16)
             }
