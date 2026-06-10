@@ -46,12 +46,12 @@ struct InterestsStepView: View {
         } label: {
             HStack(spacing: 6) {
                 Text(emoji)
-                Text(name).font(.body)
+                Text(name).font(.buttonLabel)
             }
             .foregroundStyle(selected ? .white : Theme.textPrimary)
             .padding(.horizontal, 16)
-            .padding(.vertical, 10)
-            .background(selected ? Theme.forest : Color(.systemGray6))
+            .padding(.vertical, 14)
+            .background(selected ? Theme.forestLight : Color(.systemGray5))
             .clipShape(Capsule())
         }
         .buttonStyle(.plain)

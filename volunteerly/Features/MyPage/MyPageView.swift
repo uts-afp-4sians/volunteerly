@@ -11,15 +11,16 @@ struct MyPageView: View {
     // Optional — logout flips the root route to .auth, tearing this view down
     // during an animated switch, when a non-optional lookup would `fatalError`.
     @Environment(AppRouter.self) private var router: AppRouter?
+    // Optional so previews that don't inject a router still render (logo tap no-ops).
+    @Environment(TabRouter.self) private var tabRouter: TabRouter?
     @Environment(UserProfileStore.self) private var profileStore
     @State private var viewModel: MyPageViewModel
 
     @State private var profileItem: PhotosPickerItem?
-    @State private var showDeleteConfirmation = false
     @State private var showInterestPicker = false
     @State private var didLoad = false
 
-    private let horizontalPadding: CGFloat = 24
+    private let horizontalPadding: CGFloat = 20
     private static let dangerColor = Color(red: 0xD9 / 255, green: 0x29 / 255, blue: 0x29 / 255)
 
     init(httpClient: HTTPClient = LiveHTTPClient.shared) {
@@ -30,8 +31,8 @@ struct MyPageView: View {
         @Bindable var store = profileStore
 
         ScrollView {
-            VStack(alignment: .leading, spacing: 28) {
-                wordmark
+            VStack(alignment: .leading, spacing: 20) {
+                headerRow
                 titleRow
 
                 if let error = store.errorMessage {
@@ -42,14 +43,19 @@ struct MyPageView: View {
                 }
 
                 profileSection
-                saveButton
+                interestsAndGoalsSection
+
+                Divider()
+
+                editButtons
                 programSection
-                accountActions
             }
             .padding(.horizontal, horizontalPadding)
-            .padding(.top, 8)
-            .padding(.bottom, 40)
+            .padding(.top, 16)
+            .padding(.bottom, 24)
+            .tabScrollTopAnchor()
         }
+        .scrollsToTop(on: .myPage)
         .scrollDismissesKeyboard(.interactively)
         .background(Theme.background.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
@@ -64,12 +70,6 @@ struct MyPageView: View {
             // Pull-to-refresh reloads programs only; the profile form keeps edits.
             await viewModel.load()
         }
-        .alert("Delete account?", isPresented: $showDeleteConfirmation) {
-            Button("Cancel", role: .cancel) {}
-            Button("Delete", role: .destructive) { performDelete() }
-        } message: {
-            Text("This permanently removes your profile and volunteering history. This action can't be undone.")
-        }
         .sheet(isPresented: $showInterestPicker) {
             InterestPickerSheet(selected: profileStore.interests) { picked in
                 withAnimation(.spring(response: 0.25, dampingFraction: 0.85)) {
@@ -81,22 +81,58 @@ struct MyPageView: View {
 
     // MARK: - Header
 
-    private var wordmark: some View {
-        HStack(spacing: 10) {
-            Image(.logo)
-                .resizable()
-                .scaledToFit()
-                .frame(width: 30, height: 30)
-            Text("Volunteerly")
-                .font(.bodyText)
-                .foregroundStyle(Color.textPrimary)
+    /// Branding wordmark (taps home) with a trailing Log Out pill — matching the
+    /// Figma top bar where logout lives in the header instead of the form footer.
+    private var headerRow: some View {
+        HStack {
+            Button {
+                tabRouter?.goHome()
+            } label: {
+                HStack(spacing: 10) {
+                    Image(.logo)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 30, height: 30)
+                    Text("Volunteerly")
+                        .font(.bodyText)
+                        .foregroundStyle(Color.textPrimary)
+                }
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Volunteerly, go to home")
+
+            Spacer()
+        }
+        // Match VolunteerlyHeader's row height (driven by its 32pt avatar) so the
+        // logo sits at the same vertical position as on the other tabs.
+        .frame(height: 32)
+        // Float Log Out as an overlay so its taller pill can't grow the logo row.
+        .overlay(alignment: .trailing) {
+            Button(action: performLogout) {
+                Text("Log Out")
+                    .font(.buttonLabel)
+                    .foregroundStyle(Color.textPrimary)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(Color(.systemGray4).opacity(0.87), in: Capsule())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Log out")
         }
     }
 
     private var titleRow: some View {
-        Text("My page")
+        Text("My Page")
             .font(.pageTitle)
             .foregroundStyle(Color.textPrimary)
+            .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// Green section subheader (#7E924E / `Theme.forest`, SF Pro Regular 30).
+    private func sectionHeader(_ title: String) -> some View {
+        Text(title)
+            .font(.subheading)
+            .foregroundStyle(Theme.forest)
             .frame(maxWidth: .infinity, alignment: .leading)
     }
 
@@ -104,10 +140,8 @@ struct MyPageView: View {
 
     private var profileSection: some View {
         @Bindable var store = profileStore
-        return VStack(alignment: .leading, spacing: 20) {
-            Text("My profile")
-                .font(.title3.bold())
-                .foregroundStyle(Color.textPrimary)
+        return VStack(alignment: .leading, spacing: 16) {
+            sectionHeader("My Profile")
 
             VStack(spacing: 12) {
                 PhotosPicker(selection: $profileItem, matching: .images) {
@@ -117,7 +151,7 @@ struct MyPageView: View {
                     Task { store.profileImageData = try? await newItem?.loadTransferable(type: Data.self) }
                 }
 
-                TextField("Name", text: $store.displayName)
+                TextField("User name", text: $store.displayName)
                     .textContentType(.name)
                     .multilineTextAlignment(.center)
                     .font(.bodyStrong)
@@ -125,52 +159,50 @@ struct MyPageView: View {
             }
             .frame(maxWidth: .infinity)
 
-            interestsEditor
+            instagramField
 
-            editableMultiline(
-                label: "What I hope to get out of this is",
-                placeholder: "Meet people who care about the same things I do",
-                text: $store.personalGoal,
-                lineLimit: 2...4,
-                minHeight: 64
-            )
-
-            Divider()
-
-            editableMultiline(
-                label: "My bio",
-                placeholder: "I am a Student, I can bring social media management",
+            TextBox(
                 text: $store.aboutMe,
-                lineLimit: 5...12,
-                minHeight: 150
+                placeholder: "I am a student, I also enjoy social media marketing",
+                height: 120
             )
-
-            VStack(alignment: .leading, spacing: 8) {
-                Text("If you want to send me the messages")
-                    .font(.bodyText)
-                    .foregroundStyle(Color.textPrimary)
-                TextField("@Instagram ID", text: $store.instagram)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 14)
-                    .background(Color(.systemGray6))
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-            }
         }
     }
 
-    private var interestsEditor: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("My interests")
-                .font(.bodyText)
-                .foregroundStyle(Color.textPrimary)
+    /// Single-line grey input for the Instagram handle (TextBox is multi-line).
+    private var instagramField: some View {
+        @Bindable var store = profileStore
+        return TextField(text: $store.instagram) {
+            Text("@Instagram ID").font(.labelItalic).foregroundStyle(Theme.textSecondary)
+        }
+        .font(.bodyText)
+        .foregroundStyle(Theme.textPrimary)
+        .textInputAutocapitalization(.never)
+        .autocorrectionDisabled()
+        .padding(.horizontal, 12)
+        .padding(.vertical, 14)
+        .background(Color(red: 0.959, green: 0.959, blue: 0.959), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+    }
+
+    // MARK: - Interests and Goals
+
+    private var interestsAndGoalsSection: some View {
+        @Bindable var store = profileStore
+        return VStack(alignment: .leading, spacing: 16) {
+            sectionHeader("Interests and Goals")
+
             FlowLayout(spacing: 8, lineSpacing: 8) {
                 ForEach(profileStore.interests) { interest in
                     interestChip(interest)
                 }
                 addInterestChip
             }
+
+            TextBox(
+                text: $store.personalGoal,
+                placeholder: "I want to find people also interested in improving their leadership skills and care about protecting animal rights.",
+                height: 110
+            )
         }
     }
 
@@ -215,25 +247,36 @@ struct MyPageView: View {
         .buttonStyle(.plain)
     }
 
-    private var saveButton: some View {
-        Button {
-            Task { await profileStore.save() }
-        } label: {
-            Group {
+    /// Cancel (outlined, reverts edits) + Edit profile (filled, saves) — the
+    /// Figma footer pair that replaces the single "Save my info" button.
+    private var editButtons: some View {
+        HStack(spacing: 12) {
+            Button(action: cancelEdits) {
+                Text("Cancel")
+                    .font(.buttonLabel)
+                    .foregroundStyle(Theme.forest)
+                    .padding(15)
+                    .frame(width: 120)
+                    .background(
+                        RoundedRectangle(cornerRadius: 30, style: .continuous)
+                            .strokeBorder(Theme.forest, lineWidth: 1.5)
+                    )
+            }
+            .buttonStyle(.plain)
+            .disabled(profileStore.isSaving)
+
+            Button {
+                Task { await profileStore.save() }
+            } label: {
                 if profileStore.isSaving {
-                    ProgressView().tint(.white)
+                    ProgressView().tint(Color.onBrand)
                 } else {
-                    Text("Save my info").font(.bodyStrong)
+                    Text("Edit profile")
                 }
             }
-            .foregroundStyle(.white)
-            .frame(maxWidth: .infinity)
-            .frame(height: 54)
-            .background(Theme.forest)
-            .clipShape(RoundedRectangle(cornerRadius: 24))
+            .buttonStyle(PrimaryActionButtonStyle())
+            .disabled(profileStore.isLoading || profileStore.isSaving)
         }
-        .buttonStyle(.plain)
-        .disabled(profileStore.isLoading || profileStore.isSaving)
     }
 
     // MARK: - My program
@@ -241,27 +284,12 @@ struct MyPageView: View {
     private var programSection: some View {
         @Bindable var vm = viewModel
         return VStack(alignment: .leading, spacing: 16) {
-            Text("My program")
-                .font(.pageTitle)
-                .foregroundStyle(Color.textPrimary)
+            sectionHeader("My Programs")
                 .padding(.top, 8)
 
-            searchRow(text: $vm.searchQuery)
+            SearchBar(text: $vm.searchQuery)
             content
         }
-    }
-
-    private func searchRow(text: Binding<String>) -> some View {
-        HStack(spacing: 12) {
-            Image(systemName: "magnifyingglass")
-                .foregroundStyle(.secondary)
-            TextField("Search", text: text)
-                .textFieldStyle(.plain)
-                .submitLabel(.search)
-        }
-        .padding(.horizontal, 16)
-        .frame(height: 44)
-        .background(Color(.systemGray6), in: Capsule())
     }
 
     @ViewBuilder
@@ -320,41 +348,14 @@ struct MyPageView: View {
         // "my posts" screen exists.
         HStack {
             Spacer()
-            Text("View all posts")
+            Text("View all programs")
                 .linkStyle()
-                .foregroundStyle(Color.textPrimary)
             Spacer()
         }
         .padding(.top, 16)
     }
 
     // MARK: - Account actions
-
-    private var accountActions: some View {
-        VStack(spacing: 12) {
-            Button(action: performLogout) {
-                Text("Log Out")
-                    .font(.bodyStrong)
-                    .foregroundStyle(Theme.forest)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 54)
-                    .overlay(RoundedRectangle(cornerRadius: 24).stroke(Theme.forest, lineWidth: 1.5))
-            }
-            .buttonStyle(.plain)
-
-            Button {
-                showDeleteConfirmation = true
-            } label: {
-                Text("Delete account")
-                    .font(.bodyStrong)
-                    .foregroundStyle(Self.dangerColor)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 54)
-            }
-            .buttonStyle(.plain)
-        }
-        .padding(.top, 8)
-    }
 
     // MARK: - Helpers
 
@@ -371,22 +372,6 @@ struct MyPageView: View {
         return emptyPrompt ? .uploadPrompt : .placeholder
     }
 
-    private func editableMultiline(label: String, placeholder: String, text: Binding<String>, lineLimit: ClosedRange<Int>, minHeight: CGFloat) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(label)
-                .font(.bodyText)
-                .foregroundStyle(Color.textPrimary)
-            TextField(placeholder, text: text, axis: .vertical)
-                .lineLimit(lineLimit)
-                .textInputAutocapitalization(.sentences)
-                .frame(minHeight: minHeight, alignment: .topLeading)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 14)
-                .background(Color(.systemGray6))
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-        }
-    }
-
     // MARK: - Actions
 
     private func removeInterest(_ interest: UserProfileStore.Interest) {
@@ -395,15 +380,12 @@ struct MyPageView: View {
         }
     }
 
-    private func performLogout() {
-        AuthService.shared.logout()
-        withAnimation(.easeInOut(duration: 0.35)) {
-            router?.route = .auth
-        }
+    /// Discard unsaved edits by re-hydrating the profile from the server.
+    private func cancelEdits() {
+        Task { await profileStore.load() }
     }
 
-    private func performDelete() {
-        // TODO: call DELETE /me once the backend endpoint exists.
+    private func performLogout() {
         AuthService.shared.logout()
         withAnimation(.easeInOut(duration: 0.35)) {
             router?.route = .auth
