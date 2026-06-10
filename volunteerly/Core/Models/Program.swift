@@ -78,6 +78,35 @@ nonisolated struct ProgramCreateRequest: Encodable {
     }
 }
 
+/// Partial update payload for `PATCH /programs/{id}`. Only fields set are sent
+/// to the server. The synthesised `encode` uses `encodeIfPresent` so `nil`
+/// values are skipped, giving true PATCH semantics.
+nonisolated struct ProgramUpdateRequest: Encodable {
+    var categoryId: Int?
+    var programName: String?
+    var description: String?
+    var startDatetime: Date?
+    var endDatetime: Date?
+    var maxVolunteers: Int?
+    var commitmentFrequency: CommitmentFrequency?
+    var commitmentDuration: CommitmentDuration?
+    var bannerImageURL: String?
+    var locationId: Int?
+
+    enum CodingKeys: String, CodingKey {
+        case categoryId = "category_id"
+        case programName = "program_name"
+        case description
+        case startDatetime = "start_datetime"
+        case endDatetime = "end_datetime"
+        case maxVolunteers = "max_volunteers"
+        case commitmentFrequency = "commitment_frequency"
+        case commitmentDuration = "commitment_duration"
+        case bannerImageURL = "banner_image_url"
+        case locationId = "location_id"
+    }
+}
+
 nonisolated enum ProgramStatus: String, Codable {
     case draft
     case open

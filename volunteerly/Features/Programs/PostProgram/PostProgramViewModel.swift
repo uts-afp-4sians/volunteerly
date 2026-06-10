@@ -30,6 +30,12 @@ final class PostProgramViewModel {
     var isSubmitting = false
     var errorMessage: String?
 
+    /// Set when the form is editing an existing program. `nil` means create
+    /// mode (POST), otherwise `submit()` issues a PATCH against this id.
+    let editingProgramId: Int?
+
+    var isEditing: Bool { editingProgramId != nil }
+
     var canSubmit: Bool {
         !name.isEmpty && !description.isEmpty && selectedCategoryId != 0 && !isSubmitting
     }
@@ -38,11 +44,27 @@ final class PostProgramViewModel {
 
     init(httpClient: HTTPClient = LiveHTTPClient.shared) {
         self.httpClient = httpClient
+        self.editingProgramId = nil
         let calendar = Calendar.current
         let now = Date()
         startDate = calendar.date(bySettingHour: 12, minute: 0, second: 0, of: now) ?? now
         endDate = calendar.date(bySettingHour: 13, minute: 0, second: 0, of: now)
             ?? now.addingTimeInterval(3600)
+    }
+
+    /// Initialise the form pre-populated for editing an existing program.
+    /// `submit()` will PATCH the changes back to the same `program.id`.
+    init(editing program: Program, httpClient: HTTPClient = LiveHTTPClient.shared) {
+        self.httpClient = httpClient
+        self.editingProgramId = program.id
+        self.name = program.name
+        self.selectedCategoryId = program.categoryId
+        self.description = program.description
+        self.maxVolunteers = program.maxVolunteers
+        self.commitmentFrequency = program.commitmentFrequency
+        self.commitmentDuration = program.commitmentDuration
+        self.startDate = program.startDatetime
+        self.endDate = program.endDatetime
     }
 
     func loadCategories() async {
@@ -58,8 +80,10 @@ final class PostProgramViewModel {
         }
     }
 
-    /// Uploads the banner (if any) and creates the program. Returns `true` on
-    /// success so the view can fire `onCreated` and dismiss.
+    /// Uploads the banner (if any) and persists the program — either creating
+    /// it (POST /programs) or, in edit mode, sending a partial update
+    /// (PATCH /programs/{id}). Returns `true` on success so the view can fire
+    /// its completion callback and dismiss.
     func submit() async -> Bool {
         guard canSubmit else { return false }
         errorMessage = nil
@@ -72,18 +96,33 @@ final class PostProgramViewModel {
                 bannerURL = try await UploadService.upload(data: data, kind: .program_banner)
             }
 
-            let request = ProgramCreateRequest(
-                categoryId: selectedCategoryId,
-                programName: name,
-                description: description,
-                startDatetime: startDate,
-                endDatetime: endDate,
-                maxVolunteers: maxVolunteers,
-                commitmentFrequency: commitmentFrequency,
-                commitmentDuration: commitmentDuration,
-                bannerImageURL: bannerURL
-            )
-            let _: Program = try await httpClient.post("/programs", body: request)
+            if let programId = editingProgramId {
+                let request = ProgramUpdateRequest(
+                    categoryId: selectedCategoryId,
+                    programName: name,
+                    description: description,
+                    startDatetime: startDate,
+                    endDatetime: endDate,
+                    maxVolunteers: maxVolunteers,
+                    commitmentFrequency: commitmentFrequency,
+                    commitmentDuration: commitmentDuration,
+                    bannerImageURL: bannerURL  // nil → backend keeps existing
+                )
+                let _: Program = try await httpClient.patch("/programs/\(programId)", body: request)
+            } else {
+                let request = ProgramCreateRequest(
+                    categoryId: selectedCategoryId,
+                    programName: name,
+                    description: description,
+                    startDatetime: startDate,
+                    endDatetime: endDate,
+                    maxVolunteers: maxVolunteers,
+                    commitmentFrequency: commitmentFrequency,
+                    commitmentDuration: commitmentDuration,
+                    bannerImageURL: bannerURL
+                )
+                let _: Program = try await httpClient.post("/programs", body: request)
+            }
             return true
         } catch {
             errorMessage = error.localizedDescription

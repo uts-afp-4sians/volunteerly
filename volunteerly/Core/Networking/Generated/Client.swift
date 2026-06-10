@@ -653,6 +653,170 @@ internal struct Client: APIProtocol {
             }
         )
     }
+    /// Update Program
+    ///
+    /// Partial update of a program. Only fields set in ``payload`` are touched.
+    /// Host-only: returns 403 if the caller isn't the program's creator.
+    ///
+    /// - Remark: HTTP `PATCH /programs/{program_id}`.
+    /// - Remark: Generated from `#/paths//programs/{program_id}/patch(update_program_programs__program_id__patch)`.
+    internal func update_program_programs__program_id__patch(_ input: Operations.update_program_programs__program_id__patch.Input) async throws -> Operations.update_program_programs__program_id__patch.Output {
+        try await client.send(
+            input: input,
+            forOperation: Operations.update_program_programs__program_id__patch.id,
+            serializer: { input in
+                let path = try converter.renderedPath(
+                    template: "/programs/{}",
+                    parameters: [
+                        input.path.program_id
+                    ]
+                )
+                var request: HTTPTypes.HTTPRequest = .init(
+                    soar_path: path,
+                    method: .patch
+                )
+                suppressMutabilityWarning(&request)
+                converter.setAcceptHeader(
+                    in: &request.headerFields,
+                    contentTypes: input.headers.accept
+                )
+                let body: OpenAPIRuntime.HTTPBody?
+                switch input.body {
+                case let .json(value):
+                    body = try converter.setRequiredRequestBodyAsJSON(
+                        value,
+                        headerFields: &request.headerFields,
+                        contentType: "application/json; charset=utf-8"
+                    )
+                }
+                return (request, body)
+            },
+            deserializer: { response, responseBody in
+                switch response.status.code {
+                case 200:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Operations.update_program_programs__program_id__patch.Output.Ok.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.ProgramRead.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .ok(.init(body: body))
+                case 422:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Operations.update_program_programs__program_id__patch.Output.UnprocessableContent.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.HTTPValidationError.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .unprocessableContent(.init(body: body))
+                default:
+                    return .undocumented(
+                        statusCode: response.status.code,
+                        .init(
+                            headerFields: response.headerFields,
+                            body: responseBody
+                        )
+                    )
+                }
+            }
+        )
+    }
+    /// Delete Program
+    ///
+    /// Soft-delete a program. Sets ``is_deleted=True`` so it stops appearing in
+    /// feeds (``_load_program`` filters them out) while keeping the row for audit
+    /// and participation history. Host-only.
+    ///
+    /// - Remark: HTTP `DELETE /programs/{program_id}`.
+    /// - Remark: Generated from `#/paths//programs/{program_id}/delete(delete_program_programs__program_id__delete)`.
+    internal func delete_program_programs__program_id__delete(_ input: Operations.delete_program_programs__program_id__delete.Input) async throws -> Operations.delete_program_programs__program_id__delete.Output {
+        try await client.send(
+            input: input,
+            forOperation: Operations.delete_program_programs__program_id__delete.id,
+            serializer: { input in
+                let path = try converter.renderedPath(
+                    template: "/programs/{}",
+                    parameters: [
+                        input.path.program_id
+                    ]
+                )
+                var request: HTTPTypes.HTTPRequest = .init(
+                    soar_path: path,
+                    method: .delete
+                )
+                suppressMutabilityWarning(&request)
+                converter.setAcceptHeader(
+                    in: &request.headerFields,
+                    contentTypes: input.headers.accept
+                )
+                return (request, nil)
+            },
+            deserializer: { response, responseBody in
+                switch response.status.code {
+                case 204:
+                    return .noContent(.init())
+                case 422:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Operations.delete_program_programs__program_id__delete.Output.UnprocessableContent.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.HTTPValidationError.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .unprocessableContent(.init(body: body))
+                default:
+                    return .undocumented(
+                        statusCode: response.status.code,
+                        .init(
+                            headerFields: response.headerFields,
+                            body: responseBody
+                        )
+                    )
+                }
+            }
+        )
+    }
     /// List Program Keywords
     ///
     /// - Remark: HTTP `GET /programs/{program_id}/keywords`.
@@ -706,6 +870,95 @@ internal struct Client: APIProtocol {
                 case 422:
                     let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
                     let body: Operations.list_program_keywords_programs__program_id__keywords_get.Output.UnprocessableContent.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.HTTPValidationError.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .unprocessableContent(.init(body: body))
+                default:
+                    return .undocumented(
+                        statusCode: response.status.code,
+                        .init(
+                            headerFields: response.headerFields,
+                            body: responseBody
+                        )
+                    )
+                }
+            }
+        )
+    }
+    /// List Participants
+    ///
+    /// Active participants of a program with the profile fields the Members row
+    /// renders (name + avatar), oldest join first. Public, like the profile and
+    /// keyword sub-resources. The host appears here only when they hold a row; the
+    /// detail screen draws the host separately from ``creator_user_id``.
+    ///
+    /// - Remark: HTTP `GET /programs/{program_id}/participants`.
+    /// - Remark: Generated from `#/paths//programs/{program_id}/participants/get(list_participants_programs__program_id__participants_get)`.
+    internal func list_participants_programs__program_id__participants_get(_ input: Operations.list_participants_programs__program_id__participants_get.Input) async throws -> Operations.list_participants_programs__program_id__participants_get.Output {
+        try await client.send(
+            input: input,
+            forOperation: Operations.list_participants_programs__program_id__participants_get.id,
+            serializer: { input in
+                let path = try converter.renderedPath(
+                    template: "/programs/{}/participants",
+                    parameters: [
+                        input.path.program_id
+                    ]
+                )
+                var request: HTTPTypes.HTTPRequest = .init(
+                    soar_path: path,
+                    method: .get
+                )
+                suppressMutabilityWarning(&request)
+                converter.setAcceptHeader(
+                    in: &request.headerFields,
+                    contentTypes: input.headers.accept
+                )
+                return (request, nil)
+            },
+            deserializer: { response, responseBody in
+                switch response.status.code {
+                case 200:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Operations.list_participants_programs__program_id__participants_get.Output.Ok.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            [Components.Schemas.ProgramParticipantRead].self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .ok(.init(body: body))
+                case 422:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Operations.list_participants_programs__program_id__participants_get.Output.UnprocessableContent.Body
                     let chosenContentType = try converter.bestContentType(
                         received: contentType,
                         options: [
