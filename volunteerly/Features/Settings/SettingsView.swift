@@ -1,10 +1,12 @@
 import SwiftUI
 
 /// Technical / account settings — change password, accessibility, legal docs,
-/// danger-zone actions. The profile-content page (name, interests, bio …)
-/// lives in `MyPageView` and is reached from the top-right avatar instead.
+/// danger-zone actions. Pushed onto the current tab's stack by the header's
+/// gear button; the profile-content page (name, interests, bio …) lives in
+/// `MyPageView` on the Profile tab.
 struct SettingsView: View {
     @Environment(AppRouter.self) private var router: AppRouter?
+    @Environment(\.dismiss) private var dismiss
     @State private var showDeleteConfirmation = false
 
     private static let dangerColor = Color(red: 0xD9 / 255, green: 0x29 / 255, blue: 0x29 / 255)
@@ -12,8 +14,18 @@ struct SettingsView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
-                VolunteerlyHeader()
-                    .padding(.horizontal, 20)
+                Button {
+                    dismiss()
+                } label: {
+                    Image(systemName: "arrow.left")
+                        .font(.bodyStrong)
+                        .foregroundStyle(Theme.textPrimary)
+                        .frame(width: 32, height: 32)
+                        .background(Color(.systemGray6), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Back")
+                .padding(.horizontal, 20)
 
                 Text("Settings")
                     .font(.system(size: 36, weight: .bold))

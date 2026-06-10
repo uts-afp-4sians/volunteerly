@@ -67,6 +67,7 @@ struct MyPageView: View {
             .tabScrollTopAnchor()
         }
         .scrollDismissesKeyboard(.interactively)
+        .scrollsToTop(on: .myPage)
         .background(Theme.background.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
         .task {

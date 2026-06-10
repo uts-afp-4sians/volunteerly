@@ -2,12 +2,10 @@ import SwiftUI
 
 /// The app logo + "Volunteerly" wordmark shown atop the main menus.
 /// Tapping the wordmark returns the user to the home page (the Programs tab
-/// at its root); the trailing avatar opens My Page on the current tab.
+/// at its root); the trailing gear opens Settings on the current tab.
 struct VolunteerlyHeader: View {
     // Optional so previews that don't inject a router still render (and no-op on tap).
     @Environment(TabRouter.self) private var tabRouter: TabRouter?
-    // Optional so previews that don't inject the store still render the placeholder.
-    @Environment(UserProfileStore.self) private var profileStore: UserProfileStore?
 
     var body: some View {
         HStack {
@@ -32,28 +30,21 @@ struct VolunteerlyHeader: View {
 
             Spacer()
 
-            // Pushes MyPageView onto the current tab's NavigationStack via the
-            // `navigationDestination(for: ProfileRoute.self)` registered in
-            // MainTabView, so the avatar always lands on the profile screen
-            // regardless of which tab the user is on.
-            NavigationLink(value: ProfileRoute()) {
-                Avatar(source: headerAvatarSource, size: 32)
+            // Pushes SettingsView onto the current tab's NavigationStack via the
+            // router-owned path (`TabRouter.showSettings`), so the gear always
+            // lands on Settings regardless of which tab the user is on.
+            Button {
+                tabRouter?.showSettings()
+            } label: {
+                Image(systemName: "gearshape")
+                    .font(.system(size: 22, weight: .regular))
+                    .foregroundStyle(Color.textPrimary)
+                    .frame(width: 32, height: 32)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("My profile")
+            .accessibilityLabel("Settings")
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    /// Pick whichever image source the store has: a freshly picked Photo
-    /// (`profileImageData`), the saved CDN URL, or the silhouette fallback.
-    private var headerAvatarSource: Avatar.Source {
-        if let data = profileStore?.profileImageData, let uiImage = UIImage(data: data) {
-            return .image(Image(uiImage: uiImage))
-        }
-        if let urlString = profileStore?.profileImageURL, let url = URL(string: urlString) {
-            return .remote(url)
-        }
-        return .placeholder
     }
 }

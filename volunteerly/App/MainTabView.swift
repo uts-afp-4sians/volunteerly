@@ -9,7 +9,7 @@ struct MainTabView: View {
         TabView(selection: $tabRouter.selectedTab) {
             programsTab.tag(TabRouter.Tab.programs)
             bookmarksTab.tag(TabRouter.Tab.bookmarks)
-            settingsTab.tag(TabRouter.Tab.settings)
+            myPageTab.tag(TabRouter.Tab.myPage)
         }
         .tabViewStyle(.page(indexDisplayMode: .never))
         .environment(tabRouter)
@@ -25,8 +25,8 @@ struct MainTabView: View {
                 .navigationDestination(for: Int.self) { programId in
                     ProgramDetailView(programId: programId)
                 }
-                .navigationDestination(for: ProfileRoute.self) { _ in
-                    MyPageView()
+                .navigationDestination(for: SettingsRoute.self) { _ in
+                    SettingsView()
                 }
                 .navigationDestination(for: TabRouter.ProgramsDestination.self) { destination in
                     switch destination {
@@ -41,28 +41,28 @@ struct MainTabView: View {
     }
 
     private var bookmarksTab: some View {
-        NavigationStack {
+        NavigationStack(path: $tabRouter.bookmarksPath) {
             BookmarksView()
                 .safeAreaInset(edge: .bottom) { floatingBar() }
                 .navigationDestination(for: Int.self) { programId in
                     ProgramDetailView(programId: programId)
                 }
-                .navigationDestination(for: ProfileRoute.self) { _ in
-                    MyPageView()
+                .navigationDestination(for: SettingsRoute.self) { _ in
+                    SettingsView()
                 }
         }
         .toolbar(.hidden, for: .tabBar)
     }
 
-    private var settingsTab: some View {
-        NavigationStack {
-            SettingsView()
+    private var myPageTab: some View {
+        NavigationStack(path: $tabRouter.myPagePath) {
+            MyPageView()
                 .safeAreaInset(edge: .bottom) { floatingBar() }
                 .navigationDestination(for: Int.self) { programId in
                     ProgramDetailView(programId: programId)
                 }
-                .navigationDestination(for: ProfileRoute.self) { _ in
-                    MyPageView()
+                .navigationDestination(for: SettingsRoute.self) { _ in
+                    SettingsView()
                 }
         }
         .toolbar(.hidden, for: .tabBar)
