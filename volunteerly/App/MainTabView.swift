@@ -11,6 +11,7 @@ struct MainTabView: View {
             bookmarksTab.tag(TabRouter.Tab.bookmarks)
             myPageTab.tag(TabRouter.Tab.myPage)
         }
+        .tabViewStyle(.page(indexDisplayMode: .never))
         .environment(tabRouter)
         .environment(profileStore)
     }
