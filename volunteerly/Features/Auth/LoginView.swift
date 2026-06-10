@@ -16,8 +16,6 @@ struct LoginView: View {
             header
             form
             submitButton
-            dividerRow
-            socialButtons
             Spacer(minLength: 24)
             signupPrompt
         }
@@ -89,44 +87,6 @@ struct LoginView: View {
         }
         .disabled(isSubmitting || email.isEmpty || password.isEmpty)
         .opacity((email.isEmpty || password.isEmpty) ? 0.6 : 1)
-    }
-
-    private var dividerRow: some View {
-        HStack(spacing: 12) {
-            line
-            Text("Or").font(.bodyText).foregroundStyle(Theme.textSecondary)
-            line
-        }
-    }
-
-    private var line: some View {
-        Rectangle()
-            .fill(Theme.border)
-            .frame(height: 1)
-    }
-
-    private var socialButtons: some View {
-        VStack(spacing: 16) {
-            socialButton(title: "Continue with Apple")
-            socialButton(title: "Continue with Google")
-            socialButton(title: "Continue with Facebook")
-        }
-    }
-
-    private func socialButton(title: String) -> some View {
-        Button(action: {}) {
-            Text(title)
-                .font(.bodyText.italic())
-                .foregroundStyle(Theme.textPrimary)
-                .frame(maxWidth: .infinity)
-                .frame(height: 56)
-                .background(Theme.card)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 14)
-                        .stroke(Theme.border, lineWidth: 1)
-                )
-                .clipShape(RoundedRectangle(cornerRadius: 14))
-        }
     }
 
     private var signupPrompt: some View {
