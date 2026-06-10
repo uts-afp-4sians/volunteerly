@@ -4,6 +4,8 @@ import SwiftUI
 /// and yellow wordmark; brand-green bottom half carries the tagline and the
 /// Log In / Sign Up calls to action.
 struct HomeView: View {
+    @Environment(AppRouter.self) private var router: AppRouter?
+
     var body: some View {
         VStack(spacing: 0) {
             topSection
@@ -19,10 +21,9 @@ struct HomeView: View {
                 .resizable()
                 .scaledToFit()
                 .frame(maxWidth: 240, maxHeight: 240)
-            Image(.volunteerlyTitle)
-                .resizable()
-                .scaledToFit()
-                .frame(maxWidth: 280, maxHeight: 80)
+            Text("Volunteerly")
+                .font(.system(size: 42, weight: .bold))
+                .foregroundStyle(Color.accentYellow)
             Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -39,12 +40,16 @@ struct HomeView: View {
             Spacer(minLength: 0)
 
             VStack(spacing: 12) {
-                NavigationLink(value: AuthRoute.login) {
+                Button {
+                    router?.route = .auth
+                } label: {
                     Text("Log In").frame(maxWidth: .infinity)
                 }
                 .buttonStyle(LandingPrimaryButtonStyle())
 
-                NavigationLink(value: AuthRoute.signup) {
+                Button {
+                    router?.route = .auth
+                } label: {
                     Text("Sign Up").frame(maxWidth: .infinity)
                 }
                 .buttonStyle(LandingSecondaryButtonStyle())

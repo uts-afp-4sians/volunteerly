@@ -5,52 +5,51 @@ struct ProgramListView: View {
 
     @State private var viewModel: ProgramListViewModel
     @State private var showFilters = false
+    private let refreshID: Int
     private let horizontalPadding: CGFloat = 20
 
-    init(httpClient: HTTPClient = LiveHTTPClient.shared) {
+    init(
+        httpClient: HTTPClient = LiveHTTPClient.shared,
+        refreshID: Int = 0
+    ) {
         _viewModel = State(initialValue: ProgramListViewModel(httpClient: httpClient))
+        self.refreshID = refreshID
     }
 
     var body: some View {
-        ZStack(alignment: .bottomTrailing) {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    VolunteerlyHeader()
-                        .padding(.horizontal, horizontalPadding)
-                    title
-                    searchRow
-                    categoryRow
-                    content
-                }
-                .padding(.top, 16)
-                .padding(.bottom, 80)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                VolunteerlyHeader()
+                    .padding(.horizontal, horizontalPadding)
+                title
+                searchRow
+                categoryRow
+                content
             }
-            .scrollDismissesKeyboard(.immediately)
-            .background(Color(.systemBackground))
-            .toolbar(.hidden, for: .navigationBar)
-            .task {
-                if viewModel.programs.isEmpty {
-                    await viewModel.load()
-                }
-                viewModel.applyUserInterests(profileStore.interests.map(\.name))
+            .padding(.top, 16)
+            .padding(.bottom, 24)
+        }
+        .scrollDismissesKeyboard(.immediately)
+        .background(Color(.systemBackground))
+        .toolbar(.hidden, for: .navigationBar)
+        .task {
+            if viewModel.programs.isEmpty {
+                await viewModel.load()
             }
-            .refreshable {
+            viewModel.applyUserInterests(profileStore.interests.map(\.name))
+        }
+        .refreshable {
+            await viewModel.load()
+            viewModel.applyUserInterests(profileStore.interests.map(\.name))
+        }
+        .onChange(of: profileStore.interests) { _, _ in
+            viewModel.applyUserInterests(profileStore.interests.map(\.name))
+        }
+        .onChange(of: refreshID) { _, _ in
+            Task {
                 await viewModel.load()
                 viewModel.applyUserInterests(profileStore.interests.map(\.name))
             }
-            .onChange(of: profileStore.interests) { _, _ in
-                viewModel.applyUserInterests(profileStore.interests.map(\.name))
-            }
-
-            // Floating Action Button (FAB)
-            NavigationLink {
-                PostProgramView(onCreated: { Task { await viewModel.load() } })
-            } label: {
-                Image(systemName: "plus")
-            }
-            .buttonStyle(FABButtonStyle())
-            .padding(.trailing, 20)
-            .padding(.bottom, 20)
         }
         .sheet(isPresented: $showFilters) {
             FilterSheet(viewModel: viewModel) {
@@ -154,32 +153,6 @@ struct ProgramListView: View {
             }
             .padding(.horizontal, horizontalPadding)
         }
-    }
-}
-
-struct FABButtonStyle: ButtonStyle {
-    @Environment(\.isFocused) private var environmentFocused
-
-    func makeBody(configuration: Configuration) -> some View {
-        let isPressed = configuration.isPressed
-        let isFocused = environmentFocused
-
-        configuration.label
-            .font(.system(size: 24, weight: .semibold))
-            .foregroundStyle(Color.onBrand)
-            .frame(width: 56, height: 56)
-            .background(
-                Circle()
-                    .fill(isPressed ? Color.brandDark : Color.brand)
-            )
-            .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 4)
-            .overlay(
-                Circle()
-                    .strokeBorder(Color.brand, lineWidth: isFocused ? 2 : 0)
-                    .padding(-4)
-            )
-            .scaleEffect(isPressed ? 0.95 : 1.0)
-            .animation(.easeOut(duration: 0.12), value: isPressed)
     }
 }
 

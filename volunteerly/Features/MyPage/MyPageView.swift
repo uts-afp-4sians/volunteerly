@@ -247,7 +247,6 @@ struct MyPageView: View {
                 .padding(.top, 8)
 
             searchRow(text: $vm.searchQuery)
-            tabBar
             content
         }
     }
@@ -265,32 +264,6 @@ struct MyPageView: View {
         .background(Color(.systemGray6), in: Capsule())
     }
 
-    private var tabBar: some View {
-        HStack(spacing: 0) {
-            ForEach(MyPageProgramTab.allCases) { tab in
-                tabButton(tab)
-            }
-        }
-    }
-
-    private func tabButton(_ tab: MyPageProgramTab) -> some View {
-        let isSelected = viewModel.selectedTab == tab
-        return Button {
-            withAnimation(.snappy) { viewModel.selectedTab = tab }
-        } label: {
-            VStack(spacing: 8) {
-                Text(tab.rawValue)
-                    .font(.bodyText)
-                    .foregroundStyle(isSelected ? Color.brand : Theme.textSecondary)
-                Rectangle()
-                    .fill(isSelected ? Color.brand : Color.clear)
-                    .frame(height: 2)
-            }
-            .frame(maxWidth: .infinity)
-        }
-        .buttonStyle(.plain)
-    }
-
     @ViewBuilder
     private var content: some View {
         if viewModel.isLoading && viewModel.programs.isEmpty {
@@ -301,12 +274,7 @@ struct MyPageView: View {
             ContentUnavailableView("Something went wrong", systemImage: "exclamationmark.triangle", description: Text(error))
                 .padding(.top, 24)
         } else {
-            switch viewModel.selectedTab {
-            case .active:
-                activeContent
-            case .bookmark:
-                bookmarkContent
-            }
+            activeContent
             viewAllPostsLink
         }
     }
@@ -334,20 +302,6 @@ struct MyPageView: View {
                     ForEach(past) { program in
                         MyPageProgramRow(program: program, isPast: true)
                     }
-                }
-            }
-        }
-    }
-
-    @ViewBuilder
-    private var bookmarkContent: some View {
-        let bookmarks = viewModel.bookmarkPrograms
-        if bookmarks.isEmpty {
-            emptyState
-        } else {
-            LazyVStack(spacing: 20) {
-                ForEach(bookmarks) { program in
-                    MyPageProgramRow(program: program)
                 }
             }
         }

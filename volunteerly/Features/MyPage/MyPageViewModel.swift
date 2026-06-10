@@ -1,19 +1,9 @@
 import Foundation
 import Observation
 
-/// The two segments of the "My program" section on the My page screen.
-enum MyPageProgramTab: String, CaseIterable, Identifiable {
-    /// Joined programs that haven't finished yet.
-    case active = "Active"
-    /// Programs the volunteer has bookmarked.
-    case bookmark = "Bookmark"
-
-    var id: String { rawValue }
-}
-
-/// Backs the "My program" section of `MyPageView`: loads the volunteer's
-/// programs and slices them into the Active / Bookmark tabs (with a "Past"
-/// sub-list under Active), applying the search filter.
+/// Backs the "My program" section of `MyPageView` (active + Past lists) and the
+/// standalone `BookmarksView`. Loads the volunteer's programs and slices them by
+/// state, applying the search filter.
 @MainActor
 @Observable
 final class MyPageViewModel {
@@ -21,9 +11,8 @@ final class MyPageViewModel {
     var isLoading = false
     var errorMessage: String?
     var searchQuery = ""
-    var selectedTab: MyPageProgramTab = .active
 
-    /// Programs the volunteer has bookmarked. Seeded so the Bookmark tab
+    /// Programs the volunteer has bookmarked. Seeded so the Bookmarks screen
     /// demonstrates content out of the box.
     var bookmarkedProgramIds: Set<Int> = [1, 2]
 
@@ -60,6 +49,12 @@ final class MyPageViewModel {
 
     // MARK: - Slicing
 
+    /// Bookmarked programs, soonest first.
+    var bookmarkPrograms: [Program] {
+        let list = filtered { self.isBookmarked($0) }
+        return list.sorted { $0.startDatetime < $1.startDatetime }
+    }
+
     /// Currently joined, not-yet-finished programs, soonest first.
     var activePrograms: [Program] {
         let now = Date.now
@@ -76,12 +71,6 @@ final class MyPageViewModel {
             program.endDatetime < now || program.status == .closed || program.status == .cancelled
         }
         return list.sorted { $0.startDatetime > $1.startDatetime }
-    }
-
-    /// Bookmarked programs, soonest first.
-    var bookmarkPrograms: [Program] {
-        let list = filtered { self.isBookmarked($0) }
-        return list.sorted { $0.startDatetime < $1.startDatetime }
     }
 
     private func filtered(_ predicate: (Program) -> Bool) -> [Program] {
