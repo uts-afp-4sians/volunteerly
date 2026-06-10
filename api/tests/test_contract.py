@@ -168,6 +168,7 @@ def test_get_user_profile(client: TestClient) -> None:
         "instagram",
         "key_skills",
         "location_id",
+        "interests",
     }
     assert body["first_name"] == "Jane"
     assert body["last_name"] == "Doe"

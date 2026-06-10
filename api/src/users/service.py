@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from src.categories.model import Keyword
 from src.users.model import UserInterest, UserProfile
-from src.users.schema import UserProfileUpdate
+from src.users.schema import UserInterestDetail, UserProfileRead, UserProfileUpdate
 
 
 class UserError(Exception):
@@ -42,11 +42,18 @@ def update_profile(
     """Apply a partial update to the user's profile.
 
     Only fields explicitly set on ``payload`` are written, so omitting a field
-    leaves it untouched. Runs in the caller's request-scoped transaction.
+    leaves it untouched. ``interest_keyword_ids`` is not a profile column — when
+    present it replaces the user's interest set in the same transaction; when
+    omitted the interests are left untouched. Runs in the caller's
+    request-scoped transaction.
     """
     profile = get_profile(db, user_id)
-    for field, value in payload.model_dump(exclude_unset=True).items():
+    data = payload.model_dump(exclude_unset=True)
+    interest_keyword_ids = data.pop("interest_keyword_ids", None)
+    for field, value in data.items():
         setattr(profile, field, value)
+    if interest_keyword_ids is not None:
+        replace_interests(db, user_id, interest_keyword_ids)
     db.flush()
     return profile
 
@@ -87,3 +94,17 @@ def replace_interests(
         db.add(UserInterest(user_id=user_id, keyword_id=keyword_id))
     db.flush()
     return list_interests(db, user_id)
+
+
+def read_profile_with_interests(db: Session, profile: UserProfile) -> UserProfileRead:
+    """Serialise a profile with its interest set embedded.
+
+    The single shape the profile endpoints return, so one read hydrates the
+    whole screen and the client caches it as one object.
+    """
+    response = UserProfileRead.model_validate(profile)
+    response.interests = [
+        UserInterestDetail.model_validate(keyword)
+        for keyword in list_interests(db, profile.user_id)
+    ]
+    return response

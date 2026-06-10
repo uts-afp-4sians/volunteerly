@@ -1,8 +1,11 @@
-"""Tests for the signed-in user's profile + interest endpoints.
+"""Tests for the signed-in user's profile endpoint.
 
 The seeded fixture user is jane.doe@example.com / "password123" (user_id 1)
 with interests {keyword 4 "Animal Care", keyword 7 "Education"} — see
 scripts/seed.py.
+
+Interests are embedded in the profile resource (read) and replaced via the same
+``PATCH /me/profile`` (write); there is no separate ``/me/interests`` endpoint.
 """
 
 from fastapi.testclient import TestClient
@@ -19,6 +22,7 @@ PROFILE_KEYS = {
     "instagram",
     "key_skills",
     "location_id",
+    "interests",
 }
 
 
@@ -42,6 +46,13 @@ def test_get_my_profile(client: TestClient) -> None:
     assert set(body.keys()) == PROFILE_KEYS
     assert body["user_id"] == 1
     assert body["first_name"] == "Jane"
+    # Interests are embedded, joined with their keyword name.
+    assert {row["keyword_id"] for row in body["interests"]} == {4, 7}
+    assert set(body["interests"][0].keys()) == {"keyword_id", "keyword_name"}
+    assert {row["keyword_name"] for row in body["interests"]} == {
+        "Animal Care",
+        "Education",
+    }
 
 
 def test_get_my_profile_requires_auth(client: TestClient) -> None:
@@ -62,6 +73,8 @@ def test_patch_my_profile_partial_update(client: TestClient) -> None:
     # Untouched fields are preserved.
     assert body["first_name"] == "Jane"
     assert body["last_name"] == "Doe"
+    # Interests are left untouched when the field is omitted.
+    assert {row["keyword_id"] for row in body["interests"]} == {4, 7}
 
     # The change persists on a fresh read.
     again = client.get("/me/profile", headers=headers).json()
@@ -77,28 +90,23 @@ def test_patch_my_profile_rejects_overlong_field(client: TestClient) -> None:
     assert res.status_code == 422
 
 
-def test_get_my_interests(client: TestClient) -> None:
-    res = client.get("/me/interests", headers=_auth(client))
-    assert res.status_code == 200
-    body = res.json()
-    assert {row["keyword_id"] for row in body} == {4, 7}
-    assert set(body[0].keys()) == {"keyword_id", "keyword_name"}
-    assert {row["keyword_name"] for row in body} == {"Animal Care", "Education"}
-
-
-def test_put_my_interests_replaces_set(client: TestClient) -> None:
+def test_patch_my_profile_replaces_interests(client: TestClient) -> None:
     headers = _auth(client)
-    res = client.put("/me/interests", headers=headers, json={"keyword_ids": [3]})
+    res = client.patch(
+        "/me/profile", headers=headers, json={"interest_keyword_ids": [3]}
+    )
     assert res.status_code == 200
-    assert {row["keyword_id"] for row in res.json()} == {3}
+    assert {row["keyword_id"] for row in res.json()["interests"]} == {3}
 
     # Replacement is reflected on a fresh read.
-    again = client.get("/me/interests", headers=headers).json()
-    assert {row["keyword_id"] for row in again} == {3}
+    again = client.get("/me/profile", headers=headers).json()
+    assert {row["keyword_id"] for row in again["interests"]} == {3}
 
 
-def test_put_my_interests_rejects_unknown_keyword(client: TestClient) -> None:
-    res = client.put(
-        "/me/interests", headers=_auth(client), json={"keyword_ids": [99999]}
+def test_patch_my_profile_rejects_unknown_interest(client: TestClient) -> None:
+    res = client.patch(
+        "/me/profile",
+        headers=_auth(client),
+        json={"interest_keyword_ids": [99999]},
     )
     assert res.status_code == 422
