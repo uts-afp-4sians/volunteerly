@@ -7,8 +7,17 @@
 
 import CoreLocation
 import Testing
-
 @testable import volunteerly
+
+// MARK: - Auth validation
+
+struct AuthValidationTests {
+    @Test func registrationPasswordMatchesBackendMinimum() {
+        #expect(!AuthValidation.isValidPassword("123456"))
+        #expect(!AuthValidation.isValidPassword("1234567"))
+        #expect(AuthValidation.isValidPassword("12345678"))
+    }
+}
 
 // MARK: - Test doubles
 
