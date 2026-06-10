@@ -26,6 +26,7 @@ final class SignupFormViewModel {
     // Step 4 — Secure your account
     var email = ""
     var password = ""
+    var passwordConfirmation = ""
     // Inline, server-driven errors surfaced under the step-4 fields. Set when
     // registration fails with a 409 (email taken) or 422 (validation).
     var emailFieldError: String?
@@ -50,7 +51,10 @@ final class SignupFormViewModel {
         switch step {
         case 2: return !city.isEmpty
         case 3: return selectedInterests.count >= 2
-        case 4: return !email.isEmpty && AuthValidation.isValidPassword(password)
+        case 4:
+            return !email.isEmpty
+                && AuthValidation.isValidPassword(password)
+                && password == passwordConfirmation
         case 5: return !expectations.isEmpty
         default: return false
         }
@@ -161,17 +165,28 @@ final class SignupFormViewModel {
         defer { isLoadingInterests = false }
         do {
             let fetched = try await profileService.fetchInterestCatalog()
-            interestCatalog = fetched.isEmpty ? fallbackCatalog : fetched
+            interestCatalog = fetched.isEmpty ? fallbackCatalog : merged(backend: fetched)
         } catch {
             interestCatalog = fallbackCatalog
         }
+    }
+
+    /// Merge the backend's keyword catalogue with the iOS-local fallback list,
+    /// appending any local entries whose names aren't already on the server.
+    /// Lets the picker show interests we've added on the client even if the
+    /// backend's seed hasn't been re-run yet — server persistence still uses
+    /// only the rows whose keyword.id matches via `resolveInterestIds`.
+    private func merged(backend: [Keyword]) -> [Keyword] {
+        let backendNames = Set(backend.map { $0.name.lowercased() })
+        let extras = fallbackCatalog.filter { !backendNames.contains($0.name.lowercased()) }
+        return backend + extras
     }
 
     func advance(profileStore: UserProfileStore, router: AppRouter?) {
         guard step < totalSteps else { return }
         commitCurrentStep(profileStore: profileStore)
         step += 1
-        if step == 6 { startFinalisingIfNeeded(router: router) }
+        if step == 6 { startFinalisingIfNeeded(profileStore: profileStore, router: router) }
     }
 
     private func commitCurrentStep(profileStore: UserProfileStore) {
@@ -179,14 +194,17 @@ final class SignupFormViewModel {
         case 2:
             profileStore.city = city
         case 3:
-            profileStore.interests = interestCatalog
-                .filter { selectedInterests.contains($0.name) }
-                .map {
-                    UserProfileStore.Interest(
-                        emoji: UserProfileStore.emoji(for: $0.name),
-                        name: $0.name
-                    )
-                }
+            // Include every selected interest — both catalog picks and any
+            // custom names the user typed via the "Add more" chip. Custom names
+            // without a matching backend keyword will be dropped server-side by
+            // `resolveInterestIds` but stay visible in the local profile during
+            // the session.
+            profileStore.interests = selectedInterests.map { name in
+                UserProfileStore.Interest(
+                    emoji: UserProfileStore.emoji(for: name),
+                    name: name
+                )
+            }
         case 5:
             profileStore.personalGoal = expectations
             profileStore.occupation = occupation
@@ -198,7 +216,7 @@ final class SignupFormViewModel {
 
     // Minimum spinner display — keeps the "Matching you with opportunities…"
     // copy on screen long enough to read.
-    func startFinalisingIfNeeded(router: AppRouter?) {
+    func startFinalisingIfNeeded(profileStore: UserProfileStore, router: AppRouter?) {
         guard !hasStartedFinalising else { return }
         hasStartedFinalising = true
 
@@ -219,6 +237,16 @@ final class SignupFormViewModel {
 
             do {
                 _ = try await registration.value
+                // Now that we have an auth token, write the step-1 fields the
+                // form collected (date of birth, profile photo, instagram) into
+                // the shared store and persist everything via PATCH /me/profile
+                // + PUT /me/interests. Best-effort: the account is already
+                // created so we proceed to onboarding even if save() fails —
+                // the user can fix anything on the My profile page.
+                profileStore.dateOfBirth = basics.dateOfBirth
+                profileStore.profileImageData = basics.profileImageData
+                profileStore.instagram = basics.instagram
+                _ = await profileStore.save()
                 withAnimation(.easeInOut(duration: 0.35)) { router?.route = .onboarding }
             } catch let error as APIError {
                 handleRegistrationFailure(error)

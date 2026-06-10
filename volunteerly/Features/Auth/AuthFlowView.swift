@@ -38,6 +38,9 @@ struct SignupBasics: Hashable {
     let lastName: String
     let email: String
     let password: String
+    let dateOfBirth: Date?
+    let profileImageData: Data?
+    let instagram: String
 }
 
 #Preview {

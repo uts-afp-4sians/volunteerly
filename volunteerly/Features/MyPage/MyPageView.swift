@@ -18,6 +18,8 @@ struct MyPageView: View {
 
     @State private var profileItem: PhotosPickerItem?
     @State private var showInterestPicker = false
+    @State private var showDOBPicker = false
+    @State private var editingName: String?
     @State private var didLoad = false
 
     private let horizontalPadding: CGFloat = 20
@@ -55,7 +57,6 @@ struct MyPageView: View {
             .padding(.bottom, 24)
             .tabScrollTopAnchor()
         }
-        .scrollsToTop(on: .myPage)
         .scrollDismissesKeyboard(.interactively)
         .background(Theme.background.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
@@ -88,14 +89,16 @@ struct MyPageView: View {
             Button {
                 tabRouter?.goHome()
             } label: {
-                HStack(spacing: 10) {
+                HStack(spacing: 0) {
                     Image(.logo)
                         .resizable()
                         .scaledToFit()
                         .frame(width: 30, height: 30)
-                    Text("Volunteerly")
-                        .font(.bodyText)
-                        .foregroundStyle(Color.textPrimary)
+                    Image(.volunteerlyTitle)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(maxWidth: 130, maxHeight: 36)
+                        .padding(.leading, -6)
                 }
             }
             .buttonStyle(.plain)
@@ -103,9 +106,10 @@ struct MyPageView: View {
 
             Spacer()
         }
-        // Match VolunteerlyHeader's row height (driven by its 32pt avatar) so the
-        // logo sits at the same vertical position as on the other tabs.
-        .frame(height: 32)
+        // Match VolunteerlyHeader's row height. The wordmark image's intrinsic
+        // 36pt cap drives the row height there; we mirror it here so the title
+        // renders at the same size and the logo lines up with the other tabs.
+        .frame(height: 36)
         // Float Log Out as an overlay so its taller pill can't grow the logo row.
         .overlay(alignment: .trailing) {
             Button(action: performLogout) {
@@ -143,30 +147,160 @@ struct MyPageView: View {
         return VStack(alignment: .leading, spacing: 16) {
             sectionHeader("My Profile")
 
-            VStack(spacing: 12) {
+            VStack(spacing: 8) {
                 PhotosPicker(selection: $profileItem, matching: .images) {
                     Avatar(source: avatarSource(emptyPrompt: true), size: 130)
+                        .overlay(alignment: .bottomTrailing) {
+                            // Small brand-green "+" badge cueing the user that
+                            // tapping the avatar swaps the picture.
+                            Image(systemName: "plus")
+                                .font(.system(size: 16, weight: .bold))
+                                .foregroundStyle(Color.white)
+                                .frame(width: 34, height: 34)
+                                .background(Theme.forest, in: Circle())
+                                .overlay(Circle().strokeBorder(Color.white, lineWidth: 3))
+                        }
                 }
                 .onChange(of: profileItem) { _, newItem in
                     Task { store.profileImageData = try? await newItem?.loadTransferable(type: Data.self) }
                 }
 
-                TextField("User name", text: $store.displayName)
-                    .textContentType(.name)
-                    .multilineTextAlignment(.center)
+                // Name is read-only and centered; the pencil button sits
+                // directly below it to keep the name truly centred on screen.
+                Text(store.displayName.isEmpty ? "Your name" : store.displayName)
                     .font(.bodyStrong)
-                    .foregroundStyle(Color.textPrimary)
+                    .foregroundStyle(store.displayName.isEmpty ? Theme.textSecondary : Color.textPrimary)
+                    .padding(.top, 6)
+
+                Button {
+                    editingName = store.displayName
+                } label: {
+                    Image(systemName: "pencil")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundStyle(Theme.forest)
+                        .padding(6)
+                        .background(Theme.forest.opacity(0.1), in: Circle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Edit name")
             }
             .frame(maxWidth: .infinity)
 
-            instagramField
-
-            TextBox(
-                text: $store.aboutMe,
-                placeholder: "I am a student, I also enjoy social media marketing",
-                height: 120
-            )
+            labelledField("Date of birth") { dateOfBirthRow }
+            labelledField("City") {
+                singleLineField(text: $store.city, placeholder: "e.g. Sydney")
+                    .textInputAutocapitalization(.words)
+            }
+            labelledField("Instagram") { instagramField }
+            labelledField("About me") {
+                TextBox(
+                    text: $store.aboutMe,
+                    placeholder: "I am a student, I also enjoy social media marketing",
+                    height: 120
+                )
+            }
         }
+        .alert("Edit name", isPresented: Binding(
+            get: { editingName != nil },
+            set: { if !$0 { editingName = nil } }
+        )) {
+            TextField("Your name", text: Binding(
+                get: { editingName ?? "" },
+                set: { editingName = $0 }
+            ))
+            .textContentType(.name)
+            Button("Cancel", role: .cancel) { editingName = nil }
+            Button("Save") {
+                if let name = editingName?.trimmingCharacters(in: .whitespacesAndNewlines), !name.isEmpty {
+                    profileStore.displayName = name
+                }
+                editingName = nil
+            }
+        } message: {
+            Text("Update the name shown on your profile.")
+        }
+        .sheet(isPresented: $showDOBPicker) {
+            dateOfBirthSheet
+        }
+    }
+
+    /// Single-line input styled to match the existing instagram / city fields.
+    private func singleLineField(text: Binding<String>, placeholder: String) -> some View {
+        TextField(placeholder, text: text)
+            .font(.bodyText)
+            .foregroundStyle(Theme.textPrimary)
+            .autocorrectionDisabled()
+            .padding(.horizontal, 12)
+            .padding(.vertical, 14)
+            .background(Color(red: 0.959, green: 0.959, blue: 0.959), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+    }
+
+    /// Field with a small labelled header, used for the new profile rows.
+    private func labelledField<Content: View>(_ label: String, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(label)
+                .font(.bodyText)
+                .foregroundStyle(Theme.textPrimary)
+            content()
+        }
+    }
+
+    /// Read-only date row that opens a graphical date picker on tap.
+    private var dateOfBirthRow: some View {
+        Button {
+            showDOBPicker = true
+        } label: {
+            HStack {
+                Text(formattedDOB)
+                    .font(.bodyText)
+                    .foregroundStyle(profileStore.dateOfBirth == nil ? Theme.textSecondary : Theme.textPrimary)
+                Spacer()
+                Image(systemName: "calendar")
+                    .foregroundStyle(Theme.forest)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 14)
+            .background(Color(red: 0.959, green: 0.959, blue: 0.959), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var formattedDOB: String {
+        guard let dob = profileStore.dateOfBirth else { return "Choose a date" }
+        return dob.formatted(date: .long, time: .omitted)
+    }
+
+    private var dateOfBirthSheet: some View {
+        VStack(spacing: 0) {
+            DatePicker(
+                "",
+                selection: Binding(
+                    get: { profileStore.dateOfBirth ?? Date() },
+                    set: { profileStore.dateOfBirth = $0 }
+                ),
+                in: ...Date(),
+                displayedComponents: .date
+            )
+            .datePickerStyle(.graphical)
+            .labelsHidden()
+            .tint(Theme.forest)
+            .padding(.horizontal, 8)
+            .padding(.top, 24)
+
+            Button { showDOBPicker = false } label: {
+                Text("Done")
+                    .font(.buttonLabel)
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 50)
+                    .background(Theme.forest)
+                    .clipShape(RoundedRectangle(cornerRadius: 25))
+            }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 20)
+        }
+        .presentationDetents([.medium])
+        .presentationDragIndicator(.visible)
     }
 
     /// Single-line grey input for the Instagram handle (TextBox is multi-line).
@@ -198,11 +332,23 @@ struct MyPageView: View {
                 addInterestChip
             }
 
-            TextBox(
-                text: $store.personalGoal,
-                placeholder: "I want to find people also interested in improving their leadership skills and care about protecting animal rights.",
-                height: 110
-            )
+            labelledField("What I hope to get out of this") {
+                TextBox(
+                    text: $store.personalGoal,
+                    placeholder: "I want to find people also interested in improving their leadership skills and care about protecting animal rights.",
+                    height: 110
+                )
+            }
+
+            labelledField("Current role") {
+                singleLineField(text: $store.occupation, placeholder: "e.g. Uni student, barista, between jobs")
+                    .textInputAutocapitalization(.sentences)
+            }
+
+            labelledField("What I can bring to the team") {
+                singleLineField(text: $store.keySkills, placeholder: "e.g. Positive energy, strong communication")
+                    .textInputAutocapitalization(.sentences)
+            }
         }
     }
 
@@ -250,33 +396,17 @@ struct MyPageView: View {
     /// Cancel (outlined, reverts edits) + Edit profile (filled, saves) — the
     /// Figma footer pair that replaces the single "Save my info" button.
     private var editButtons: some View {
-        HStack(spacing: 12) {
-            Button(action: cancelEdits) {
-                Text("Cancel")
-                    .font(.buttonLabel)
-                    .foregroundStyle(Theme.forest)
-                    .padding(15)
-                    .frame(width: 120)
-                    .background(
-                        RoundedRectangle(cornerRadius: 30, style: .continuous)
-                            .strokeBorder(Theme.forest, lineWidth: 1.5)
-                    )
+        Button {
+            Task { await profileStore.save() }
+        } label: {
+            if profileStore.isSaving {
+                ProgressView().tint(Color.onBrand)
+            } else {
+                Text("Save changes")
             }
-            .buttonStyle(.plain)
-            .disabled(profileStore.isSaving)
-
-            Button {
-                Task { await profileStore.save() }
-            } label: {
-                if profileStore.isSaving {
-                    ProgressView().tint(Color.onBrand)
-                } else {
-                    Text("Edit profile")
-                }
-            }
-            .buttonStyle(PrimaryActionButtonStyle())
-            .disabled(profileStore.isLoading || profileStore.isSaving)
         }
+        .buttonStyle(PrimaryActionButtonStyle())
+        .disabled(profileStore.isLoading || profileStore.isSaving || !profileStore.isDirty)
     }
 
     // MARK: - My program
@@ -378,11 +508,6 @@ struct MyPageView: View {
         withAnimation(.spring(response: 0.25, dampingFraction: 0.85)) {
             profileStore.interests.removeAll { $0.id == interest.id }
         }
-    }
-
-    /// Discard unsaved edits by re-hydrating the profile from the server.
-    private func cancelEdits() {
-        Task { await profileStore.load() }
     }
 
     private func performLogout() {

@@ -1,9 +1,9 @@
 import SwiftUI
 
-/// Floating tab bar that replaces the system tab bar: a frosted capsule holding
-/// the three primary destinations (Programs, Bookmarks, Profile), with an
-/// optional separate "+" circle for posting a program (shown on the Programs
-/// list only).
+/// Floating tab bar that replaces the system tab bar: a frosted capsule
+/// holding the three primary destinations (Programs, Bookmarks, Settings),
+/// horizontally centred on screen. When `showsPostButton` is true a separate
+/// "+" circle floats to the trailing edge, slightly above the capsule.
 struct FloatingTabBar: View {
     @Binding var selection: TabRouter.Tab
     var showsPostButton: Bool = false
@@ -12,10 +12,16 @@ struct FloatingTabBar: View {
     private let itemSize: CGFloat = 56
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 0) {
+            Spacer()
             capsule
+            Spacer()
+        }
+        .overlay(alignment: .trailing) {
             if showsPostButton {
                 postButton
+                    .padding(.trailing, 12)
+                    .offset(y: -12)
             }
         }
         .padding(.horizontal, 20)
@@ -26,7 +32,7 @@ struct FloatingTabBar: View {
         HStack(spacing: 4) {
             tabButton(.programs, icon: "magnifyingglass", label: "Programs")
             tabButton(.bookmarks, icon: "bookmark", label: "Bookmarks")
-            tabButton(.myPage, icon: "person.crop.circle", label: "My page")
+            tabButton(.settings, icon: "gearshape", label: "Settings")
         }
         .padding(.horizontal, 10)
         .frame(height: itemSize)

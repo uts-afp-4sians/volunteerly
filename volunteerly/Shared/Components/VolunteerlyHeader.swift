@@ -6,20 +6,24 @@ import SwiftUI
 struct VolunteerlyHeader: View {
     // Optional so previews that don't inject a router still render (and no-op on tap).
     @Environment(TabRouter.self) private var tabRouter: TabRouter?
+    // Optional so previews that don't inject the store still render the placeholder.
+    @Environment(UserProfileStore.self) private var profileStore: UserProfileStore?
 
     var body: some View {
         HStack {
             Button {
                 tabRouter?.goHome()
             } label: {
-                HStack(spacing: 10) {
+                HStack(spacing: 0) {
                     Image(.logo)
                         .resizable()
                         .scaledToFit()
                         .frame(width: 30, height: 30)
-                    Text("Volunteerly")
-                        .font(.bodyText)
-                        .foregroundStyle(Color.textPrimary)
+                    Image(.volunteerlyTitle)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(maxWidth: 130, maxHeight: 36)
+                        .padding(.leading, -6)
                 }
             }
             .buttonStyle(.plain)
@@ -28,15 +32,27 @@ struct VolunteerlyHeader: View {
 
             Spacer()
 
-            // The avatar selects the My page tab rather than pushing a screen,
-            // now that My page is a top-level tab.
-            Button {
-                tabRouter?.selectedTab = .myPage
-            } label: {
-                Avatar(source: .placeholder, size: 32)
+            // Pushes MyPageView onto the current tab's NavigationStack via the
+            // `navigationDestination(for: ProfileRoute.self)` registered in
+            // MainTabView, so the avatar always lands on the profile screen
+            // regardless of which tab the user is on.
+            NavigationLink(value: ProfileRoute()) {
+                Avatar(source: headerAvatarSource, size: 32)
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("My page")
+            .accessibilityLabel("My profile")
         }
+    }
+
+    /// Pick whichever image source the store has: a freshly picked Photo
+    /// (`profileImageData`), the saved CDN URL, or the silhouette fallback.
+    private var headerAvatarSource: Avatar.Source {
+        if let data = profileStore?.profileImageData, let uiImage = UIImage(data: data) {
+            return .image(Image(uiImage: uiImage))
+        }
+        if let urlString = profileStore?.profileImageURL, let url = URL(string: urlString) {
+            return .remote(url)
+        }
+        return .placeholder
     }
 }

@@ -8,6 +8,7 @@ import Observation
 @Observable
 final class UserProfileStore {
     var displayName: String = ""
+    var dateOfBirth: Date?
     var city: String = ""
     var instagram: String = ""
     var aboutMe: String = ""
@@ -23,6 +24,67 @@ final class UserProfileStore {
     var isLoading = false
     var isSaving = false
     var errorMessage: String?
+
+    /// Snapshot captured at load time so the view can tell whether anything has
+    /// actually changed and decide whether to enable the Save button.
+    private(set) var snapshot: Snapshot?
+
+    struct Snapshot: Equatable {
+        var displayName: String
+        var dateOfBirth: Date?
+        var city: String
+        var instagram: String
+        var aboutMe: String
+        var personalGoal: String
+        var occupation: String
+        var keySkills: String
+        var interestNames: [String]
+        var profileImageURL: String?
+    }
+
+    /// `true` when any user-editable field differs from the loaded snapshot (or
+    /// when a new image has been picked). Drives the Save / Cancel button state
+    /// on MyPage.
+    var isDirty: Bool {
+        if profileImageData != nil { return true }
+        guard let snap = snapshot else { return false }
+        return snap != currentSnapshot()
+    }
+
+    private func currentSnapshot() -> Snapshot {
+        Snapshot(
+            displayName: displayName,
+            dateOfBirth: dateOfBirth,
+            city: city,
+            instagram: instagram,
+            aboutMe: aboutMe,
+            personalGoal: personalGoal,
+            occupation: occupation,
+            keySkills: keySkills,
+            interestNames: interests.map(\.name),
+            profileImageURL: profileImageURL
+        )
+    }
+
+    /// Revert all edits back to the values captured in the last snapshot.
+    /// Called by MyPage's Cancel button.
+    func revertToSnapshot() {
+        guard let snap = snapshot else { return }
+        displayName = snap.displayName
+        dateOfBirth = snap.dateOfBirth
+        city = snap.city
+        instagram = snap.instagram
+        aboutMe = snap.aboutMe
+        personalGoal = snap.personalGoal
+        occupation = snap.occupation
+        keySkills = snap.keySkills
+        profileImageURL = snap.profileImageURL
+        profileImageData = nil
+        // Restore interests by name; emoji are presentation-only.
+        interests = snap.interestNames.map { name in
+            Interest(emoji: Self.emoji(for: name), name: name)
+        }
+    }
 
     private let service: ProfileService
 
@@ -57,6 +119,16 @@ final class UserProfileStore {
         ("🍽️", "Food"),
         ("✊", "Social Justice"),
         ("💻", "Technology"),
+        ("🧒", "Children & Youth"),
+        ("🏥", "Health"),
+        ("🧠", "Mental Health"),
+        ("♿️", "Disability Support"),
+        ("🏠", "Homelessness"),
+        ("📖", "Literacy"),
+        ("🚨", "Disaster Relief"),
+        ("⚽️", "Sports"),
+        ("🎵", "Music"),
+        ("🤝", "Refugees"),
     ]
 
     /// Emoji for a keyword name, defaulting to a generic tag for anything not in
@@ -72,7 +144,13 @@ final class UserProfileStore {
     func load() async {
         isLoading = true
         errorMessage = nil
-        defer { isLoading = false }
+        defer {
+            isLoading = false
+            // Always capture a snapshot — even if the fetch failed — so the
+            // view's `isDirty` check has something to diff against and the
+            // Save button can light up as soon as the user types.
+            if snapshot == nil { snapshot = currentSnapshot() }
+        }
         do {
             async let profile = service.fetchMyProfile()
             async let interestDetails = service.fetchMyInterests()
@@ -80,6 +158,7 @@ final class UserProfileStore {
             interests = try await interestDetails.map {
                 Interest(emoji: Self.emoji(for: $0.keywordName), name: $0.keywordName)
             }
+            snapshot = currentSnapshot()
         } catch where Self.isCancellation(error) {
             return
         } catch {
@@ -129,6 +208,8 @@ final class UserProfileStore {
         do {
             try await service.updateMyProfile(update)
             try await service.replaceMyInterests(keywordIds: resolveInterestIds())
+            // Refresh snapshot so `isDirty` returns to false after a successful save.
+            snapshot = currentSnapshot()
             return true
         } catch {
             errorMessage = "Couldn't save your changes. \(Self.message(error))"
@@ -142,6 +223,7 @@ final class UserProfileStore {
         displayName = [profile.firstName, profile.lastName]
             .filter { !$0.isEmpty }
             .joined(separator: " ")
+        dateOfBirth = profile.dateOfBirth
         profileImageURL = profile.profileImageURL
         instagram = profile.instagram ?? ""
         aboutMe = profile.bio ?? ""
@@ -152,6 +234,7 @@ final class UserProfileStore {
 
     private func buildUpdate() -> UserProfileUpdate {
         var update = UserProfileUpdate(
+            dateOfBirth: dateOfBirth,
             occupation: occupation,
             goalText: personalGoal,
             bio: aboutMe,

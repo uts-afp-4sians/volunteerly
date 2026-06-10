@@ -9,7 +9,7 @@ struct MainTabView: View {
         TabView(selection: $tabRouter.selectedTab) {
             programsTab.tag(TabRouter.Tab.programs)
             bookmarksTab.tag(TabRouter.Tab.bookmarks)
-            myPageTab.tag(TabRouter.Tab.myPage)
+            settingsTab.tag(TabRouter.Tab.settings)
         }
         .environment(tabRouter)
         .environment(profileStore)
@@ -23,6 +23,9 @@ struct MainTabView: View {
                 }
                 .navigationDestination(for: Int.self) { programId in
                     ProgramDetailView(programId: programId)
+                }
+                .navigationDestination(for: ProfileRoute.self) { _ in
+                    MyPageView()
                 }
                 .navigationDestination(for: TabRouter.ProgramsDestination.self) { destination in
                     switch destination {
@@ -43,16 +46,22 @@ struct MainTabView: View {
                 .navigationDestination(for: Int.self) { programId in
                     ProgramDetailView(programId: programId)
                 }
+                .navigationDestination(for: ProfileRoute.self) { _ in
+                    MyPageView()
+                }
         }
         .toolbar(.hidden, for: .tabBar)
     }
 
-    private var myPageTab: some View {
+    private var settingsTab: some View {
         NavigationStack {
-            MyPageView()
+            SettingsView()
                 .safeAreaInset(edge: .bottom) { floatingBar() }
                 .navigationDestination(for: Int.self) { programId in
                     ProgramDetailView(programId: programId)
+                }
+                .navigationDestination(for: ProfileRoute.self) { _ in
+                    MyPageView()
                 }
         }
         .toolbar(.hidden, for: .tabBar)

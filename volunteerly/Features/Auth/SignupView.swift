@@ -139,6 +139,7 @@ struct SignupView: View {
                     .tint(Theme.forest)
                     .onChange(of: dateOfBirth) { _, _ in dobSet = true }
                     .padding(.horizontal, 8)
+                    .padding(.top, 24)
 
                     Button {
                         dobSet = true
@@ -255,7 +256,10 @@ struct SignupView: View {
             firstName: firstName,
             lastName: lastName,
             email: "",
-            password: ""
+            password: "",
+            dateOfBirth: dobSet ? dateOfBirth : nil,
+            profileImageData: profileImageData,
+            instagram: instagram.trimmingCharacters(in: .whitespacesAndNewlines)
         ))) {
             Text("Next")
                 .font(.buttonLabel)

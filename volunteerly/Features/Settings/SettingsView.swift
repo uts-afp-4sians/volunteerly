@@ -1,0 +1,157 @@
+import SwiftUI
+
+/// Technical / account settings — change password, accessibility, legal docs,
+/// danger-zone actions. The profile-content page (name, interests, bio …)
+/// lives in `MyPageView` and is reached from the top-right avatar instead.
+struct SettingsView: View {
+    @Environment(AppRouter.self) private var router: AppRouter?
+    @State private var showDeleteConfirmation = false
+
+    private static let dangerColor = Color(red: 0xD9 / 255, green: 0x29 / 255, blue: 0x29 / 255)
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 24) {
+                VolunteerlyHeader()
+                    .padding(.horizontal, 20)
+
+                Text("Settings")
+                    .font(.system(size: 36, weight: .bold))
+                    .foregroundStyle(Theme.textPrimary)
+                    .padding(.horizontal, 20)
+
+                section(title: "Account") {
+                    row(icon: "key.fill", label: "Change password")
+                    row(icon: "envelope.fill", label: "Change email")
+                    row(icon: "bell.fill", label: "Notifications")
+                }
+
+                section(title: "App") {
+                    row(icon: "accessibility", label: "Accessibility")
+                    row(icon: "globe", label: "Language")
+                    row(icon: "moon.fill", label: "Appearance")
+                }
+
+                section(title: "Legal") {
+                    row(icon: "lock.shield.fill", label: "Privacy policy")
+                    row(icon: "doc.text.fill", label: "Terms of service")
+                    row(icon: "exclamationmark.bubble.fill", label: "Report a problem")
+                }
+
+                section(title: "About") {
+                    row(icon: "info.circle.fill", label: "About Volunteerly")
+                    row(icon: "heart.fill", label: "Rate the app")
+                }
+
+                accountActions
+                    .padding(.horizontal, 20)
+            }
+            .padding(.top, 16)
+            .padding(.bottom, 32)
+        }
+        .background(Theme.background.ignoresSafeArea())
+        .toolbar(.hidden, for: .navigationBar)
+        .alert("Delete account?", isPresented: $showDeleteConfirmation) {
+            Button("Cancel", role: .cancel) {}
+            Button("Delete", role: .destructive) { performDelete() }
+        } message: {
+            Text("This permanently removes your profile and volunteering history. This action can't be undone.")
+        }
+    }
+
+    // MARK: Sections
+
+    private func section<Content: View>(
+        title: String,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(Theme.textSecondary)
+                .textCase(.uppercase)
+                .padding(.horizontal, 20)
+            VStack(spacing: 0) {
+                content()
+            }
+            .background(Theme.card)
+            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .padding(.horizontal, 20)
+        }
+    }
+
+    /// One settings row. Tap currently no-ops — destinations to be wired up as
+    /// each sub-page is built.
+    private func row(icon: String, label: String) -> some View {
+        Button {
+            // TODO: route to the dedicated screen for each settings entry.
+        } label: {
+            HStack(spacing: 14) {
+                Image(systemName: icon)
+                    .font(.system(size: 16, weight: .regular))
+                    .foregroundStyle(Theme.forest)
+                    .frame(width: 24)
+                Text(label)
+                    .font(.body)
+                    .foregroundStyle(Theme.textPrimary)
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(Theme.textSecondary)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .overlay(alignment: .bottom) {
+            Rectangle()
+                .fill(Theme.border)
+                .frame(height: 0.5)
+                .padding(.leading, 54)
+        }
+    }
+
+    private var accountActions: some View {
+        VStack(spacing: 12) {
+            Button(action: performLogout) {
+                Text("Log Out")
+                    .font(.headline)
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 54)
+                    .background(Theme.forest)
+                    .clipShape(RoundedRectangle(cornerRadius: 24))
+            }
+
+            Button {
+                showDeleteConfirmation = true
+            } label: {
+                Text("Delete account")
+                    .font(.headline)
+                    .foregroundStyle(Self.dangerColor)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 54)
+            }
+        }
+        .padding(.top, 8)
+    }
+
+    private func performLogout() {
+        AuthService.shared.logout()
+        withAnimation(.easeInOut(duration: 0.35)) { router?.route = .home }
+    }
+
+    private func performDelete() {
+        // TODO: call DELETE /me once the backend endpoint exists.
+        AuthService.shared.logout()
+        withAnimation(.easeInOut(duration: 0.35)) { router?.route = .home }
+    }
+}
+
+#Preview {
+    NavigationStack { SettingsView() }
+        .environment(AppRouter())
+        .environment(TabRouter())
+}

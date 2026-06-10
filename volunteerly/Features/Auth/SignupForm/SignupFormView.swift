@@ -100,7 +100,10 @@ struct SignupFormView: View {
             firstName: "Ada",
             lastName: "Lovelace",
             email: "ada@example.com",
-            password: "password123"
+            password: "password123",
+            dateOfBirth: nil,
+            profileImageData: nil,
+            instagram: ""
         ))
     }
     .environment(AppRouter())

@@ -8,7 +8,7 @@ final class TabRouter {
     enum Tab: Hashable {
         case programs
         case bookmarks
-        case myPage
+        case settings
     }
 
     enum ProgramsDestination: Hashable {
@@ -29,3 +29,8 @@ final class TabRouter {
         programsPath.append(ProgramsDestination.post)
     }
 }
+
+/// Route value pushed by the top-right avatar to open the signed-in user's
+/// profile (`MyPageView`). Each tab's `NavigationStack` registers a
+/// `navigationDestination(for: ProfileRoute.self)` mapping to `MyPageView`.
+struct ProfileRoute: Hashable {}

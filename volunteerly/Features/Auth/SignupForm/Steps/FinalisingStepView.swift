@@ -3,6 +3,7 @@ import SwiftUI
 struct FinalisingStepView: View {
     @Bindable var vm: SignupFormViewModel
     let router: AppRouter?
+    @Environment(UserProfileStore.self) private var profileStore
 
     var body: some View {
         VStack(spacing: 24) {
@@ -43,7 +44,7 @@ struct FinalisingStepView: View {
                 Button {
                     vm.finalisingError = nil
                     vm.hasStartedFinalising = false
-                    vm.startFinalisingIfNeeded(router: router)
+                    vm.startFinalisingIfNeeded(profileStore: profileStore, router: router)
                 } label: {
                     Text("Try again")
                         .font(.headline)
@@ -60,6 +61,6 @@ struct FinalisingStepView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.horizontal, 8)
-        .onAppear { vm.startFinalisingIfNeeded(router: router) }
+        .onAppear { vm.startFinalisingIfNeeded(profileStore: profileStore, router: router) }
     }
 }

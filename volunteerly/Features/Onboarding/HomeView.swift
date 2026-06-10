@@ -26,8 +26,8 @@ struct HomeView: View {
                 .resizable()
                 .scaledToFit()
                 .frame(width: logoSize, height: logoSize)
-                .offset(y: -logoSize / 2)        // straddle the seam
-                .padding(.bottom, -logoSize / 2) // reclaim layout space
+                .offset(y: -logoSize / 2)     
+                .padding(.bottom, -logoSize / 2)
 
             Image(.volunteerlyTitle)
                 .resizable()
@@ -84,48 +84,6 @@ struct HomeView: View {
             )
             .fill(Theme.forest)
         )
-    }
-}
-
-/// Continuously translates two stacked copies of `HomeBackground` downward to
-/// produce a seamless, endless scroll. `TimelineView(.animation)` drives the
-/// offset off the elapsed time since the view appeared, so the loop self-
-/// corrects after backgrounding and pauses automatically when offscreen.
-private struct ScrollingBackground: View {
-    /// Scroll speed in points per second.
-    var speed: CGFloat = 20
-    /// Anchored when the view first materialises so the loop starts at the top
-    /// of the image rather than at a random offset of wall-clock time.
-    @State private var startDate = Date()
-
-    var body: some View {
-        GeometryReader { proxy in
-            let imageAspect: CGFloat = 1536.0 / 2752.0  // width / height of HomeBackground.png
-            // Each tile fills the viewport's width; height follows the native aspect.
-            let tileHeight = proxy.size.width / imageAspect
-
-            TimelineView(.animation) { context in
-                let elapsed = CGFloat(context.date.timeIntervalSince(startDate))
-                // Cycles 0 → tileHeight → 0, so the two stacked copies appear to
-                // scroll forever without a visible seam.
-                let offset = (elapsed * speed).truncatingRemainder(dividingBy: tileHeight)
-
-                VStack(spacing: 0) {
-                    Image(.homeBackground)
-                        .resizable()
-                        .frame(width: proxy.size.width, height: tileHeight)
-                    Image(.homeBackground)
-                        .resizable()
-                        .frame(width: proxy.size.width, height: tileHeight)
-                }
-                // Start with the lower copy covering the viewport (offset == 0,
-                // dy == -tileHeight, so its top edge sits at y=0). As offset grows
-                // the pair slides downward, revealing the upper copy's bottom edge
-                // from the top of the viewport.
-                .offset(y: offset - tileHeight)
-            }
-        }
-        .clipped()
     }
 }
 
