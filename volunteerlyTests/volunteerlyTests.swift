@@ -54,6 +54,28 @@ private final class RecordingHTTPClient: HTTPClient {
     }
 }
 
+private final class CancellingHTTPClient: HTTPClient {
+    func get<T: Decodable>(_ path: String) async throws -> T {
+        throw CancellationError()
+    }
+
+    func post<B: Encodable, T: Decodable>(_ path: String, body: B) async throws -> T {
+        throw CancellationError()
+    }
+
+    func put<B: Encodable, T: Decodable>(_ path: String, body: B) async throws -> T {
+        throw CancellationError()
+    }
+
+    func patch<B: Encodable, T: Decodable>(_ path: String, body: B) async throws -> T {
+        throw CancellationError()
+    }
+
+    func delete(_ path: String) async throws {
+        throw CancellationError()
+    }
+}
+
 /// Returns a fixed coordinate (or `nil` to model a denied prompt) immediately.
 @MainActor
 private final class StubLocationProvider: LocationProviding {
@@ -68,6 +90,22 @@ private final class HangingLocationProvider: LocationProviding {
     func currentCoordinate() async -> CLLocationCoordinate2D? {
         try? await Task.sleep(for: .seconds(3600))
         return nil
+    }
+}
+
+// MARK: - UserProfileStore
+
+@MainActor
+struct UserProfileStoreTests {
+    @Test func load_doesNotShowError_whenTaskIsCancelled() async {
+        let store = UserProfileStore(
+            service: ProfileService(client: CancellingHTTPClient())
+        )
+
+        await store.load()
+
+        #expect(store.isLoading == false)
+        #expect(store.errorMessage == nil)
     }
 }
 

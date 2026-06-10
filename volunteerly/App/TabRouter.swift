@@ -7,7 +7,12 @@ import SwiftUI
 final class TabRouter {
     enum Tab: Hashable {
         case programs
-        case myPrograms
+        case bookmarks
+        case myPage
+    }
+
+    enum ProgramsDestination: Hashable {
+        case post
     }
 
     var selectedTab: Tab = .programs
@@ -17,5 +22,10 @@ final class TabRouter {
     func goHome() {
         selectedTab = .programs
         programsPath = NavigationPath()
+    }
+
+    func showPostProgram() {
+        selectedTab = .programs
+        programsPath.append(ProgramsDestination.post)
     }
 }

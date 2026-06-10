@@ -15,6 +15,9 @@ final class UserProfileStore {
     var occupation: String = ""
     var keySkills: String = ""
     var profileImageData: Data?
+    /// Public CDN URL of the saved profile image (hydrated from the backend).
+    /// `profileImageData` takes precedence when the user has just picked a new one.
+    var profileImageURL: String?
     var interests: [Interest] = []
 
     var isLoading = false
@@ -77,6 +80,8 @@ final class UserProfileStore {
             interests = try await interestDetails.map {
                 Interest(emoji: Self.emoji(for: $0.keywordName), name: $0.keywordName)
             }
+        } catch where Self.isCancellation(error) {
+            return
         } catch {
             errorMessage = "Couldn't load your profile. \(Self.message(error))"
         }
@@ -108,9 +113,13 @@ final class UserProfileStore {
                 // field so the server keeps whatever URL it already has.
                 if let url = publicURL {
                     update.profileImageUrl = url
+                    // Point the avatar at the freshly uploaded CDN image and drop
+                    // the now-consumed local picker data so it renders the remote URL.
+                    profileImageURL = url
+                    profileImageData = nil
                 }
-                // Clear the local data regardless: the picker selection is consumed.
-                profileImageData = nil
+                // When there's no R2 bucket we keep `profileImageData` so the picked
+                // image still previews for the rest of the session.
             } catch {
                 errorMessage = "Couldn't upload profile image. \(Self.message(error))"
                 return false
@@ -133,6 +142,7 @@ final class UserProfileStore {
         displayName = [profile.firstName, profile.lastName]
             .filter { !$0.isEmpty }
             .joined(separator: " ")
+        profileImageURL = profile.profileImageURL
         instagram = profile.instagram ?? ""
         aboutMe = profile.bio ?? ""
         personalGoal = profile.goalText ?? ""
@@ -173,5 +183,14 @@ final class UserProfileStore {
 
     private static func message(_ error: Error) -> String {
         (error as? APIError)?.errorDescription ?? error.localizedDescription
+    }
+
+    private static func isCancellation(_ error: Error) -> Bool {
+        if error is CancellationError {
+            return true
+        }
+
+        let error = error as NSError
+        return error.domain == NSURLErrorDomain && error.code == NSURLErrorCancelled
     }
 }
