@@ -17,6 +17,7 @@ struct NewPostView: View {
     @State private var isSubmitting = false
     @State private var errorMessage: String?
     @State private var showingDrafts = false
+    @State private var showDiscardConfirm = false
 
     private let titleLimit = 60
     private let titleMinimum = 3
@@ -48,6 +49,10 @@ struct NewPostView: View {
 
     private var canPost: Bool { titleValid && bodyValid && !isSubmitting }
 
+    private var isDirty: Bool {
+        !title.isEmpty || !postBody.isEmpty || photoItem != nil
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
@@ -72,12 +77,30 @@ struct NewPostView: View {
         .scrollDismissesKeyboard(.interactively)
         .safeAreaInset(edge: .bottom) { actionBar }
         .toolbar(.hidden, for: .navigationBar)
+        .interactiveSwipeBack(
+            canPop: { !isDirty },
+            onBlocked: { showDiscardConfirm = true }
+        )
         .onAppear { drafts = ForumDraftStore.load(programId: viewModel.programId) }
         .onChange(of: photoItem) { _, item in
             Task { await loadPhoto(item) }
         }
         .navigationDestination(isPresented: $showingDrafts) {
-            DraftsView(drafts: drafts) { loadDraft($0) }
+            DraftsView(
+                drafts: drafts,
+                viewModel: viewModel,
+                onPosted: removeDraftAndDismiss
+            )
+        }
+        .confirmationDialog(
+            "Discard this post?",
+            isPresented: $showDiscardConfirm,
+            titleVisibility: .visible
+        ) {
+            Button("Discard Changes", role: .destructive) { dismiss() }
+            Button("Keep Editing", role: .cancel) {}
+        } message: {
+            Text("Your changes won't be saved.")
         }
     }
 
@@ -85,7 +108,7 @@ struct NewPostView: View {
 
     private var header: some View {
         HStack(spacing: 12) {
-            Button { dismiss() } label: {
+            Button { attemptDismiss() } label: {
                 Image(systemName: "arrow.left")
                     .font(.system(size: 20, weight: .regular))
                     .foregroundStyle(Theme.textPrimary)
@@ -263,6 +286,14 @@ struct NewPostView: View {
 
     // MARK: Actions
 
+    private func attemptDismiss() {
+        if isDirty {
+            showDiscardConfirm = true
+        } else {
+            dismiss()
+        }
+    }
+
     private func submit() async {
         errorMessage = nil
         isSubmitting = true
@@ -287,14 +318,10 @@ struct NewPostView: View {
         dismiss()
     }
 
-    /// Pull a chosen draft back into the fields and drop it from the store, so
-    /// the user resumes editing where they left off (and frees a draft slot).
-    private func loadDraft(_ draft: PostDraft) {
-        title = draft.title
-        postBody = draft.body
+    private func removeDraftAndDismiss(_ draft: PostDraft) {
         drafts.removeAll { $0.id == draft.id }
         ForumDraftStore.save(drafts, programId: viewModel.programId)
-        showingDrafts = false
+        dismiss()
     }
 
     private func loadPhoto(_ item: PhotosPickerItem?) async {
