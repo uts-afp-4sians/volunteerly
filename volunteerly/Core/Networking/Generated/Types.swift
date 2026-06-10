@@ -49,6 +49,19 @@ internal protocol APIProtocol: Sendable {
     /// - Remark: HTTP `POST /programs`.
     /// - Remark: Generated from `#/paths//programs/post(create_program_programs_post)`.
     func create_program_programs_post(_ input: Operations.create_program_programs_post.Input) async throws -> Operations.create_program_programs_post.Output
+    /// List My Programs
+    ///
+    /// Programs the caller is part of, backing My Page's "My programs" list.
+    ///
+    /// A program qualifies when the caller holds an active (pending/approved)
+    /// participation, or created it before creator auto-enrolment existed and so
+    /// holds no participation row at all — a withdrawn row means they left on
+    /// purpose (mirrors ``_creator_has_row``). Soft-deleted programs are excluded.
+    /// Rows carry the same capacity/banner enrichment as ``GET /programs``.
+    ///
+    /// - Remark: HTTP `GET /me/programs`.
+    /// - Remark: Generated from `#/paths//me/programs/get(list_my_programs_me_programs_get)`.
+    func list_my_programs_me_programs_get(_ input: Operations.list_my_programs_me_programs_get.Input) async throws -> Operations.list_my_programs_me_programs_get.Output
     /// Get Program
     ///
     /// - Remark: HTTP `GET /programs/{program_id}`.
@@ -223,6 +236,21 @@ extension APIProtocol {
             headers: headers,
             body: body
         ))
+    }
+    /// List My Programs
+    ///
+    /// Programs the caller is part of, backing My Page's "My programs" list.
+    ///
+    /// A program qualifies when the caller holds an active (pending/approved)
+    /// participation, or created it before creator auto-enrolment existed and so
+    /// holds no participation row at all — a withdrawn row means they left on
+    /// purpose (mirrors ``_creator_has_row``). Soft-deleted programs are excluded.
+    /// Rows carry the same capacity/banner enrichment as ``GET /programs``.
+    ///
+    /// - Remark: HTTP `GET /me/programs`.
+    /// - Remark: Generated from `#/paths//me/programs/get(list_my_programs_me_programs_get)`.
+    internal func list_my_programs_me_programs_get(headers: Operations.list_my_programs_me_programs_get.Input.Headers = .init()) async throws -> Operations.list_my_programs_me_programs_get.Output {
+        try await list_my_programs_me_programs_get(Operations.list_my_programs_me_programs_get.Input(headers: headers))
     }
     /// Get Program
     ///
@@ -2344,6 +2372,124 @@ internal enum Operations {
                     default:
                         try throwUnexpectedResponseStatus(
                             expectedStatus: "unprocessableContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        internal enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            internal init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            internal var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            internal static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// List My Programs
+    ///
+    /// Programs the caller is part of, backing My Page's "My programs" list.
+    ///
+    /// A program qualifies when the caller holds an active (pending/approved)
+    /// participation, or created it before creator auto-enrolment existed and so
+    /// holds no participation row at all — a withdrawn row means they left on
+    /// purpose (mirrors ``_creator_has_row``). Soft-deleted programs are excluded.
+    /// Rows carry the same capacity/banner enrichment as ``GET /programs``.
+    ///
+    /// - Remark: HTTP `GET /me/programs`.
+    /// - Remark: Generated from `#/paths//me/programs/get(list_my_programs_me_programs_get)`.
+    internal enum list_my_programs_me_programs_get {
+        internal static let id: Swift.String = "list_my_programs_me_programs_get"
+        internal struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/me/programs/GET/header`.
+            internal struct Headers: Sendable, Hashable {
+                internal var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.list_my_programs_me_programs_get.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                internal init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.list_my_programs_me_programs_get.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            internal var headers: Operations.list_my_programs_me_programs_get.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            internal init(headers: Operations.list_my_programs_me_programs_get.Input.Headers = .init()) {
+                self.headers = headers
+            }
+        }
+        internal enum Output: Sendable, Hashable {
+            internal struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/me/programs/GET/responses/200/content`.
+                internal enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/me/programs/GET/responses/200/content/application\/json`.
+                    case json([Components.Schemas.ProgramRead])
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    internal var json: [Components.Schemas.ProgramRead] {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                internal var body: Operations.list_my_programs_me_programs_get.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                internal init(body: Operations.list_my_programs_me_programs_get.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// Successful Response
+            ///
+            /// - Remark: Generated from `#/paths//me/programs/get(list_my_programs_me_programs_get)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.list_my_programs_me_programs_get.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            internal var ok: Operations.list_my_programs_me_programs_get.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
                             response: self
                         )
                     }

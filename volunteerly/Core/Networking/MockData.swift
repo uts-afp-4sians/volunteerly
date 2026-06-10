@@ -343,6 +343,8 @@ enum MockData {
             "/users/1":             user,
             "/users/1/profile":     userProfile,
             "/me/profile":          userProfile,
+            // Mirrors the seeded join (user 1 is APPROVED in program 1).
+            "/me/programs":         [programs[0]],
             "/programs/1/posts":    forumPosts,
             "/categories":          categories,
             "/keywords":            keywords,
