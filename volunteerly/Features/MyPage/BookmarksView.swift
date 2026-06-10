@@ -21,7 +21,9 @@ struct BookmarksView: View {
             .padding(.horizontal, 20)
             .padding(.top, 16)
             .padding(.bottom, 24)
+            .tabScrollTopAnchor()
         }
+        .scrollsToTop(on: .bookmarks)
         .background(Theme.background.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
         .task {
