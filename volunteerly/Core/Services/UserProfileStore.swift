@@ -80,6 +80,8 @@ final class UserProfileStore {
             interests = try await interestDetails.map {
                 Interest(emoji: Self.emoji(for: $0.keywordName), name: $0.keywordName)
             }
+        } catch where Self.isCancellation(error) {
+            return
         } catch {
             errorMessage = "Couldn't load your profile. \(Self.message(error))"
         }
@@ -181,5 +183,14 @@ final class UserProfileStore {
 
     private static func message(_ error: Error) -> String {
         (error as? APIError)?.errorDescription ?? error.localizedDescription
+    }
+
+    private static func isCancellation(_ error: Error) -> Bool {
+        if error is CancellationError {
+            return true
+        }
+
+        let error = error as NSError
+        return error.domain == NSURLErrorDomain && error.code == NSURLErrorCancelled
     }
 }
