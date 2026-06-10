@@ -40,6 +40,17 @@ final class ProgramDetailViewModel {
         participants.filter { $0.userId != program?.creatorUserId }
     }
 
+    /// Every profile shown after joining. Older programs may not have an
+    /// explicit participation row for the host, so include the separately
+    /// loaded host profile when the participants endpoint omits it.
+    var allMembers: [UserProfile] {
+        guard let host else { return participants }
+        guard !participants.contains(where: { $0.userId == host.userId }) else {
+            return participants
+        }
+        return [host] + participants
+    }
+
     private var participationsPath: String { "/programs/\(programId)/participations" }
 
     private let httpClient: HTTPClient

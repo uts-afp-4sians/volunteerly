@@ -1,59 +1,52 @@
 import SwiftUI
 
 /// Confirmation screen shown after a user joins a program ("You're in!").
-/// Mirrors the Figma "C" frame: banner, celebratory heading, teammate avatars,
-/// a "Your first session" summary card, and follow-up actions.
+/// Mirrors Figma node 134:335 using the joined program and live participant
+/// profiles returned by the API.
 struct ProgramJoinedView: View {
     let program: Program
-    /// The cause/category the program works towards, shown as the second bold span.
-    let goal: String?
-    /// Total teammates; drives the avatar row and the "And N more!" line.
-    let teammateCount: Int
+    let teamName: String?
+    let members: [UserProfile]
+    let participantCount: Int
 
     var onCheckTeamBoard: () -> Void = {}
     var onFindOtherOpportunities: () -> Void = {}
 
-    /// Avatars shown inline before the "And N more!" line.
     private let visibleAvatars = 4
     private let horizontalPadding: CGFloat = 24
 
     var body: some View {
-        ZStack {
-            Color.pageBackground.ignoresSafeArea()
-
+        GeometryReader { proxy in
             ScrollView {
                 VStack(spacing: 0) {
                     banner
+                        .padding(.top, 24)
+
+                    heading
+                        .padding(.top, 58)
+
+                    bodyText
                         .padding(.top, 16)
 
-                    VStack(spacing: 16) {
-                        heading
-                        bodyText
-                    }
-                    .padding(.top, 40)
-
                     teammates
-                        .padding(.top, 32)
+                        .padding(.top, 44)
 
-                    summaryCard
-                        .padding(.top, 56)
+                    Spacer(minLength: 64)
 
                     actions
-                        .padding(.top, 24)
+                        .padding(.bottom, 46)
                 }
+                .frame(minHeight: proxy.size.height)
                 .padding(.horizontal, horizontalPadding)
-                .padding(.bottom, 32)
             }
+            .scrollBounceBehavior(.basedOnSize)
         }
+        .background(Color.pageBackground.ignoresSafeArea())
     }
 
     // MARK: - Banner
 
     private var banner: some View {
-        // The frame (not the image) must define the banner's size — a
-        // `.fill` image reports a width wider than the proposed one, which
-        // would otherwise push the enclosing VStack past the screen edges and
-        // swallow the horizontal padding. Mirror ProgramDetailView's banner.
         Color.clear
             .frame(maxWidth: .infinity)
             .frame(height: 215)
@@ -64,71 +57,58 @@ struct ProgramJoinedView: View {
                     Rectangle().fill(Color(.systemGray5))
                 }
             )
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
 
     // MARK: - Heading
 
     private var heading: some View {
         Text("You're in!")
-            .font(.pageTitle)
-            .foregroundStyle(Theme.textPrimary)
+            .largeTitleStyle()
     }
 
     private var bodyText: some View {
-        Text("You've teamed up with **\(program.name)** working towards **\(goal ?? "your community")**")
+        Text(
+            "You've teamed up with **\(teamName ?? "your community")** working towards **\(program.name)**"
+        )
             .font(.bodyText)
-            .foregroundStyle(Theme.textPrimary)
+            .foregroundStyle(Theme.textBody)
             .multilineTextAlignment(.center)
             .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: 290)
     }
 
     // MARK: - Teammates
 
     @ViewBuilder
     private var teammates: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 20) {
             HStack(spacing: 21) {
-                ForEach(0..<min(visibleAvatars, max(teammateCount, 0)), id: \.self) { _ in
-                    Avatar(source: .placeholder, size: 55)
+                ForEach(0..<displayedAvatarCount, id: \.self) { index in
+                    Avatar(url: avatarURL(at: index), size: 52)
                 }
             }
 
-            let remaining = teammateCount - visibleAvatars
+            let remaining = max(0, participantCount - displayedAvatarCount)
             if remaining > 0 {
                 Text("And \(remaining) more!")
-                    .font(.bodyText)
-                    .foregroundStyle(Theme.textPrimary)
+                    .font(.subheadText)
+                    .foregroundStyle(Theme.textBody)
             }
         }
     }
 
-    // MARK: - Summary card
-
-    private var summaryCard: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Your first session")
-                .font(Font.bodyStrong.italic())
-                .foregroundStyle(Theme.textPrimary)
-            Text(dateRange)
-                .font(Font.bodyText.italic())
-                .foregroundStyle(Theme.textPrimary)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(20)
-        .overlay(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .strokeBorder(Theme.textPrimary, lineWidth: 1)
-        )
+    private var displayedAvatarCount: Int {
+        min(visibleAvatars, max(participantCount, 0))
     }
 
-    private var dateRange: String {
-        let day = program.startDatetime.formatted(
-            .dateTime.weekday(.wide).day().month(.abbreviated).year()
-        )
-        let start = program.startDatetime.formatted(date: .omitted, time: .shortened)
-        let end = program.endDatetime.formatted(date: .omitted, time: .shortened)
-        return "\(day)\n\(start) - \(end)"
+    private func avatarURL(at index: Int) -> URL? {
+        guard members.indices.contains(index),
+              let rawURL = members[index].profileImageURL,
+              !rawURL.isEmpty else {
+            return nil
+        }
+        return URL(string: rawURL)
     }
 
     // MARK: - Actions
@@ -145,7 +125,9 @@ struct ProgramJoinedView: View {
 
             Button(action: onFindOtherOpportunities) {
                 Text("or find other opportunities")
-                    .linkStyle()
+                    .font(.bodyText)
+                    .underline()
+                    .foregroundStyle(Theme.brand300)
             }
             .buttonStyle(.plain)
         }
@@ -156,7 +138,8 @@ struct ProgramJoinedView: View {
     let _ = MockData.registerAll(in: MockHTTPClient.shared)
     return ProgramJoinedView(
         program: MockData.programs[0],
-        goal: "Environment",
-        teammateCount: 13
+        teamName: "Community Garden",
+        members: MockData.memberProfiles,
+        participantCount: 7
     )
 }
