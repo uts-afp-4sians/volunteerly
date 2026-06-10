@@ -93,6 +93,19 @@ class ProgramParticipationRead(BaseModel):
     joined_at: UTCDateTime
 
 
+class ProgramParticipantRead(BaseModel):
+    """A program participant with the profile fields the Members row renders
+    (name + avatar). A subset of iOS `UserProfile`, so it decodes into the same
+    model client-side."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    user_id: int
+    first_name: str
+    last_name: str
+    profile_image_url: str | None = None
+
+
 class ProgramParticipationSummary(BaseModel):
     """Capacity snapshot for a program from the caller's perspective, used by the
     iOS detail screen to render the Join counter and gate the Join button."""

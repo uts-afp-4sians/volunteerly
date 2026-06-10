@@ -19,11 +19,12 @@ from src.programs.model import Program, ProgramKeyword, ProgramParticipation
 from src.programs.schema import (
     ProgramCreate,
     ProgramKeywordRead,
+    ProgramParticipantRead,
     ProgramParticipationSummary,
     ProgramRead,
     SimilarProgramRead,
 )
-from src.users.model import User
+from src.users.model import User, UserProfile
 
 router = APIRouter(tags=["programs"])
 
@@ -70,33 +71,75 @@ def _load_program(program_id: int, db: Session) -> Program:
     return program
 
 
-def _participant_count(program_id: int, db: Session) -> int:
-    """Number of volunteers currently occupying a slot in the program."""
-    return db.execute(
+def _creator_has_row(program: Program, db: Session) -> bool:
+    """Whether the program's creator holds any participation row (active or
+    withdrawn). Programs created before creator auto-enrolment (and seeded
+    fixtures) have none, so the host is counted explicitly; once a row exists we
+    respect its status — a withdrawn host has intentionally left their slot."""
+    return (
+        db.execute(
+            select(ProgramParticipation.participation_id).where(
+                ProgramParticipation.program_id == program.program_id,
+                ProgramParticipation.user_id == program.creator_user_id,
+            )
+        ).first()
+        is not None
+    )
+
+
+def _participant_count(program: Program, db: Session) -> int:
+    """Number of volunteers occupying a slot, with the host always counted once.
+
+    The host occupies a slot whether or not they hold a participation row: new
+    programs auto-enroll the creator (so they have a row), but older programs
+    don't. Counting the host explicitly when no creator row exists keeps the
+    tally correct for both, without double-counting once a row is present."""
+    active = db.execute(
         select(func.count())
         .select_from(ProgramParticipation)
         .where(
-            ProgramParticipation.program_id == program_id,
+            ProgramParticipation.program_id == program.program_id,
             ProgramParticipation.participation_status.in_(_ACTIVE_PARTICIPATION),
         )
     ).scalar_one()
+    return active + (0 if _creator_has_row(program, db) else 1)
 
 
-def _participant_counts(program_ids: list[int], db: Session) -> dict[int, int]:
-    """Active participant counts for many programs in a single grouped query
-    (avoids an N+1 when enriching a list). Programs with no active participations
-    are absent from the map — callers default those to 0."""
-    if not program_ids:
+def _participant_counts(programs: list[Program], db: Session) -> dict[int, int]:
+    """Host-inclusive active participant counts for many programs in two grouped
+    queries (avoids an N+1 when enriching a list). Every program is present in
+    the map — the host contributes the implicit +1 when it holds no row."""
+    if not programs:
         return {}
+    ids = [p.program_id for p in programs]
     rows = db.execute(
         select(ProgramParticipation.program_id, func.count())
         .where(
-            ProgramParticipation.program_id.in_(program_ids),
+            ProgramParticipation.program_id.in_(ids),
             ProgramParticipation.participation_status.in_(_ACTIVE_PARTICIPATION),
         )
         .group_by(ProgramParticipation.program_id)
     ).all()
-    return {program_id: count for program_id, count in rows}
+    active = {program_id: count for program_id, count in rows}
+    # Programs whose creator already holds a row (active or withdrawn) don't get
+    # the implicit host +1 — mirrors ``_creator_has_row`` for the bulk path.
+    creators_present = set(
+        db.execute(
+            select(ProgramParticipation.program_id)
+            .join(Program, Program.program_id == ProgramParticipation.program_id)
+            .where(
+                ProgramParticipation.program_id.in_(ids),
+                ProgramParticipation.user_id == Program.creator_user_id,
+            )
+        )
+        .scalars()
+        .all()
+    )
+    return {
+        p.program_id: active.get(p.program_id, 0)
+        + (0 if p.program_id in creators_present else 1)
+        for p in programs
+    }
 
 
 def _active_participation(
@@ -167,7 +210,7 @@ def list_programs(
     # The card shows how many volunteers have joined (the host included, as they
     # hold an ordinary participation row), so carry the count on every list row.
     # One grouped query keeps this O(1) rather than a count per program.
-    counts = _participant_counts([p.program_id for p in programs], db)
+    counts = _participant_counts(programs, db)
 
     # Distance needs the caller's coordinates; without them ``distance_km`` stays
     # ``None``. When present, one bulk location lookup avoids an N+1 per program.
@@ -264,7 +307,7 @@ def create_program(
 @router.get("/programs/{program_id}", response_model=ProgramRead)
 def get_program(program_id: int, db: Session = Depends(get_db)) -> ProgramRead:
     program = _load_program(program_id, db)
-    count = _participant_count(program_id, db)
+    count = _participant_count(program, db)
     read = ProgramRead.model_validate(program)
     read.participant_count = count
     read.is_full = count >= program.max_volunteers
@@ -281,6 +324,36 @@ def list_program_keywords(
         .order_by(ProgramKeyword.keyword_id)
     )
     return list(result.scalars().all())
+
+
+@router.get(
+    "/programs/{program_id}/participants",
+    response_model=list[ProgramParticipantRead],
+)
+def list_participants(
+    program_id: int, db: Session = Depends(get_db)
+) -> list[UserProfile]:
+    """Active participants of a program with the profile fields the Members row
+    renders (name + avatar), oldest join first. Public, like the profile and
+    keyword sub-resources. The host appears here only when they hold a row; the
+    detail screen draws the host separately from ``creator_user_id``."""
+    _load_program(program_id, db)
+    return list(
+        db.execute(
+            select(UserProfile)
+            .join(
+                ProgramParticipation,
+                ProgramParticipation.user_id == UserProfile.user_id,
+            )
+            .where(
+                ProgramParticipation.program_id == program_id,
+                ProgramParticipation.participation_status.in_(_ACTIVE_PARTICIPATION),
+            )
+            .order_by(ProgramParticipation.joined_at)
+        )
+        .scalars()
+        .all()
+    )
 
 
 @router.get("/programs/{program_id}/similar", response_model=SimilarProgramRead)
@@ -374,7 +447,7 @@ def get_similar_program(
 def _summary(
     program: Program, db: Session, user_id: int
 ) -> ProgramParticipationSummary:
-    count = _participant_count(program.program_id, db)
+    count = _participant_count(program, db)
     return ProgramParticipationSummary(
         program_id=program.program_id,
         participant_count=count,
@@ -424,7 +497,7 @@ def join_program(
             status_code=status.HTTP_409_CONFLICT,
             detail="Already joined this program",
         )
-    if _participant_count(program_id, db) >= program.max_volunteers:
+    if _participant_count(program, db) >= program.max_volunteers:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail="Program is full"
         )

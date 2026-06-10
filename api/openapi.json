@@ -437,6 +437,53 @@
         }
       }
     },
+    "/programs/{program_id}/participants": {
+      "get": {
+        "tags": [
+          "programs"
+        ],
+        "summary": "List Participants",
+        "description": "Active participants of a program with the profile fields the Members row\nrenders (name + avatar), oldest join first. Public, like the profile and\nkeyword sub-resources. The host appears here only when they hold a row; the\ndetail screen draws the host separately from ``creator_user_id``.",
+        "operationId": "list_participants_programs__program_id__participants_get",
+        "parameters": [
+          {
+            "name": "program_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Program Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProgramParticipantRead"
+                  },
+                  "title": "Response List Participants Programs  Program Id  Participants Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/programs/{program_id}/similar": {
       "get": {
         "tags": [
@@ -1880,6 +1927,35 @@
         ],
         "title": "ProgramKeywordRead",
         "description": "Wire shape matching iOS `ProgramKeyword`."
+      },
+      "ProgramParticipantRead": {
+        "properties": {
+          "user_id": {
+            "type": "integer",
+            "title": "User Id"
+          },
+          "first_name": {
+            "type": "string",
+            "title": "First Name"
+          },
+          "last_name": {
+            "type": "string",
+            "title": "Last Name"
+          },
+          "profile_image_url": {
+            "title": "Profile Image Url",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id",
+          "first_name",
+          "last_name"
+        ],
+        "title": "ProgramParticipantRead",
+        "description": "A program participant with the profile fields the Members row renders\n(name + avatar). A subset of iOS `UserProfile`, so it decodes into the same\nmodel client-side."
       },
       "ProgramParticipationSummary": {
         "properties": {
