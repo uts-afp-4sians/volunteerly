@@ -15,7 +15,12 @@ from src.common.enums import (
 )
 from src.lib.database import get_db
 from src.locations.model import Location
-from src.programs.model import Program, ProgramKeyword, ProgramParticipation
+from src.programs.model import (
+    Program,
+    ProgramImage,
+    ProgramKeyword,
+    ProgramParticipation,
+)
 from src.programs.schema import (
     ProgramCreate,
     ProgramKeywordRead,
@@ -142,6 +147,46 @@ def _participant_counts(programs: list[Program], db: Session) -> dict[int, int]:
     }
 
 
+def _program_images(program_ids: list[int], db: Session) -> dict[int, list[str]]:
+    """Ordered banner-gallery URLs for many programs in one grouped query
+    (avoids an N+1 when enriching a list). Programs without images are absent
+    from the map; callers fall back to the legacy ``banner_image_url``."""
+    if not program_ids:
+        return {}
+    rows = db.execute(
+        select(ProgramImage.program_id, ProgramImage.image_url)
+        .where(ProgramImage.program_id.in_(program_ids))
+        .order_by(
+            ProgramImage.program_id,
+            ProgramImage.sort_order,
+            ProgramImage.image_id,
+        )
+    ).all()
+    out: dict[int, list[str]] = {}
+    for program_id, url in rows:
+        out.setdefault(program_id, []).append(url)
+    return out
+
+
+def _hydrate_images(read: ProgramRead, urls: list[str]) -> None:
+    """Populate ``banner_image_urls`` (and keep ``banner_image_url`` in sync with
+    the first image). Falls back to the legacy single banner when the program
+    has no gallery rows, so old data still renders one image."""
+    if urls:
+        read.banner_image_urls = urls
+        read.banner_image_url = urls[0]
+    elif read.banner_image_url:
+        read.banner_image_urls = [read.banner_image_url]
+
+
+def _read_with_images(program: Program, db: Session) -> ProgramRead:
+    """``ProgramRead`` for a single program with its banner gallery hydrated."""
+    read = ProgramRead.model_validate(program)
+    urls = _program_images([program.program_id], db).get(program.program_id, [])
+    _hydrate_images(read, urls)
+    return read
+
+
 def _active_participation(
     program_id: int, user_id: int, db: Session
 ) -> ProgramParticipation | None:
@@ -212,6 +257,10 @@ def list_programs(
     # One grouped query keeps this O(1) rather than a count per program.
     counts = _participant_counts(programs, db)
 
+    # Ordered banner galleries for every program in one grouped query, so the
+    # card/detail carousel never triggers an N+1.
+    images = _program_images([p.program_id for p in programs], db)
+
     # Distance needs the caller's coordinates; without them ``distance_km`` stays
     # ``None``. When present, one bulk location lookup avoids an N+1 per program.
     locations: dict[int, Location] = {}
@@ -232,6 +281,7 @@ def list_programs(
         count = counts.get(program.program_id, 0)
         read.participant_count = count
         read.is_full = count >= program.max_volunteers
+        _hydrate_images(read, images.get(program.program_id, []))
         loc = locations.get(program.location_id)
         if loc is not None and loc.latitude is not None and loc.longitude is not None:
             read.distance_km = _haversine_coords(lat, lng, loc.latitude, loc.longitude)
@@ -274,13 +324,19 @@ def create_program(
             status_code=status.HTTP_404_NOT_FOUND, detail="Location not found"
         )
 
+    # Resolve the banner gallery: an explicit list wins, else the legacy single
+    # banner seeds a one-image gallery. The first image is the legacy banner.
+    gallery = payload.banner_image_urls
+    if gallery is None:
+        gallery = [payload.banner_image_url] if payload.banner_image_url else []
+
     program = Program(
         creator_user_id=current_user.user_id,
         category_id=payload.category_id,
         location_id=location_id,
         program_name=payload.program_name,
         description=payload.description,
-        banner_image_url=payload.banner_image_url,
+        banner_image_url=gallery[0] if gallery else None,
         start_datetime=payload.start_datetime,
         end_datetime=payload.end_datetime,
         max_volunteers=payload.max_volunteers,
@@ -290,6 +346,14 @@ def create_program(
     )
     db.add(program)
     db.flush()
+    for sort_order, url in enumerate(gallery):
+        db.add(
+            ProgramImage(
+                program_id=program.program_id,
+                image_url=url,
+                sort_order=sort_order,
+            )
+        )
     # Auto-enroll the creator so participant_count starts at 1 (host occupies a slot).
     db.add(
         ProgramParticipation(
@@ -301,6 +365,7 @@ def create_program(
     read = ProgramRead.model_validate(program)
     read.participant_count = 1
     read.is_full = program.max_volunteers <= 1
+    _hydrate_images(read, gallery)
     return read
 
 
@@ -311,6 +376,7 @@ def get_program(program_id: int, db: Session = Depends(get_db)) -> ProgramRead:
     read = ProgramRead.model_validate(program)
     read.participant_count = count
     read.is_full = count >= program.max_volunteers
+    _hydrate_images(read, _program_images([program_id], db).get(program_id, []))
     return read
 
 
@@ -397,7 +463,7 @@ def get_similar_program(
         )
         if nearest is not None:
             return SimilarProgramRead(
-                program=ProgramRead.model_validate(nearest),
+                program=_read_with_images(nearest, db),
                 distance_km=_haversine_km(
                     target_location, db.get(Location, nearest.location_id)
                 ),
@@ -420,7 +486,7 @@ def get_similar_program(
                 .first()
             )
             if match is not None:
-                return SimilarProgramRead(program=ProgramRead.model_validate(match))
+                return SimilarProgramRead(program=_read_with_images(match, db))
 
     # 3. Same category, then any other program.
     fallback = (
@@ -441,7 +507,7 @@ def get_similar_program(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="No similar program found"
         )
-    return SimilarProgramRead(program=ProgramRead.model_validate(fallback))
+    return SimilarProgramRead(program=_read_with_images(fallback, db))
 
 
 def _summary(

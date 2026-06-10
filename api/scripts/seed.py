@@ -22,6 +22,7 @@ from src.lib.database import Base, engine, session_factory
 from src.locations.model import Location
 from src.programs.model import (
     Program,
+    ProgramImage,
     ProgramKeyword,
     ProgramParticipation,
 )
@@ -269,6 +270,42 @@ def _rows() -> list[Base]:
         UserInterest(user_id=1, keyword_id=4),
         UserInterest(user_id=1, keyword_id=7),
     ]
+    # Banner galleries. Program 1 carries three images so the detail screen's
+    # carousel + dots are exercised; the rest mirror their single banner so the
+    # one-image (no-carousel) path is seeded too. The first image of each
+    # equals the program's ``banner_image_url``.
+    program_images = [
+        ProgramImage(
+            program_id=1,
+            image_url="https://picsum.photos/seed/prog1/800/400",
+            sort_order=0,
+        ),
+        ProgramImage(
+            program_id=1,
+            image_url="https://picsum.photos/seed/prog1b/800/400",
+            sort_order=1,
+        ),
+        ProgramImage(
+            program_id=1,
+            image_url="https://picsum.photos/seed/prog1c/800/400",
+            sort_order=2,
+        ),
+        ProgramImage(
+            program_id=2,
+            image_url="https://picsum.photos/seed/prog2/800/400",
+            sort_order=0,
+        ),
+        ProgramImage(
+            program_id=3,
+            image_url="https://picsum.photos/seed/prog3/800/400",
+            sort_order=0,
+        ),
+        ProgramImage(
+            program_id=4,
+            image_url="https://picsum.photos/seed/prog4/800/400",
+            sort_order=0,
+        ),
+    ]
     program_keywords = [
         ProgramKeyword(program_id=1, keyword_id=1),
         ProgramKeyword(program_id=2, keyword_id=2),
@@ -406,6 +443,7 @@ def _rows() -> list[Base]:
         *member_users,
         *member_profiles,
         *programs,
+        *program_images,
         *user_interests,
         *program_keywords,
         *participations,

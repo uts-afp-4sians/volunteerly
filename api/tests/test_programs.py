@@ -57,6 +57,44 @@ def test_create_program_host_auto_enrolled(client: TestClient) -> None:
     assert created["participant_count"] == 1
 
 
+def test_create_program_with_image_gallery(client: TestClient) -> None:
+    # A multi-image program round-trips the ordered gallery, and the legacy
+    # single banner mirrors the first image.
+    headers = {"Authorization": f"Bearer {_token(client)}"}
+    urls = [
+        "https://cdn.example.com/program_banner/1/a.webp",
+        "https://cdn.example.com/program_banner/1/b.webp",
+        "https://cdn.example.com/program_banner/1/c.webp",
+    ]
+    payload = {**VALID_PROGRAM, "banner_image_urls": urls}
+    res = client.post("/programs", json=payload, headers=headers)
+    assert res.status_code == 201
+    body = res.json()
+    assert body["banner_image_urls"] == urls
+    assert body["banner_image_url"] == urls[0]
+
+    # The detail fetch returns the same ordered gallery.
+    detail = client.get(f"/programs/{body['program_id']}").json()
+    assert detail["banner_image_urls"] == urls
+    assert detail["banner_image_url"] == urls[0]
+
+
+def test_create_program_legacy_single_banner_seeds_gallery(client: TestClient) -> None:
+    # The legacy single-banner field still works and produces a one-image gallery.
+    headers = {"Authorization": f"Bearer {_token(client)}"}
+    url = "https://cdn.example.com/program_banner/1/solo.webp"
+    payload = {**VALID_PROGRAM, "banner_image_url": url}
+    res = client.post("/programs", json=payload, headers=headers)
+    assert res.status_code == 201
+    assert res.json()["banner_image_urls"] == [url]
+
+
+def test_create_program_rejects_too_many_images(client: TestClient) -> None:
+    headers = {"Authorization": f"Bearer {_token(client)}"}
+    payload = {**VALID_PROGRAM, "banner_image_urls": [f"u{i}" for i in range(4)]}
+    assert client.post("/programs", json=payload, headers=headers).status_code == 422
+
+
 def test_create_program_unknown_category(client: TestClient) -> None:
     headers = {"Authorization": f"Bearer {_token(client)}"}
     payload = {**VALID_PROGRAM, "category_id": 999}
