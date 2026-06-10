@@ -292,43 +292,6 @@ extension PostProgramView {
             .fixedSize()
     }
 
-    // MARK: Banner image
-
-    /// Single banner image picker — uploads to R2 on submit.
-    var bannerSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            optionalLabel("Banner image")
-
-            PhotosPicker(selection: $bannerItem, matching: .images) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .fill(Color(.systemGray6))
-                    if let preview = bannerPreview {
-                        preview
-                            .resizable()
-                            .scaledToFill()
-                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                    } else {
-                        VStack(spacing: 8) {
-                            Image(systemName: "photo.badge.plus")
-                                .font(.system(size: 32))
-                                .foregroundStyle(Color.textPrimary.opacity(0.5))
-                            Text("Add banner")
-                                .font(.buttonLabel)
-                                .foregroundStyle(Color.textPrimary.opacity(0.5))
-                        }
-                    }
-                }
-                .frame(height: 160)
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-            }
-            .buttonStyle(.plain)
-            .onChange(of: bannerItem) { _, item in
-                Task { await handleBannerChange(item) }
-            }
-        }
-    }
-
     // MARK: Add images
 
     /// "Add images" (Figma 190:639): a header with an "Up to three photos" hint,
@@ -345,9 +308,13 @@ extension PostProgramView {
                     .foregroundStyle(Theme.textSecondary)
             }
 
-            HStack(spacing: 12) {
-                ForEach(0..<maxPhotos, id: \.self) { index in
-                    photoThumbnail(at: index)
+            // Only show the thumbnail row once at least one photo is picked —
+            // an empty row of grey placeholders reads as a loading skeleton.
+            if !photoImages.isEmpty {
+                HStack(spacing: 12) {
+                    ForEach(0..<maxPhotos, id: \.self) { index in
+                        photoThumbnail(at: index)
+                    }
                 }
             }
 

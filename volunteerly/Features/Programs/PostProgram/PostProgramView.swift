@@ -19,13 +19,9 @@ struct PostProgramView: View {
         self.onCreated = onCreated
     }
 
-    // Banner image (single WebP upload to R2). The decoded bytes live on the
-    // view model; the picked item + preview are view-only. These stay internal
-    // (not private) so the section builders in the extension can bind to them.
-    @State var bannerItem: PhotosPickerItem?
-    @State var bannerPreview: Image?
-
-    // Up to three program photos (Figma 190:639 "Add images").
+    // Up to three program photos (Figma 190:639 "Add images"). The first picked
+    // photo doubles as the program banner — its bytes are pushed to the view
+    // model and uploaded to R2 on submit.
     let maxPhotos = 3
     @State var photoItems: [PhotosPickerItem] = []
     @State var photoImages: [Image] = []
@@ -68,10 +64,7 @@ struct PostProgramView: View {
                     // 6. Volunteers Needed
                     volunteersSliderSection
 
-                    // 7. Banner image (optional, uploaded to R2)
-                    bannerSection
-
-                    // 8. Add images (up to three)
+                    // 7. Add images (up to three; the first is the banner, uploaded to R2)
                     imageSection
 
                     // 9. Commitment (optional)
@@ -220,16 +213,19 @@ struct PostProgramView: View {
     // MARK: - Photo picker plumbing
 
     /// Decode the picked items into displayable images, preserving pick order.
-    /// TODO(oma-deferred): upload the photos once `/programs` accepts media;
-    /// `ProgramCreateRequest` has no image field yet, so the pick is preview-only.
+    /// The first photo doubles as the program banner (uploaded on submit); the
+    /// rest are preview-only until `/programs` accepts a media gallery.
     func loadPhotos(_ items: [PhotosPickerItem]) async {
         var images: [Image] = []
+        var bannerData: Data?
         for item in items.prefix(maxPhotos) {
             guard let data = try? await item.loadTransferable(type: Data.self),
                   let uiImage = UIImage(data: data) else { continue }
+            if bannerData == nil { bannerData = data }  // first valid photo = banner
             images.append(Image(uiImage: uiImage))
         }
         photoImages = images
+        viewModel.bannerImageData = bannerData
     }
 
     func removePhoto(at index: Int) {
@@ -237,15 +233,6 @@ struct PostProgramView: View {
         photoItems.remove(at: index)
         if index < photoImages.count {
             photoImages.remove(at: index)
-        }
-    }
-
-    /// Decode the banner bytes for upload and build a view-side preview.
-    func handleBannerChange(_ item: PhotosPickerItem?) async {
-        guard let data = try? await item?.loadTransferable(type: Data.self) else { return }
-        viewModel.bannerImageData = data
-        if let ui = UIImage(data: data) {
-            bannerPreview = Image(uiImage: ui)
         }
     }
 }

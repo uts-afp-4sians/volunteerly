@@ -1,4 +1,5 @@
 import Foundation
+import CoreGraphics
 import ImageIO
 import UniformTypeIdentifiers
 
@@ -29,14 +30,19 @@ enum UploadError: Error, LocalizedError {
 enum UploadService {
     private static let maxBytes = 5 * 1_048_576 // 5 MB
 
-    /// Uploads `data` (any UIImage-readable format) to R2 via a presigned URL.
+    /// Uploads `data` (any decodable image format) to R2 via a presigned URL.
     ///
-    /// Conversion pipeline:
-    /// 1. Decode `data` into a `CGImage`.
-    /// 2. Re-encode as WebP (lossless, quality 0.85).
+    /// Pipeline:
+    /// 1. Obtain a presigned PUT URL from `POST /uploads/presign`. When the
+    ///    backend has no R2 bucket it returns an empty `upload_url`; we short
+    ///    circuit to `nil` here — before any (potentially failing) image work.
+    /// 2. Downscale + encode the image. WebP is preferred (it matches the
+    ///    presigned `image/webp` content type), but iOS *devices* cannot encode
+    ///    WebP via ImageIO — only decode it — so we fall back to JPEG there. The
+    ///    Simulator runs macOS ImageIO, which *can* encode WebP.
     /// 3. Verify the result is under `maxBytes`.
-    /// 4. Obtain a presigned PUT URL from `POST /uploads/presign`.
-    /// 5. PUT the WebP payload; accept HTTP 200 or 204 as success.
+    /// 4. PUT the payload with `Content-Type: image/webp` (required by the
+    ///    presigned signature); accept HTTP 200 or 204 as success.
     ///
     /// - Returns: The public CDN URL, or `nil` when the backend returned an
     ///   empty `upload_url` (local-dev fallback with no R2 bucket configured).
@@ -45,15 +51,7 @@ enum UploadService {
         kind: Components.Schemas.UploadKind,
         programId: Int? = nil
     ) async throws -> String? {
-        // Step 1 & 2: convert to WebP
-        let webpData = try convertToWebP(data)
-
-        // Step 3: size guard
-        if webpData.count > maxBytes {
-            throw UploadError.fileTooLarge(bytes: webpData.count)
-        }
-
-        // Step 4: presign
+        // Step 1: presign first, so the no-R2 case never attempts conversion.
         let client = API.makeClient()
         let output = try await client.presign_uploads_presign_post(
             query: .init(kind: kind, program_id: programId.map { Int($0) })
@@ -61,11 +59,19 @@ enum UploadService {
         let presign = try output.ok.body.json
 
         guard !presign.upload_url.isEmpty else {
-            // Local dev: no R2 bucket — treat as no-op
+            // Local dev / no R2 bucket — treat as a no-op.
             return nil
         }
 
-        // Step 5: PUT to R2
+        // Step 2: downscale + encode (WebP where supported, else JPEG).
+        let payload = try encodeForUpload(data)
+
+        // Step 3: size guard
+        if payload.count > maxBytes {
+            throw UploadError.fileTooLarge(bytes: payload.count)
+        }
+
+        // Step 4: PUT to R2
         guard let putURL = URL(string: presign.upload_url) else {
             throw UploadError.putFailed(statusCode: 0)
         }
@@ -75,7 +81,7 @@ enum UploadService {
 
         let (_, response) = try await URLSession.shared.upload(
             for: request,
-            from: webpData
+            from: payload
         )
         if let http = response as? HTTPURLResponse,
            http.statusCode != 200 && http.statusCode != 204 {
@@ -87,35 +93,59 @@ enum UploadService {
 
     // MARK: - Private
 
-    /// Converts arbitrary image data to WebP using `CGImageDestination`.
-    /// Available on iOS 14+ (WebP encode support landed in iOS 14).
-    private static func convertToWebP(_ data: Data) throws -> Data {
-        guard
-            let source = CGImageSourceCreateWithData(data as CFData, nil),
-            let cgImage = CGImageSourceCreateImageAtIndex(source, 0, nil)
-        else {
+    /// Largest edge (px) we keep for an upload — profile/banner images never
+    /// need more, and this keeps payloads well under `maxBytes`.
+    private static let maxPixelSize: CGFloat = 1280
+
+    /// Downscales the image and encodes it for upload, preferring WebP and
+    /// falling back to JPEG where ImageIO can't write WebP (iOS devices).
+    private static func encodeForUpload(_ data: Data) throws -> Data {
+        guard let source = CGImageSourceCreateWithData(data as CFData, nil) else {
+            throw UploadError.webpConversionFailed
+        }
+        // Thumbnail downscaling also bakes in the EXIF orientation transform.
+        let cgImage = downscaledImage(from: source)
+            ?? CGImageSourceCreateImageAtIndex(source, 0, nil)
+        guard let cgImage else {
             throw UploadError.webpConversionFailed
         }
 
-        let output = NSMutableData()
-        guard
-            let destination = CGImageDestinationCreateWithData(
-                output,
-                UTType.webP.identifier as CFString,
-                1,
-                nil
-            )
-        else {
-            throw UploadError.webpConversionFailed
+        if webpEncodingSupported, let webp = encode(cgImage, as: .webP) {
+            return webp
         }
+        if let jpeg = encode(cgImage, as: .jpeg) {
+            return jpeg
+        }
+        throw UploadError.webpConversionFailed
+    }
 
+    /// Whether this platform's ImageIO can *write* WebP. True on the macOS-based
+    /// Simulator, false on iOS devices.
+    private static let webpEncodingSupported: Bool = {
+        let ids = CGImageDestinationCopyTypeIdentifiers() as? [String] ?? []
+        return ids.contains(UTType.webP.identifier)
+    }()
+
+    private static func downscaledImage(from source: CGImageSource) -> CGImage? {
         let options: [CFString: Any] = [
-            kCGImageDestinationLossyCompressionQuality: 0.85
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceThumbnailMaxPixelSize: maxPixelSize,
         ]
-        CGImageDestinationAddImage(destination, cgImage, options as CFDictionary)
+        return CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary)
+    }
 
+    private static func encode(_ cgImage: CGImage, as type: UTType) -> Data? {
+        let output = NSMutableData()
+        guard let destination = CGImageDestinationCreateWithData(
+            output, type.identifier as CFString, 1, nil
+        ) else {
+            return nil
+        }
+        let options: [CFString: Any] = [kCGImageDestinationLossyCompressionQuality: 0.85]
+        CGImageDestinationAddImage(destination, cgImage, options as CFDictionary)
         guard CGImageDestinationFinalize(destination), output.length > 0 else {
-            throw UploadError.webpConversionFailed
+            return nil
         }
         return output as Data
     }
