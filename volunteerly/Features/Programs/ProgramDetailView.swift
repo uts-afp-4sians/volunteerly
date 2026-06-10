@@ -6,6 +6,7 @@ struct ProgramDetailView: View {
 
     @State private var viewModel: ProgramDetailViewModel
     @State private var showJoinedConfirmation = false
+    @State private var bannerSelection = 0
     @Environment(\.dismiss) private var dismiss
 
     private let httpClient: HTTPClient
@@ -74,23 +75,51 @@ struct ProgramDetailView: View {
 
     // MARK: - Banner
 
+    /// Ordered banner images for the program — one renders as a still banner,
+    /// several become a swipeable carousel with dots. Falls back to the single
+    /// `bannerImageURL` for legacy payloads via `galleryImageURLs`.
+    private var bannerURLs: [String] {
+        viewModel.program?.galleryImageURLs ?? []
+    }
+
+    /// A single image renders as a still banner; two or more become a swipeable
+    /// carousel with page dots. Never shows dots for one image.
+    @ViewBuilder
     private var banner: some View {
+        let urls = bannerURLs
+        if urls.count > 1 {
+            TabView(selection: $bannerSelection) {
+                ForEach(Array(urls.enumerated()), id: \.offset) { index, url in
+                    bannerImage(url)
+                        .tag(index)
+                }
+            }
+            .tabViewStyle(.page(indexDisplayMode: .never))
+            .frame(height: 220)
+            .clipShape(UnevenRoundedRectangle(bottomLeadingRadius: 8, bottomTrailingRadius: 8, style: .continuous))
+            .overlay(alignment: .bottom) {
+                PageDots(count: urls.count, selection: bannerSelection)
+                    .padding(.bottom, 21)
+            }
+        } else {
+            bannerImage(urls.first)
+                .frame(height: 220)
+                .contentShape(Rectangle())
+                .clipped()
+                .clipShape(UnevenRoundedRectangle(bottomLeadingRadius: 8, bottomTrailingRadius: 8, style: .continuous))
+        }
+    }
+
+    private func bannerImage(_ url: String?) -> some View {
         Color.clear
             .overlay(
-                AsyncImage(url: URL(string: viewModel.program?.bannerImageURL ?? "")) { image in
+                AsyncImage(url: URL(string: url ?? "")) { image in
                     image.resizable().aspectRatio(contentMode: .fill)
                 } placeholder: {
                     Rectangle().fill(Color(.systemGray5))
                 }
             )
-            .frame(height: 220)
-            .contentShape(Rectangle())
             .clipped()
-            .clipShape(UnevenRoundedRectangle(bottomLeadingRadius: 8, bottomTrailingRadius: 8, style: .continuous))
-            .overlay(alignment: .bottom) {
-                PageDots(count: 3, selection: 0)
-                    .padding(.bottom, 21)
-            }
     }
 
     private var topControls: some View {

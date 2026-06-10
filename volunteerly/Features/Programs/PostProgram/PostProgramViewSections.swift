@@ -353,11 +353,18 @@ extension PostProgramView {
     private func photoThumbnail(at index: Int) -> some View {
         let shape = RoundedRectangle(cornerRadius: 12, style: .continuous)
         if index < photoImages.count {
-            photoImages[index]
-                .resizable()
-                .scaledToFill()
+            // Fix the slot to a 1:1 square first (identical sizing to the empty
+            // placeholder below), then fill it with the photo and crop the
+            // overflow — so portrait and landscape picks render the same size.
+            shape
+                .fill(Color(.systemGray6))
                 .frame(maxWidth: .infinity)
                 .aspectRatio(1, contentMode: .fit)
+                .overlay {
+                    photoImages[index]
+                        .resizable()
+                        .scaledToFill()
+                }
                 .clipShape(shape)
                 .modifier(JiggleEffect(isActive: photosEditing, index: index))
                 .overlay(alignment: .topTrailing) {
