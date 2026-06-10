@@ -7,36 +7,9 @@ struct MainTabView: View {
 
     var body: some View {
         TabView(selection: $tabRouter.selectedTab) {
-            programsTab
-                .tag(TabRouter.Tab.programs)
-                .tabItem { Image(systemName: "magnifyingglass") }
-                .accessibilityLabel("Search")
-
-            bookmarksTab
-                .tag(TabRouter.Tab.bookmarks)
-                .tabItem { Image(systemName: "bookmark") }
-                .accessibilityLabel("Bookmarks")
-
-            myPageTab
-                .tag(TabRouter.Tab.myPage)
-                .tabItem { Image(systemName: "person.crop.circle") }
-                .accessibilityLabel("My page")
-        }
-        .overlay(alignment: .bottomTrailing) {
-            if showsPostButton {
-                Button(action: tabRouter.showPostProgram) {
-                    Image(systemName: "plus")
-                        .font(.system(size: 24, weight: .regular))
-                        .foregroundStyle(Color.textPrimary)
-                        .frame(width: 48, height: 48)
-                        .background(.ultraThinMaterial, in: Circle())
-                        .background(Color(.systemGray6).opacity(0.9), in: Circle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Post a program")
-                .padding(.trailing, 20)
-                .padding(.bottom, 68)
-            }
+            programsTab.tag(TabRouter.Tab.programs)
+            bookmarksTab.tag(TabRouter.Tab.bookmarks)
+            myPageTab.tag(TabRouter.Tab.myPage)
         }
         .environment(tabRouter)
         .environment(profileStore)
@@ -45,6 +18,9 @@ struct MainTabView: View {
     private var programsTab: some View {
         NavigationStack(path: $tabRouter.programsPath) {
             ProgramListView(refreshID: programRefreshID)
+                .safeAreaInset(edge: .bottom) {
+                    floatingBar(showsPostButton: true)
+                }
                 .navigationDestination(for: Int.self) { programId in
                     ProgramDetailView(programId: programId)
                 }
@@ -57,28 +33,40 @@ struct MainTabView: View {
                     }
                 }
         }
+        .toolbar(.hidden, for: .tabBar)
     }
 
     private var bookmarksTab: some View {
         NavigationStack {
             BookmarksView()
+                .safeAreaInset(edge: .bottom) { floatingBar() }
                 .navigationDestination(for: Int.self) { programId in
                     ProgramDetailView(programId: programId)
                 }
         }
+        .toolbar(.hidden, for: .tabBar)
     }
 
     private var myPageTab: some View {
         NavigationStack {
             MyPageView()
+                .safeAreaInset(edge: .bottom) { floatingBar() }
                 .navigationDestination(for: Int.self) { programId in
                     ProgramDetailView(programId: programId)
                 }
         }
+        .toolbar(.hidden, for: .tabBar)
     }
 
-    private var showsPostButton: Bool {
-        tabRouter.selectedTab == .programs && tabRouter.programsPath.isEmpty
+    /// The custom floating tab bar. Mounted on each tab's root via
+    /// `safeAreaInset` so it floats above the content and is covered (hidden)
+    /// when a detail is pushed onto the stack.
+    private func floatingBar(showsPostButton: Bool = false) -> some View {
+        FloatingTabBar(
+            selection: $tabRouter.selectedTab,
+            showsPostButton: showsPostButton,
+            onPostProgram: tabRouter.showPostProgram
+        )
     }
 }
 
