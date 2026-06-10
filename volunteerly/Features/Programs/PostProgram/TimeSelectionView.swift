@@ -4,10 +4,9 @@ import SwiftUI
 /// (Figma node 329:1550). Tapping a row's **Time** chip presents this.
 ///
 /// Shorter than the calendar sheet: a "Time" header over the native
-/// `DatePicker` wheel limited to `.hourAndMinute`. Chrome (blue drag handle,
-/// centred title, green Confirm) matches the other PostProgram sheets.
+/// `DatePicker` wheel limited to `.hourAndMinute`. Chrome (grey drag handle,
+/// centred 24pt title, green Save) matches the Figma sheet (389:1156).
 struct TimeSelectionView: View {
-    let title: String
     @Binding var date: Date
     /// Lower bound (used by the "Ends" sheet so the end can't precede the start
     /// on the same day).
@@ -19,8 +18,8 @@ struct TimeSelectionView: View {
             dragHandle
                 .padding(.top, 12)
 
-            Text(title)
-                .font(.system(size: 26, weight: .bold))
+            Text("Time")
+                .font(.sectionHeader)
                 .foregroundStyle(Theme.textPrimary)
                 .padding(.top, 8)
                 .padding(.bottom, 4)
@@ -53,22 +52,22 @@ struct TimeSelectionView: View {
 
     // MARK: - Chrome
 
-    /// Custom blue drag handle matching the other PostProgram sheets.
+    /// Custom grey drag handle (Figma 351:659 — #F5F5F5, 80×6).
     private var dragHandle: some View {
         Capsule()
-            .fill(Color.secondaryBlue)
-            .frame(width: 56, height: 6)
+            .fill(Color(.systemGray6))
+            .frame(width: 80, height: 6)
     }
 
     private var confirmButton: some View {
         Button {
             dismiss()
         } label: {
-            Text("Confirm")
-                .font(.bodyStrong)
+            Text("Save")
+                .font(.buttonLabel)
                 .foregroundStyle(Color.onBrand)
                 .frame(maxWidth: .infinity)
-                .frame(height: 50)
+                .frame(height: 53)
                 .background(Color.brand, in: Capsule())
         }
         .buttonStyle(.plain)
@@ -80,7 +79,7 @@ struct TimeSelectionView: View {
 #Preview {
     Color.white
         .sheet(isPresented: .constant(true)) {
-            TimeSelectionView(title: "Starts", date: .constant(Date()))
+            TimeSelectionView(date: .constant(Date()))
                 .presentationDetents([.height(440)])
                 .presentationDragIndicator(.hidden)
         }
