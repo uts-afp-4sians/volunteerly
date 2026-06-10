@@ -89,9 +89,9 @@ struct DraftCard: View {
                 .lineLimit(3)
             Spacer(minLength: 0)
         }
-        .frame(maxWidth: .infinity, minHeight: 120, alignment: .topLeading)
+        .frame(maxWidth: .infinity, minHeight: 163, maxHeight: 163, alignment: .topLeading)
         .padding(16)
-        .background(Color(.systemGray6), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .background(Color(.systemGray6))
     }
 }
 
