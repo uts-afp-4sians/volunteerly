@@ -31,6 +31,8 @@ struct PostProgramView: View {
 
     // UI State
     @State private var activeSheet: SheetType? = nil
+    /// Confirm before discarding unsaved edits when the user backs out / swipes.
+    @State private var showDiscardConfirm = false
 
     enum SheetType: Identifiable {
         case location
@@ -90,11 +92,19 @@ struct PostProgramView: View {
         }
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)
+        .interactiveSwipeBack(
+            canPop: { !viewModel.isDirty },
+            onBlocked: { showDiscardConfirm = true }
+        )
         .toolbar(.visible, for: .navigationBar)
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 Button {
-                    dismiss()
+                    if viewModel.isDirty {
+                        showDiscardConfirm = true
+                    } else {
+                        dismiss()
+                    }
                 } label: {
                     Image(systemName: "arrow.left")
                         .font(.system(size: 16, weight: .bold))
@@ -119,6 +129,16 @@ struct PostProgramView: View {
             Button("OK") {}
         } message: {
             Text(viewModel.errorMessage ?? "")
+        }
+        .confirmationDialog(
+            "Discard this program?",
+            isPresented: $showDiscardConfirm,
+            titleVisibility: .visible
+        ) {
+            Button("Discard Changes", role: .destructive) { dismiss() }
+            Button("Keep Editing", role: .cancel) {}
+        } message: {
+            Text("Your changes won't be saved.")
         }
         .sheet(item: $activeSheet) { type in
             switch type {

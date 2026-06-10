@@ -6,10 +6,16 @@ import Observation
 final class PostProgramViewModel {
     // MARK: - Form state
 
+    /// Default volunteer headcount shown on a fresh form (mockup value). Also the
+    /// baseline `isDirty` compares against, so it lives in one place.
+    static let defaultMaxVolunteers = 7
+    /// Category selected on a fresh form, before `loadCategories` may rebase it.
+    static let defaultCategoryId = 1
+
     var name: String = ""
-    var selectedCategoryId: Int = 1
+    var selectedCategoryId: Int = PostProgramViewModel.defaultCategoryId
     var description: String = ""
-    var maxVolunteers: Int = 7 // Default to 7 like mockup
+    var maxVolunteers: Int = PostProgramViewModel.defaultMaxVolunteers
     var commitmentFrequency: CommitmentFrequency?
     var commitmentDuration: CommitmentDuration?
 
@@ -34,15 +40,43 @@ final class PostProgramViewModel {
         !name.isEmpty && !description.isEmpty && selectedCategoryId != 0 && !isSubmitting
     }
 
+    /// True once the user has touched any field, so the view can confirm before
+    /// discarding unsaved edits on back/swipe. Compared against the form's
+    /// initial state (dates and category baseline captured at load).
+    var isDirty: Bool {
+        !name.isEmpty
+            || !description.isEmpty
+            || !selectedRegion.isEmpty
+            || bannerImageData != nil
+            || maxVolunteers != Self.defaultMaxVolunteers
+            || commitmentFrequency != nil
+            || commitmentDuration != nil
+            || selectedRepeat != "Never"
+            || startDate != initialStartDate
+            || endDate != initialEndDate
+            || selectedCategoryId != baselineCategoryId
+    }
+
+    /// Form baselines for `isDirty`. Dates are fixed at init; the category
+    /// baseline is rebased after `loadCategories` resolves the default selection.
+    private let initialStartDate: Date
+    private let initialEndDate: Date
+    private var baselineCategoryId: Int
+
     private let httpClient: HTTPClient
 
     init(httpClient: HTTPClient = LiveHTTPClient.shared) {
         self.httpClient = httpClient
         let calendar = Calendar.current
         let now = Date()
-        startDate = calendar.date(bySettingHour: 12, minute: 0, second: 0, of: now) ?? now
-        endDate = calendar.date(bySettingHour: 13, minute: 0, second: 0, of: now)
+        let start = calendar.date(bySettingHour: 12, minute: 0, second: 0, of: now) ?? now
+        let end = calendar.date(bySettingHour: 13, minute: 0, second: 0, of: now)
             ?? now.addingTimeInterval(3600)
+        startDate = start
+        endDate = end
+        initialStartDate = start
+        initialEndDate = end
+        baselineCategoryId = Self.defaultCategoryId
     }
 
     func loadCategories() async {
@@ -53,6 +87,8 @@ final class PostProgramViewModel {
                !cats.contains(where: { $0.id == selectedCategoryId }) {
                 selectedCategoryId = first.id
             }
+            // Rebase so the auto-resolved default category isn't seen as a user edit.
+            baselineCategoryId = selectedCategoryId
         } catch {
             errorMessage = error.localizedDescription
         }
