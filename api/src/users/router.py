@@ -14,6 +14,7 @@ from src.users.schema import (
 from src.users.service import (
     ProfileNotFound,
     UnknownKeyword,
+    UnknownLocation,
     get_profile,
     read_profile_with_interests,
     update_profile,
@@ -52,6 +53,10 @@ def update_my_profile(
             status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found"
         ) from None
     except UnknownKeyword as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)
+        ) from None
+    except UnknownLocation as exc:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)
         ) from None

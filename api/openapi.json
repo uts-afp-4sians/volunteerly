@@ -2495,6 +2495,14 @@
             "nullable": true,
             "type": "integer"
           },
+          "location": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LocationRead"
+              }
+            ]
+          },
           "interests": {
             "items": {
               "$ref": "#/components/schemas/UserInterestDetail"
@@ -2526,6 +2534,12 @@
             "nullable": true,
             "type": "string",
             "maxLength": 255
+          },
+          "date_of_birth": {
+            "title": "Date Of Birth",
+            "nullable": true,
+            "type": "string",
+            "format": "date-time"
           },
           "profile_image_url": {
             "title": "Profile Image Url",
@@ -2562,6 +2576,11 @@
             "nullable": true,
             "type": "string",
             "maxLength": 500
+          },
+          "location_id": {
+            "title": "Location Id",
+            "nullable": true,
+            "type": "integer"
           },
           "interest_keyword_ids": {
             "title": "Interest Keyword Ids",

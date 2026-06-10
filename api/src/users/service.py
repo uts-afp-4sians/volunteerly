@@ -8,6 +8,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from src.categories.model import Keyword
+from src.locations.model import Location
+from src.locations.schema import LocationRead
 from src.users.model import UserInterest, UserProfile
 from src.users.schema import UserInterestDetail, UserProfileRead, UserProfileUpdate
 
@@ -26,6 +28,14 @@ class UnknownKeyword(UserError):
     def __init__(self, keyword_id: int) -> None:
         self.keyword_id = keyword_id
         super().__init__(f"Unknown keyword_id: {keyword_id}")
+
+
+class UnknownLocation(UserError):
+    """The profile referenced a location_id that does not exist."""
+
+    def __init__(self, location_id: int) -> None:
+        self.location_id = location_id
+        super().__init__(f"Unknown location_id: {location_id}")
 
 
 def get_profile(db: Session, user_id: int) -> UserProfile:
@@ -50,6 +60,9 @@ def update_profile(
     profile = get_profile(db, user_id)
     data = payload.model_dump(exclude_unset=True)
     interest_keyword_ids = data.pop("interest_keyword_ids", None)
+    location_id = data.get("location_id")
+    if location_id is not None and db.get(Location, location_id) is None:
+        raise UnknownLocation(location_id)
     for field, value in data.items():
         setattr(profile, field, value)
     if interest_keyword_ids is not None:
@@ -103,6 +116,9 @@ def read_profile_with_interests(db: Session, profile: UserProfile) -> UserProfil
     whole screen and the client caches it as one object.
     """
     response = UserProfileRead.model_validate(profile)
+    if profile.location_id is not None:
+        if location := db.get(Location, profile.location_id):
+            response.location = LocationRead.model_validate(location)
     response.interests = [
         UserInterestDetail.model_validate(keyword)
         for keyword in list_interests(db, profile.user_id)
