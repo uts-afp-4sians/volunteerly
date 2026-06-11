@@ -162,6 +162,14 @@ final class ProgramListViewModel {
         categories = (try? await httpClient.get("/categories")) ?? []
     }
 
+    /// Emoji for a program's category, resolved via the loaded catalog
+    /// (`categoryId` → name → emoji). `nil` until categories have loaded so the
+    /// card can hide the chip rather than show a placeholder glyph.
+    func categoryEmoji(for program: Program) -> String? {
+        categories.first { $0.id == program.categoryId }
+            .map { UserProfileStore.emoji(for: $0.name) }
+    }
+
     /// Resolves the device coordinate at most once and, on success, re-fetches
     /// so distances appear. Fire-and-forget: `load()` returns immediately even
     /// when the permission prompt is never answered.

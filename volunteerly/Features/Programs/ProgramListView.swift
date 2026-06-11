@@ -19,8 +19,6 @@ struct ProgramListView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                VolunteerlyHeader()
-                    .padding(.horizontal, horizontalPadding)
                 title
                 searchRow
                 categoryRow
@@ -163,7 +161,11 @@ struct ProgramListView: View {
             LazyVStack(spacing: 21) {
                 ForEach(viewModel.filteredPrograms) { program in
                     NavigationLink(value: program.id) {
-                        ProgramCard(program: program, distanceKm: program.distanceKm)
+                        ProgramCard(
+                            program: program,
+                            distanceKm: program.distanceKm,
+                            categoryEmoji: viewModel.categoryEmoji(for: program)
+                        )
                     }
                     .buttonStyle(.plain)
                 }

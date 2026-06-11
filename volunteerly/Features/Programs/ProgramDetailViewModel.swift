@@ -14,6 +14,9 @@ final class ProgramDetailViewModel {
     /// Straight-line distance to `similarProgram`, in kilometres, when both
     /// programs have located coordinates. `nil` when picked by city/category.
     var similarDistanceKm: Double?
+    /// Category emoji for the `similarProgram` card, resolved from the same
+    /// `/categories` fetch used for this program's own chips.
+    var similarCategoryEmoji: String?
     var isLoading = false
     var errorMessage: String?
 
@@ -85,12 +88,16 @@ final class ProgramDetailViewModel {
             async let participants: [UserProfile] = httpClient.get("/programs/\(programId)/participants")
             self.host = try? await host
             self.location = try? await location
-            self.category = (try? await categories)?.first { $0.id == program.categoryId }
+            let allCategories = (try? await categories) ?? []
+            self.category = allCategories.first { $0.id == program.categoryId }
             self.participants = (try? await participants) ?? []
 
             if let similar = try? await similar {
                 self.similarProgram = similar.program
                 self.similarDistanceKm = similar.distanceKm
+                self.similarCategoryEmoji = allCategories
+                    .first { $0.id == similar.program.categoryId }
+                    .map { UserProfileStore.emoji(for: $0.name) }
             }
 
             // Participation is supplementary — failing to load it shouldn't

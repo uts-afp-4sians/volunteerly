@@ -633,7 +633,11 @@ struct ProgramDetailView: View {
         VStack(alignment: .leading, spacing: 16) {
             sectionHeader("Similar programs nearby")
             NavigationLink(value: similar.id) {
-                ProgramCard(program: similar, distanceKm: viewModel.similarDistanceKm)
+                ProgramCard(
+                    program: similar,
+                    distanceKm: viewModel.similarDistanceKm,
+                    categoryEmoji: viewModel.similarCategoryEmoji
+                )
             }
             .buttonStyle(.plain)
         }

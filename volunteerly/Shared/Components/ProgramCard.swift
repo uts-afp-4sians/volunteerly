@@ -1,75 +1,154 @@
 import SwiftUI
 
+/// Program list/grid card (Figma node 776:977). A full-bleed banner with a
+/// bottom gradient scrim, over which sit the category emoji, title, a truncated
+/// description, a participants progress bar, the participants/distance metrics,
+/// and a commitment-frequency chip.
 struct ProgramCard: View {
     let program: Program
-    /// When set, the trailing metric shows this distance (km) instead of the
-    /// start date — used by the "Similar program nearby" card.
-    var distanceKm: Double?
+    /// When set, overrides the model's `distanceKm` (used by the "Similar
+    /// program nearby" card, which carries its own computed distance).
+    var distanceKm: Double? = nil
+    /// Category glyph for the corner chip, resolved by the caller from its
+    /// loaded categories (`categoryId` → name → emoji). Hidden when nil.
+    var categoryEmoji: String? = nil
 
     var body: some View {
-        VStack(spacing: 0) {
-            Spacer(minLength: 0)
-            footer
-        }
-        .frame(maxWidth: .infinity)
-        .frame(height: 270)
-        .background {
+        ZStack(alignment: .bottomLeading) {
             CachedAsyncImage(url: URL(string: program.bannerImageURL ?? "")) { image in
                 image.resizable().aspectRatio(contentMode: .fill)
             } placeholder: {
                 Rectangle().fill(Color(.systemGray5))
             }
+            .frame(maxWidth: .infinity)
+            .frame(height: 263)
+            .clipped()
+
+            // Transparent at the top, deepening to ~70% black by the lower
+            // third so the white content stays legible (Figma gradient).
+            LinearGradient(
+                stops: [
+                    .init(color: .clear, location: 0),
+                    .init(color: .black.opacity(0.7), location: 0.64),
+                    .init(color: .black.opacity(0.7), location: 1),
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .allowsHitTesting(false)
+
+            content
         }
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .frame(maxWidth: .infinity)
+        .frame(height: 263)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 
-    private var footer: some View {
-        VStack(alignment: .leading, spacing: 4) {
+    private var content: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            if let categoryEmoji {
+                emojiChip(categoryEmoji)
+            }
+
             Text(program.name)
-                .font(.bodyStrong)
-                .foregroundStyle(Color.onBrand)
+                .font(.cardTitle)
+                .fontWeight(.bold)
+                .foregroundStyle(.white)
                 .lineLimit(1)
 
-            HStack(alignment: .bottom, spacing: 8) {
-                Text(program.description)
-                    .font(.labelItalic)
-                    .foregroundStyle(Color.onBrand)
-                    .lineLimit(2)
+            Text(program.description)
+                .font(.captionText)
+                .foregroundStyle(.white.opacity(0.9))
+                .lineLimit(1)
+                .truncationMode(.tail)
 
-                Spacer(minLength: 8)
+            progressBar
+                .padding(.top, 2)
 
-                HStack(spacing: 12) {
-                    metric(systemImage: "person.2.fill", text: "\(program.participantCount ?? 0)")
-                    metric(systemImage: "map.fill", text: distanceKm.map(Self.distanceText) ?? "-")
-                }
-                .fixedSize()
+            metricsRow
+                .padding(.top, 2)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(14)
+    }
+
+    private func emojiChip(_ emoji: String) -> some View {
+        Text(emoji)
+            .font(.captionText)
+            .frame(width: 24, height: 24)
+            .background(.white.opacity(0.3), in: Circle())
+            .overlay(Circle().strokeBorder(.white.opacity(0.4), lineWidth: 0.5))
+    }
+
+    /// Joined-vs-capacity bar — `participantCount / maxVolunteers`.
+    private var progressBar: some View {
+        GeometryReader { geo in
+            ZStack(alignment: .leading) {
+                Capsule().fill(Color.brand100)
+                Capsule()
+                    .fill(Color.brand300)
+                    .frame(width: geo.size.width * progressFraction)
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 16)
-        .frame(maxWidth: .infinity, minHeight: 89, alignment: .leading)
-        .background(Color.brand)
+        .frame(height: 6)
+    }
+
+    private var metricsRow: some View {
+        HStack(spacing: 12) {
+            metric(systemImage: "person.2.fill", text: "\(participantCount)/\(program.maxVolunteers)")
+            if let distance = resolvedDistanceKm {
+                metric(systemImage: "map.fill", text: Self.distanceText(distance))
+            }
+
+            Spacer(minLength: 8)
+
+            if let frequency = program.commitmentFrequency {
+                frequencyChip(frequency.label)
+            }
+        }
     }
 
     private func metric(systemImage: String, text: String) -> some View {
         HStack(spacing: 4) {
             Image(systemName: systemImage)
-                .font(.system(size: 15))
-                .foregroundStyle(Color.onBrand)
             Text(text)
-                .font(.labelItalic)
-                .foregroundStyle(Color.onBrand)
         }
+        .font(.captionText)
+        .foregroundStyle(.white.opacity(0.9))
+    }
+
+    private func frequencyChip(_ label: String) -> some View {
+        HStack(spacing: 4) {
+            Image(systemName: "arrow.clockwise")
+            Text(label)
+        }
+        .font(.captionText)
+        .foregroundStyle(.white.opacity(0.85))
+        .padding(.horizontal, 8)
+        .padding(.vertical, 3)
+        .background(.white.opacity(0.15), in: Capsule())
+        .overlay(Capsule().strokeBorder(.white.opacity(0.3), lineWidth: 0.5))
+    }
+
+    // MARK: - Derived values
+
+    private var participantCount: Int { program.participantCount ?? 0 }
+
+    private var resolvedDistanceKm: Double? { distanceKm ?? program.distanceKm }
+
+    private var progressFraction: Double {
+        guard program.maxVolunteers > 0 else { return 0 }
+        return min(1, max(0, Double(participantCount) / Double(program.maxVolunteers)))
     }
 
     // Pure formatter — marked `nonisolated` so it can be passed as a plain
-    // function value to `Optional.map` without a main-actor isolation warning.
+    // function value without a main-actor isolation warning.
     nonisolated private static func distanceText(_ km: Double) -> String {
         km < 10 ? String(format: "%.1fkm", km) : String(format: "%.0fkm", km)
     }
 }
 
 #Preview {
-    ProgramCard(program: MockData.programs[0])
+    ProgramCard(program: MockData.programs[0], categoryEmoji: "🌱")
         .padding()
 }
