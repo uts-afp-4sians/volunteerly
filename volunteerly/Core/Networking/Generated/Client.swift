@@ -708,6 +708,204 @@ internal struct Client: APIProtocol {
             }
         )
     }
+    /// List My Bookmarks
+    ///
+    /// Programs the caller has bookmarked, backing the Bookmarks tab. Soft-deleted
+    /// programs are excluded; rows carry the same capacity/banner enrichment as
+    /// ``GET /programs`` and are ordered soonest-first to match the client list.
+    ///
+    /// - Remark: HTTP `GET /me/bookmarks`.
+    /// - Remark: Generated from `#/paths//me/bookmarks/get(list_my_bookmarks_me_bookmarks_get)`.
+    internal func list_my_bookmarks_me_bookmarks_get(_ input: Operations.list_my_bookmarks_me_bookmarks_get.Input) async throws -> Operations.list_my_bookmarks_me_bookmarks_get.Output {
+        try await client.send(
+            input: input,
+            forOperation: Operations.list_my_bookmarks_me_bookmarks_get.id,
+            serializer: { input in
+                let path = try converter.renderedPath(
+                    template: "/me/bookmarks",
+                    parameters: []
+                )
+                var request: HTTPTypes.HTTPRequest = .init(
+                    soar_path: path,
+                    method: .get
+                )
+                suppressMutabilityWarning(&request)
+                converter.setAcceptHeader(
+                    in: &request.headerFields,
+                    contentTypes: input.headers.accept
+                )
+                return (request, nil)
+            },
+            deserializer: { response, responseBody in
+                switch response.status.code {
+                case 200:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Operations.list_my_bookmarks_me_bookmarks_get.Output.Ok.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            [Components.Schemas.ProgramRead].self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .ok(.init(body: body))
+                default:
+                    return .undocumented(
+                        statusCode: response.status.code,
+                        .init(
+                            headerFields: response.headerFields,
+                            body: responseBody
+                        )
+                    )
+                }
+            }
+        )
+    }
+    /// Add Bookmark
+    ///
+    /// Bookmark a program for the caller. Idempotent — re-bookmarking is a no-op.
+    /// 404 if the program doesn't exist (or is soft-deleted).
+    ///
+    /// - Remark: HTTP `POST /programs/{program_id}/bookmark`.
+    /// - Remark: Generated from `#/paths//programs/{program_id}/bookmark/post(add_bookmark_programs__program_id__bookmark_post)`.
+    internal func add_bookmark_programs__program_id__bookmark_post(_ input: Operations.add_bookmark_programs__program_id__bookmark_post.Input) async throws -> Operations.add_bookmark_programs__program_id__bookmark_post.Output {
+        try await client.send(
+            input: input,
+            forOperation: Operations.add_bookmark_programs__program_id__bookmark_post.id,
+            serializer: { input in
+                let path = try converter.renderedPath(
+                    template: "/programs/{}/bookmark",
+                    parameters: [
+                        input.path.program_id
+                    ]
+                )
+                var request: HTTPTypes.HTTPRequest = .init(
+                    soar_path: path,
+                    method: .post
+                )
+                suppressMutabilityWarning(&request)
+                converter.setAcceptHeader(
+                    in: &request.headerFields,
+                    contentTypes: input.headers.accept
+                )
+                return (request, nil)
+            },
+            deserializer: { response, responseBody in
+                switch response.status.code {
+                case 204:
+                    return .noContent(.init())
+                case 422:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Operations.add_bookmark_programs__program_id__bookmark_post.Output.UnprocessableContent.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.HTTPValidationError.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .unprocessableContent(.init(body: body))
+                default:
+                    return .undocumented(
+                        statusCode: response.status.code,
+                        .init(
+                            headerFields: response.headerFields,
+                            body: responseBody
+                        )
+                    )
+                }
+            }
+        )
+    }
+    /// Remove Bookmark
+    ///
+    /// Remove the caller's bookmark. Idempotent — removing a missing one is a
+    /// no-op (so the client can clear a bookmark even after the program is gone).
+    ///
+    /// - Remark: HTTP `DELETE /programs/{program_id}/bookmark`.
+    /// - Remark: Generated from `#/paths//programs/{program_id}/bookmark/delete(remove_bookmark_programs__program_id__bookmark_delete)`.
+    internal func remove_bookmark_programs__program_id__bookmark_delete(_ input: Operations.remove_bookmark_programs__program_id__bookmark_delete.Input) async throws -> Operations.remove_bookmark_programs__program_id__bookmark_delete.Output {
+        try await client.send(
+            input: input,
+            forOperation: Operations.remove_bookmark_programs__program_id__bookmark_delete.id,
+            serializer: { input in
+                let path = try converter.renderedPath(
+                    template: "/programs/{}/bookmark",
+                    parameters: [
+                        input.path.program_id
+                    ]
+                )
+                var request: HTTPTypes.HTTPRequest = .init(
+                    soar_path: path,
+                    method: .delete
+                )
+                suppressMutabilityWarning(&request)
+                converter.setAcceptHeader(
+                    in: &request.headerFields,
+                    contentTypes: input.headers.accept
+                )
+                return (request, nil)
+            },
+            deserializer: { response, responseBody in
+                switch response.status.code {
+                case 204:
+                    return .noContent(.init())
+                case 422:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Operations.remove_bookmark_programs__program_id__bookmark_delete.Output.UnprocessableContent.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.HTTPValidationError.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .unprocessableContent(.init(body: body))
+                default:
+                    return .undocumented(
+                        statusCode: response.status.code,
+                        .init(
+                            headerFields: response.headerFields,
+                            body: responseBody
+                        )
+                    )
+                }
+            }
+        )
+    }
     /// Get Program
     ///
     /// - Remark: HTTP `GET /programs/{program_id}`.

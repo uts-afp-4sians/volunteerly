@@ -26,6 +26,9 @@ struct MainTabView: View {
         // owner sees the "Joined" join bar instead of the host "…" menu.
         // Cache-first and idempotent; safe to call alongside My Page's own load.
         .task { await profileStore.load() }
+        // Hydrate bookmarks once at the root so the list and detail bookmark
+        // button reflect the server set from the first tab the user opens.
+        .task { await bookmarkStore.load() }
     }
 
     private var programsTab: some View {

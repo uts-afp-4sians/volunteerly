@@ -422,6 +422,117 @@
         ]
       }
     },
+    "/me/bookmarks": {
+      "get": {
+        "tags": [
+          "programs"
+        ],
+        "summary": "List My Bookmarks",
+        "description": "Programs the caller has bookmarked, backing the Bookmarks tab. Soft-deleted\nprograms are excluded; rows carry the same capacity/banner enrichment as\n``GET /programs`` and are ordered soonest-first to match the client list.",
+        "operationId": "list_my_bookmarks_me_bookmarks_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProgramRead"
+                  },
+                  "type": "array",
+                  "title": "Response List My Bookmarks Me Bookmarks Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/programs/{program_id}/bookmark": {
+      "post": {
+        "tags": [
+          "programs"
+        ],
+        "summary": "Add Bookmark",
+        "description": "Bookmark a program for the caller. Idempotent \u2014 re-bookmarking is a no-op.\n404 if the program doesn't exist (or is soft-deleted).",
+        "operationId": "add_bookmark_programs__program_id__bookmark_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "program_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Program Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "programs"
+        ],
+        "summary": "Remove Bookmark",
+        "description": "Remove the caller's bookmark. Idempotent \u2014 removing a missing one is a\nno-op (so the client can clear a bookmark even after the program is gone).",
+        "operationId": "remove_bookmark_programs__program_id__bookmark_delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "program_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Program Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/programs/{program_id}": {
       "get": {
         "tags": [

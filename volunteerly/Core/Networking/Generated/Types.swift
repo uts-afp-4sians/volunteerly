@@ -67,6 +67,31 @@ internal protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /me/programs`.
     /// - Remark: Generated from `#/paths//me/programs/get(list_my_programs_me_programs_get)`.
     func list_my_programs_me_programs_get(_ input: Operations.list_my_programs_me_programs_get.Input) async throws -> Operations.list_my_programs_me_programs_get.Output
+    /// List My Bookmarks
+    ///
+    /// Programs the caller has bookmarked, backing the Bookmarks tab. Soft-deleted
+    /// programs are excluded; rows carry the same capacity/banner enrichment as
+    /// ``GET /programs`` and are ordered soonest-first to match the client list.
+    ///
+    /// - Remark: HTTP `GET /me/bookmarks`.
+    /// - Remark: Generated from `#/paths//me/bookmarks/get(list_my_bookmarks_me_bookmarks_get)`.
+    func list_my_bookmarks_me_bookmarks_get(_ input: Operations.list_my_bookmarks_me_bookmarks_get.Input) async throws -> Operations.list_my_bookmarks_me_bookmarks_get.Output
+    /// Add Bookmark
+    ///
+    /// Bookmark a program for the caller. Idempotent — re-bookmarking is a no-op.
+    /// 404 if the program doesn't exist (or is soft-deleted).
+    ///
+    /// - Remark: HTTP `POST /programs/{program_id}/bookmark`.
+    /// - Remark: Generated from `#/paths//programs/{program_id}/bookmark/post(add_bookmark_programs__program_id__bookmark_post)`.
+    func add_bookmark_programs__program_id__bookmark_post(_ input: Operations.add_bookmark_programs__program_id__bookmark_post.Input) async throws -> Operations.add_bookmark_programs__program_id__bookmark_post.Output
+    /// Remove Bookmark
+    ///
+    /// Remove the caller's bookmark. Idempotent — removing a missing one is a
+    /// no-op (so the client can clear a bookmark even after the program is gone).
+    ///
+    /// - Remark: HTTP `DELETE /programs/{program_id}/bookmark`.
+    /// - Remark: Generated from `#/paths//programs/{program_id}/bookmark/delete(remove_bookmark_programs__program_id__bookmark_delete)`.
+    func remove_bookmark_programs__program_id__bookmark_delete(_ input: Operations.remove_bookmark_programs__program_id__bookmark_delete.Input) async throws -> Operations.remove_bookmark_programs__program_id__bookmark_delete.Output
     /// Get Program
     ///
     /// - Remark: HTTP `GET /programs/{program_id}`.
@@ -269,6 +294,49 @@ extension APIProtocol {
     /// - Remark: Generated from `#/paths//me/programs/get(list_my_programs_me_programs_get)`.
     internal func list_my_programs_me_programs_get(headers: Operations.list_my_programs_me_programs_get.Input.Headers = .init()) async throws -> Operations.list_my_programs_me_programs_get.Output {
         try await list_my_programs_me_programs_get(Operations.list_my_programs_me_programs_get.Input(headers: headers))
+    }
+    /// List My Bookmarks
+    ///
+    /// Programs the caller has bookmarked, backing the Bookmarks tab. Soft-deleted
+    /// programs are excluded; rows carry the same capacity/banner enrichment as
+    /// ``GET /programs`` and are ordered soonest-first to match the client list.
+    ///
+    /// - Remark: HTTP `GET /me/bookmarks`.
+    /// - Remark: Generated from `#/paths//me/bookmarks/get(list_my_bookmarks_me_bookmarks_get)`.
+    internal func list_my_bookmarks_me_bookmarks_get(headers: Operations.list_my_bookmarks_me_bookmarks_get.Input.Headers = .init()) async throws -> Operations.list_my_bookmarks_me_bookmarks_get.Output {
+        try await list_my_bookmarks_me_bookmarks_get(Operations.list_my_bookmarks_me_bookmarks_get.Input(headers: headers))
+    }
+    /// Add Bookmark
+    ///
+    /// Bookmark a program for the caller. Idempotent — re-bookmarking is a no-op.
+    /// 404 if the program doesn't exist (or is soft-deleted).
+    ///
+    /// - Remark: HTTP `POST /programs/{program_id}/bookmark`.
+    /// - Remark: Generated from `#/paths//programs/{program_id}/bookmark/post(add_bookmark_programs__program_id__bookmark_post)`.
+    internal func add_bookmark_programs__program_id__bookmark_post(
+        path: Operations.add_bookmark_programs__program_id__bookmark_post.Input.Path,
+        headers: Operations.add_bookmark_programs__program_id__bookmark_post.Input.Headers = .init()
+    ) async throws -> Operations.add_bookmark_programs__program_id__bookmark_post.Output {
+        try await add_bookmark_programs__program_id__bookmark_post(Operations.add_bookmark_programs__program_id__bookmark_post.Input(
+            path: path,
+            headers: headers
+        ))
+    }
+    /// Remove Bookmark
+    ///
+    /// Remove the caller's bookmark. Idempotent — removing a missing one is a
+    /// no-op (so the client can clear a bookmark even after the program is gone).
+    ///
+    /// - Remark: HTTP `DELETE /programs/{program_id}/bookmark`.
+    /// - Remark: Generated from `#/paths//programs/{program_id}/bookmark/delete(remove_bookmark_programs__program_id__bookmark_delete)`.
+    internal func remove_bookmark_programs__program_id__bookmark_delete(
+        path: Operations.remove_bookmark_programs__program_id__bookmark_delete.Input.Path,
+        headers: Operations.remove_bookmark_programs__program_id__bookmark_delete.Input.Headers = .init()
+    ) async throws -> Operations.remove_bookmark_programs__program_id__bookmark_delete.Output {
+        try await remove_bookmark_programs__program_id__bookmark_delete(Operations.remove_bookmark_programs__program_id__bookmark_delete.Input(
+            path: path,
+            headers: headers
+        ))
     }
     /// Get Program
     ///
@@ -2695,6 +2763,452 @@ internal enum Operations {
                     default:
                         try throwUnexpectedResponseStatus(
                             expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        internal enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            internal init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            internal var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            internal static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// List My Bookmarks
+    ///
+    /// Programs the caller has bookmarked, backing the Bookmarks tab. Soft-deleted
+    /// programs are excluded; rows carry the same capacity/banner enrichment as
+    /// ``GET /programs`` and are ordered soonest-first to match the client list.
+    ///
+    /// - Remark: HTTP `GET /me/bookmarks`.
+    /// - Remark: Generated from `#/paths//me/bookmarks/get(list_my_bookmarks_me_bookmarks_get)`.
+    internal enum list_my_bookmarks_me_bookmarks_get {
+        internal static let id: Swift.String = "list_my_bookmarks_me_bookmarks_get"
+        internal struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/me/bookmarks/GET/header`.
+            internal struct Headers: Sendable, Hashable {
+                internal var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.list_my_bookmarks_me_bookmarks_get.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                internal init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.list_my_bookmarks_me_bookmarks_get.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            internal var headers: Operations.list_my_bookmarks_me_bookmarks_get.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            internal init(headers: Operations.list_my_bookmarks_me_bookmarks_get.Input.Headers = .init()) {
+                self.headers = headers
+            }
+        }
+        internal enum Output: Sendable, Hashable {
+            internal struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/me/bookmarks/GET/responses/200/content`.
+                internal enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/me/bookmarks/GET/responses/200/content/application\/json`.
+                    case json([Components.Schemas.ProgramRead])
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    internal var json: [Components.Schemas.ProgramRead] {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                internal var body: Operations.list_my_bookmarks_me_bookmarks_get.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                internal init(body: Operations.list_my_bookmarks_me_bookmarks_get.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// Successful Response
+            ///
+            /// - Remark: Generated from `#/paths//me/bookmarks/get(list_my_bookmarks_me_bookmarks_get)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.list_my_bookmarks_me_bookmarks_get.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            internal var ok: Operations.list_my_bookmarks_me_bookmarks_get.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        internal enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            internal init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            internal var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            internal static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Add Bookmark
+    ///
+    /// Bookmark a program for the caller. Idempotent — re-bookmarking is a no-op.
+    /// 404 if the program doesn't exist (or is soft-deleted).
+    ///
+    /// - Remark: HTTP `POST /programs/{program_id}/bookmark`.
+    /// - Remark: Generated from `#/paths//programs/{program_id}/bookmark/post(add_bookmark_programs__program_id__bookmark_post)`.
+    internal enum add_bookmark_programs__program_id__bookmark_post {
+        internal static let id: Swift.String = "add_bookmark_programs__program_id__bookmark_post"
+        internal struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/programs/{program_id}/bookmark/POST/path`.
+            internal struct Path: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/programs/{program_id}/bookmark/POST/path/program_id`.
+                internal var program_id: Swift.Int
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - program_id:
+                internal init(program_id: Swift.Int) {
+                    self.program_id = program_id
+                }
+            }
+            internal var path: Operations.add_bookmark_programs__program_id__bookmark_post.Input.Path
+            /// - Remark: Generated from `#/paths/programs/{program_id}/bookmark/POST/header`.
+            internal struct Headers: Sendable, Hashable {
+                internal var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.add_bookmark_programs__program_id__bookmark_post.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                internal init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.add_bookmark_programs__program_id__bookmark_post.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            internal var headers: Operations.add_bookmark_programs__program_id__bookmark_post.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            internal init(
+                path: Operations.add_bookmark_programs__program_id__bookmark_post.Input.Path,
+                headers: Operations.add_bookmark_programs__program_id__bookmark_post.Input.Headers = .init()
+            ) {
+                self.path = path
+                self.headers = headers
+            }
+        }
+        internal enum Output: Sendable, Hashable {
+            internal struct NoContent: Sendable, Hashable {
+                /// Creates a new `NoContent`.
+                internal init() {}
+            }
+            /// Successful Response
+            ///
+            /// - Remark: Generated from `#/paths//programs/{program_id}/bookmark/post(add_bookmark_programs__program_id__bookmark_post)/responses/204`.
+            ///
+            /// HTTP response code: `204 noContent`.
+            case noContent(Operations.add_bookmark_programs__program_id__bookmark_post.Output.NoContent)
+            /// Successful Response
+            ///
+            /// - Remark: Generated from `#/paths//programs/{program_id}/bookmark/post(add_bookmark_programs__program_id__bookmark_post)/responses/204`.
+            ///
+            /// HTTP response code: `204 noContent`.
+            internal static var noContent: Self {
+                .noContent(.init())
+            }
+            /// The associated value of the enum case if `self` is `.noContent`.
+            ///
+            /// - Throws: An error if `self` is not `.noContent`.
+            /// - SeeAlso: `.noContent`.
+            internal var noContent: Operations.add_bookmark_programs__program_id__bookmark_post.Output.NoContent {
+                get throws {
+                    switch self {
+                    case let .noContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "noContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            internal struct UnprocessableContent: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/programs/{program_id}/bookmark/POST/responses/422/content`.
+                internal enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/programs/{program_id}/bookmark/POST/responses/422/content/application\/json`.
+                    case json(Components.Schemas.HTTPValidationError)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    internal var json: Components.Schemas.HTTPValidationError {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                internal var body: Operations.add_bookmark_programs__program_id__bookmark_post.Output.UnprocessableContent.Body
+                /// Creates a new `UnprocessableContent`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                internal init(body: Operations.add_bookmark_programs__program_id__bookmark_post.Output.UnprocessableContent.Body) {
+                    self.body = body
+                }
+            }
+            /// Validation Error
+            ///
+            /// - Remark: Generated from `#/paths//programs/{program_id}/bookmark/post(add_bookmark_programs__program_id__bookmark_post)/responses/422`.
+            ///
+            /// HTTP response code: `422 unprocessableContent`.
+            case unprocessableContent(Operations.add_bookmark_programs__program_id__bookmark_post.Output.UnprocessableContent)
+            /// The associated value of the enum case if `self` is `.unprocessableContent`.
+            ///
+            /// - Throws: An error if `self` is not `.unprocessableContent`.
+            /// - SeeAlso: `.unprocessableContent`.
+            internal var unprocessableContent: Operations.add_bookmark_programs__program_id__bookmark_post.Output.UnprocessableContent {
+                get throws {
+                    switch self {
+                    case let .unprocessableContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unprocessableContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        internal enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            internal init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            internal var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            internal static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Remove Bookmark
+    ///
+    /// Remove the caller's bookmark. Idempotent — removing a missing one is a
+    /// no-op (so the client can clear a bookmark even after the program is gone).
+    ///
+    /// - Remark: HTTP `DELETE /programs/{program_id}/bookmark`.
+    /// - Remark: Generated from `#/paths//programs/{program_id}/bookmark/delete(remove_bookmark_programs__program_id__bookmark_delete)`.
+    internal enum remove_bookmark_programs__program_id__bookmark_delete {
+        internal static let id: Swift.String = "remove_bookmark_programs__program_id__bookmark_delete"
+        internal struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/programs/{program_id}/bookmark/DELETE/path`.
+            internal struct Path: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/programs/{program_id}/bookmark/DELETE/path/program_id`.
+                internal var program_id: Swift.Int
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - program_id:
+                internal init(program_id: Swift.Int) {
+                    self.program_id = program_id
+                }
+            }
+            internal var path: Operations.remove_bookmark_programs__program_id__bookmark_delete.Input.Path
+            /// - Remark: Generated from `#/paths/programs/{program_id}/bookmark/DELETE/header`.
+            internal struct Headers: Sendable, Hashable {
+                internal var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.remove_bookmark_programs__program_id__bookmark_delete.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                internal init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.remove_bookmark_programs__program_id__bookmark_delete.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            internal var headers: Operations.remove_bookmark_programs__program_id__bookmark_delete.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            internal init(
+                path: Operations.remove_bookmark_programs__program_id__bookmark_delete.Input.Path,
+                headers: Operations.remove_bookmark_programs__program_id__bookmark_delete.Input.Headers = .init()
+            ) {
+                self.path = path
+                self.headers = headers
+            }
+        }
+        internal enum Output: Sendable, Hashable {
+            internal struct NoContent: Sendable, Hashable {
+                /// Creates a new `NoContent`.
+                internal init() {}
+            }
+            /// Successful Response
+            ///
+            /// - Remark: Generated from `#/paths//programs/{program_id}/bookmark/delete(remove_bookmark_programs__program_id__bookmark_delete)/responses/204`.
+            ///
+            /// HTTP response code: `204 noContent`.
+            case noContent(Operations.remove_bookmark_programs__program_id__bookmark_delete.Output.NoContent)
+            /// Successful Response
+            ///
+            /// - Remark: Generated from `#/paths//programs/{program_id}/bookmark/delete(remove_bookmark_programs__program_id__bookmark_delete)/responses/204`.
+            ///
+            /// HTTP response code: `204 noContent`.
+            internal static var noContent: Self {
+                .noContent(.init())
+            }
+            /// The associated value of the enum case if `self` is `.noContent`.
+            ///
+            /// - Throws: An error if `self` is not `.noContent`.
+            /// - SeeAlso: `.noContent`.
+            internal var noContent: Operations.remove_bookmark_programs__program_id__bookmark_delete.Output.NoContent {
+                get throws {
+                    switch self {
+                    case let .noContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "noContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            internal struct UnprocessableContent: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/programs/{program_id}/bookmark/DELETE/responses/422/content`.
+                internal enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/programs/{program_id}/bookmark/DELETE/responses/422/content/application\/json`.
+                    case json(Components.Schemas.HTTPValidationError)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    internal var json: Components.Schemas.HTTPValidationError {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                internal var body: Operations.remove_bookmark_programs__program_id__bookmark_delete.Output.UnprocessableContent.Body
+                /// Creates a new `UnprocessableContent`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                internal init(body: Operations.remove_bookmark_programs__program_id__bookmark_delete.Output.UnprocessableContent.Body) {
+                    self.body = body
+                }
+            }
+            /// Validation Error
+            ///
+            /// - Remark: Generated from `#/paths//programs/{program_id}/bookmark/delete(remove_bookmark_programs__program_id__bookmark_delete)/responses/422`.
+            ///
+            /// HTTP response code: `422 unprocessableContent`.
+            case unprocessableContent(Operations.remove_bookmark_programs__program_id__bookmark_delete.Output.UnprocessableContent)
+            /// The associated value of the enum case if `self` is `.unprocessableContent`.
+            ///
+            /// - Throws: An error if `self` is not `.unprocessableContent`.
+            /// - SeeAlso: `.unprocessableContent`.
+            internal var unprocessableContent: Operations.remove_bookmark_programs__program_id__bookmark_delete.Output.UnprocessableContent {
+                get throws {
+                    switch self {
+                    case let .unprocessableContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unprocessableContent",
                             response: self
                         )
                     }

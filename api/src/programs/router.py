@@ -18,6 +18,7 @@ from src.lib.database import get_db
 from src.locations.model import Location
 from src.programs.model import (
     Program,
+    ProgramBookmark,
     ProgramImage,
     ProgramKeyword,
     ProgramParticipation,
@@ -341,6 +342,84 @@ def list_my_programs(
         _hydrate_images(read, images.get(program.program_id, []))
         reads.append(read)
     return reads
+
+
+@router.get("/me/bookmarks", response_model=list[ProgramRead])
+def list_my_bookmarks(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> list[ProgramRead]:
+    """Programs the caller has bookmarked, backing the Bookmarks tab. Soft-deleted
+    programs are excluded; rows carry the same capacity/banner enrichment as
+    ``GET /programs`` and are ordered soonest-first to match the client list."""
+    bookmarked = select(ProgramBookmark.program_id).where(
+        ProgramBookmark.user_id == current_user.user_id
+    )
+    programs = list(
+        db.execute(
+            select(Program)
+            .where(
+                Program.is_deleted.is_(False),
+                Program.program_id.in_(bookmarked),
+            )
+            .order_by(Program.start_datetime, Program.program_id)
+        )
+        .scalars()
+        .all()
+    )
+
+    counts = _participant_counts(programs, db)
+    images = _program_images([p.program_id for p in programs], db)
+
+    reads: list[ProgramRead] = []
+    for program in programs:
+        read = ProgramRead.model_validate(program)
+        count = counts.get(program.program_id, 0)
+        read.participant_count = count
+        read.is_full = count >= program.max_volunteers
+        _hydrate_images(read, images.get(program.program_id, []))
+        reads.append(read)
+    return reads
+
+
+@router.post(
+    "/programs/{program_id}/bookmark",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def add_bookmark(
+    program_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Response:
+    """Bookmark a program for the caller. Idempotent — re-bookmarking is a no-op.
+    404 if the program doesn't exist (or is soft-deleted)."""
+    _load_program(program_id, db)
+    existing = db.get(ProgramBookmark, (current_user.user_id, program_id))
+    if existing is None:
+        db.add(
+            ProgramBookmark(user_id=current_user.user_id, program_id=program_id)
+        )
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.delete(
+    "/programs/{program_id}/bookmark",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def remove_bookmark(
+    program_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Response:
+    """Remove the caller's bookmark. Idempotent — removing a missing one is a
+    no-op (so the client can clear a bookmark even after the program is gone)."""
+    db.execute(
+        delete(ProgramBookmark).where(
+            ProgramBookmark.user_id == current_user.user_id,
+            ProgramBookmark.program_id == program_id,
+        )
+    )
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.post(
