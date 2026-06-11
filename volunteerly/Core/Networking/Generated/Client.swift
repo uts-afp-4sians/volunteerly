@@ -415,7 +415,7 @@ internal struct Client: APIProtocol {
     /// List Programs
     ///
     /// List non-deleted programs, optionally narrowed by query-string filters.
-    /// Repeated params (``team_size``, ``commitment_frequency``,
+    /// Repeated params (``category_id``, ``team_size``, ``commitment_frequency``,
     /// ``commitment_duration``) are OR-ed within a group and AND-ed across groups.
     /// When ``lat``/``lng`` are supplied, each program carries ``distance_km`` —
     /// the straight-line distance from the caller to its location.

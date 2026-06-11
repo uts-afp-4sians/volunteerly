@@ -223,7 +223,7 @@
           "programs"
         ],
         "summary": "List Programs",
-        "description": "List non-deleted programs, optionally narrowed by query-string filters.\nRepeated params (``team_size``, ``commitment_frequency``,\n``commitment_duration``) are OR-ed within a group and AND-ed across groups.\nWhen ``lat``/``lng`` are supplied, each program carries ``distance_km`` \u2014\nthe straight-line distance from the caller to its location.",
+        "description": "List non-deleted programs, optionally narrowed by query-string filters.\nRepeated params (``category_id``, ``team_size``, ``commitment_frequency``,\n``commitment_duration``) are OR-ed within a group and AND-ed across groups.\nWhen ``lat``/``lng`` are supplied, each program carries ``distance_km`` \u2014\nthe straight-line distance from the caller to its location.",
         "operationId": "list_programs_programs_get",
         "parameters": [
           {
@@ -245,7 +245,10 @@
             "schema": {
               "title": "Category Id",
               "nullable": true,
-              "type": "integer"
+              "type": "array",
+              "items": {
+                "type": "integer"
+              }
             }
           },
           {

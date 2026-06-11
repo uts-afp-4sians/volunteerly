@@ -11,7 +11,11 @@ final class ProgramListViewModel {
     var isLoadingCategories = false
     var errorMessage: String?
     var searchQuery = ""
-    var selectedCategoryId: Int?
+
+    /// Category chips the user has tapped to filter the list. Multi-select:
+    /// programs in ANY selected category match (OR), mirroring the repeated
+    /// `category_id` the API ORs server-side. Empty = no category filter.
+    var selectedCategoryIds: Set<Int> = []
 
     /// Category ids the user said they care about during signup. Programs
     /// matching these surface above unmatched programs in `filteredPrograms`.
@@ -43,8 +47,8 @@ final class ProgramListViewModel {
     /// (which ignores the query string) filter for previews.
     var filteredPrograms: [Program] {
         let matched = programs.filter { program in
-            let matchesCategory = selectedCategoryId == nil
-                || program.categoryId == selectedCategoryId
+            let matchesCategory = selectedCategoryIds.isEmpty
+                || selectedCategoryIds.contains(program.categoryId)
             let matchesSearch = searchQuery.isEmpty
                 || program.name.localizedCaseInsensitiveContains(searchQuery)
                 || program.description.localizedCaseInsensitiveContains(searchQuery)
@@ -59,7 +63,7 @@ final class ProgramListViewModel {
         }
         // Sort interest-matching programs to the top, preserving original
         // order within each bucket. Skip when the user manually picked a chip.
-        guard selectedCategoryId == nil, !preferredCategoryIds.isEmpty else { return matched }
+        guard selectedCategoryIds.isEmpty, !preferredCategoryIds.isEmpty else { return matched }
         return matched.sorted { lhs, rhs in
             let lhsPreferred = preferredCategoryIds.contains(lhs.categoryId)
             let rhsPreferred = preferredCategoryIds.contains(rhs.categoryId)
@@ -101,8 +105,8 @@ final class ProgramListViewModel {
         var items: [URLQueryItem] = []
         let trimmed = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
         if !trimmed.isEmpty { items.append(.init(name: "q", value: trimmed)) }
-        if let categoryId = selectedCategoryId {
-            items.append(.init(name: "category_id", value: String(categoryId)))
+        items += selectedCategoryIds.sorted().map {
+            .init(name: "category_id", value: String($0))
         }
         items += selectedTeamSizes.map { .init(name: "team_size", value: $0.rawValue) }
         items += selectedFrequencies.map { .init(name: "commitment_frequency", value: $0.rawValue) }
@@ -174,7 +178,11 @@ final class ProgramListViewModel {
     }
 
     func toggleCategory(_ id: Int) {
-        selectedCategoryId = (selectedCategoryId == id) ? nil : id
+        if selectedCategoryIds.contains(id) {
+            selectedCategoryIds.remove(id)
+        } else {
+            selectedCategoryIds.insert(id)
+        }
     }
 
     /// Resolve the user's chosen interest names against the loaded categories

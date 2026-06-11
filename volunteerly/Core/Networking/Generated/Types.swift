@@ -41,7 +41,7 @@ internal protocol APIProtocol: Sendable {
     /// List Programs
     ///
     /// List non-deleted programs, optionally narrowed by query-string filters.
-    /// Repeated params (``team_size``, ``commitment_frequency``,
+    /// Repeated params (``category_id``, ``team_size``, ``commitment_frequency``,
     /// ``commitment_duration``) are OR-ed within a group and AND-ed across groups.
     /// When ``lat``/``lng`` are supplied, each program carries ``distance_km`` —
     /// the straight-line distance from the caller to its location.
@@ -226,7 +226,7 @@ extension APIProtocol {
     /// List Programs
     ///
     /// List non-deleted programs, optionally narrowed by query-string filters.
-    /// Repeated params (``team_size``, ``commitment_frequency``,
+    /// Repeated params (``category_id``, ``team_size``, ``commitment_frequency``,
     /// ``commitment_duration``) are OR-ed within a group and AND-ed across groups.
     /// When ``lat``/``lng`` are supplied, each program carries ``distance_km`` —
     /// the straight-line distance from the caller to its location.
@@ -2221,7 +2221,7 @@ internal enum Operations {
     /// List Programs
     ///
     /// List non-deleted programs, optionally narrowed by query-string filters.
-    /// Repeated params (``team_size``, ``commitment_frequency``,
+    /// Repeated params (``category_id``, ``team_size``, ``commitment_frequency``,
     /// ``commitment_duration``) are OR-ed within a group and AND-ed across groups.
     /// When ``lat``/``lng`` are supplied, each program carries ``distance_km`` —
     /// the straight-line distance from the caller to its location.
@@ -2238,7 +2238,7 @@ internal enum Operations {
                 /// - Remark: Generated from `#/paths/programs/GET/query/q`.
                 internal var q: Swift.String?
                 /// - Remark: Generated from `#/paths/programs/GET/query/category_id`.
-                internal var category_id: Swift.Int?
+                internal var category_id: [Swift.Int]?
                 /// - Remark: Generated from `#/paths/programs/GET/query/team_size`.
                 internal var team_size: [Components.Schemas.TeamSize]?
                 /// - Remark: Generated from `#/paths/programs/GET/query/commitment_frequency`.
@@ -2265,7 +2265,7 @@ internal enum Operations {
                 ///   - lng: Caller longitude for distance
                 internal init(
                     q: Swift.String? = nil,
-                    category_id: Swift.Int? = nil,
+                    category_id: [Swift.Int]? = nil,
                     team_size: [Components.Schemas.TeamSize]? = nil,
                     commitment_frequency: [Components.Schemas.CommitmentFrequency]? = nil,
                     commitment_duration: [Components.Schemas.CommitmentDuration]? = nil,

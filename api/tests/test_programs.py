@@ -146,6 +146,13 @@ def test_filter_by_category(client: TestClient) -> None:
     assert _ids(client, "?category_id=1") == {1, 2}
 
 
+def test_filter_by_category_multi(client: TestClient) -> None:
+    # Repeated category_id is OR-ed: programs in any selected category match.
+    # cat1 (Nature) -> {1, 2}, cat3 (Education) -> {3}, cat7 (Elderly) -> {4}.
+    assert _ids(client, "?category_id=1&category_id=3") == {1, 2, 3}
+    assert _ids(client, "?category_id=3&category_id=7") == {3, 4}
+
+
 def test_filter_by_commitment_frequency(client: TestClient) -> None:
     assert _ids(client, "?commitment_frequency=weekly") == {3, 4}
     assert _ids(client, "?commitment_frequency=monthly") == {1, 2}

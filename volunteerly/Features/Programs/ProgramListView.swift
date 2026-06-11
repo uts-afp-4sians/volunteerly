@@ -135,7 +135,7 @@ struct ProgramListView: View {
                     ForEach(viewModel.categories) { category in
                         CategoryChip(
                             category: category,
-                            isSelected: viewModel.selectedCategoryId == category.id
+                            isSelected: viewModel.selectedCategoryIds.contains(category.id)
                         ) {
                             viewModel.toggleCategory(category.id)
                             Task { await viewModel.load() }

@@ -210,7 +210,7 @@ def _active_participation(
 def list_programs(
     db: Session = Depends(get_db),
     q: str | None = Query(default=None, description="Search in name/description"),
-    category_id: int | None = None,
+    category_id: list[int] | None = Query(default=None),
     team_size: list[TeamSize] | None = Query(default=None),
     commitment_frequency: list[CommitmentFrequency] | None = Query(default=None),
     commitment_duration: list[CommitmentDuration] | None = Query(default=None),
@@ -222,7 +222,7 @@ def list_programs(
     ),
 ) -> list[ProgramRead]:
     """List non-deleted programs, optionally narrowed by query-string filters.
-    Repeated params (``team_size``, ``commitment_frequency``,
+    Repeated params (``category_id``, ``team_size``, ``commitment_frequency``,
     ``commitment_duration``) are OR-ed within a group and AND-ed across groups.
     When ``lat``/``lng`` are supplied, each program carries ``distance_km`` —
     the straight-line distance from the caller to its location."""
@@ -233,8 +233,8 @@ def list_programs(
         stmt = stmt.where(
             or_(Program.program_name.ilike(like), Program.description.ilike(like))
         )
-    if category_id is not None:
-        stmt = stmt.where(Program.category_id == category_id)
+    if category_id:
+        stmt = stmt.where(Program.category_id.in_(category_id))
     if team_size:
         bounds = [_TEAM_SIZE_BOUNDS[t] for t in team_size]
         stmt = stmt.where(
