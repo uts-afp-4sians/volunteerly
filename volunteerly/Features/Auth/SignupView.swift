@@ -1,11 +1,12 @@
 import SwiftUI
-import PhotosUI
 
+/// Step 1 of the 6-step signup flow — "Let's introduce yourself" (Figma
+/// Introduction Screen, node 209:629). Collects first/last name + date of
+/// birth only; photo + Instagram move to step 2 inside the SignupForm.
 struct SignupView: View {
     private enum Field: Hashable {
         case firstName
         case lastName
-        case instagram
     }
 
     // Optional — see WelcomeView: an animated route switch can re-evaluate this
@@ -17,9 +18,6 @@ struct SignupView: View {
     @State private var dateOfBirth = Date()
     @State private var dobSet = false
     @State private var showDOBPicker = false
-    @State private var profileItem: PhotosPickerItem?
-    @State private var profileImageData: Data?
-    @State private var instagram = ""
     @FocusState private var focusedField: Field?
 
     // 6-step signup flow (this intro screen is step 1; the SignupForm covers 2–6).
@@ -28,25 +26,18 @@ struct SignupView: View {
     private let totalSteps = 6
     private let currentStep = 1
 
-    private static let monthAbbreviations = [
-        "JAN", "FEB", "MAR", "APR", "MAY", "JUN",
-        "JUL", "AUG", "SEP", "OCT", "NOV", "DEC",
-    ]
-
     private var dobDay: String {
-        guard dobSet else { return "--" }
-        let d = Calendar.current.component(.day, from: dateOfBirth)
-        return String(format: "%02d", d)
+        guard dobSet else { return "DD" }
+        return String(format: "%02d", Calendar.current.component(.day, from: dateOfBirth))
     }
 
     private var dobMonth: String {
-        guard dobSet else { return "---" }
-        let m = Calendar.current.component(.month, from: dateOfBirth)
-        return Self.monthAbbreviations[m - 1]
+        guard dobSet else { return "MM" }
+        return String(format: "%02d", Calendar.current.component(.month, from: dateOfBirth))
     }
 
     private var dobYear: String {
-        guard dobSet else { return "----" }
+        guard dobSet else { return "YYYY" }
         return String(Calendar.current.component(.year, from: dateOfBirth))
     }
 
@@ -60,8 +51,6 @@ struct SignupView: View {
 
                 nameRow
                 dateOfBirthField
-                profilePictureRow
-                instagramField
 
                 Spacer().frame(height: 8)
                 nextButton
@@ -114,15 +103,16 @@ struct SignupView: View {
     // MARK: Date of birth
 
     private var dateOfBirthField: some View {
-        fieldColumn(label: "Date of birth (DD/MM/YYYY)", required: true) {
+        VStack(alignment: .leading, spacing: 8) {
+            FieldLabel(text: "Date of birth", required: true)
             Button {
                 focusedField = nil
                 showDOBPicker = true
             } label: {
-                HStack(spacing: 8) {
-                    dobBox(dobDay)
-                    dobBox(dobMonth)
-                    dobBox(dobYear)
+                HStack(spacing: 12) {
+                    dobColumn(value: dobDay, caption: "Day")
+                    dobColumn(value: dobMonth, caption: "Month")
+                    dobColumn(value: dobYear, caption: "Year")
                 }
             }
             .buttonStyle(.plain)
@@ -159,90 +149,18 @@ struct SignupView: View {
         }
     }
 
-    private func dobBox(_ value: String) -> some View {
-        Text(value)
-            .font(.bodyText)
-            .foregroundStyle(dobSet ? Theme.textPrimary : Theme.placeholder)
-            .frame(maxWidth: .infinity)
-            .frame(height: 53)
-            .overlay(
-                RoundedRectangle(cornerRadius: 8)
-                    .stroke(Theme.divider, lineWidth: 1)
-            )
-    }
-
-    // MARK: Profile picture
-
-    private var profilePictureRow: some View {
-        HStack(spacing: 16) {
-            PhotosPicker(selection: $profileItem, matching: .images) {
-                profileCircle
-                    .frame(width: 110, height: 110)
-            }
-            .onChange(of: profileItem) { _, newItem in
-                Task { profileImageData = try? await newItem?.loadTransferable(type: Data.self) }
-            }
-
-            Text("Let's put a face to your name - upload a profile picture here!")
+    private func dobColumn(value: String, caption: String) -> some View {
+        VStack(spacing: 6) {
+            Text(value)
                 .font(.bodyText)
-                .foregroundStyle(Theme.textMeta)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-    }
-
-    @ViewBuilder
-    private var profileCircle: some View {
-        if let data = profileImageData, let uiImage = UIImage(data: data) {
-            Image(uiImage: uiImage)
-                .resizable()
-                .scaledToFill()
-                .clipShape(Circle())
-        } else {
-            ZStack {
-                Circle().fill(Theme.surface)
-                Image(systemName: "camera")
-                    .font(.cardTitle)
-                    .foregroundStyle(Theme.placeholder)
-            }
-        }
-    }
-
-    // MARK: Instagram
-
-    private var instagramField: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Instagram")
-                .font(.bodyText)
-                .foregroundStyle(Theme.textPrimary)
-            borderedTextField {
-                HStack(spacing: 10) {
-                    Button(action: openInstagram) {
-                        Image(systemName: "camera.fill")
-                            .font(.body)
-                            .foregroundStyle(Theme.textPrimary)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("Open Instagram to copy your username")
-
-                    TextField("", text: $instagram)
-                        .textContentType(.username)
-                        .autocorrectionDisabled()
-                        .textInputAutocapitalization(.never)
-                        .focused($focusedField, equals: .instagram)
-                }
-            }
-        }
-    }
-
-    /// Opens the Instagram app (deep link), falling back to the web in Safari
-    /// if Instagram isn't installed. The text field stays editable so the user
-    /// can paste their `@handle` back in once they've copied it from Instagram.
-    private func openInstagram() {
-        guard let appURL = URL(string: "instagram://app") else { return }
-        UIApplication.shared.open(appURL) { success in
-            if !success, let webURL = URL(string: "https://www.instagram.com/") {
-                UIApplication.shared.open(webURL)
-            }
+                .foregroundStyle(dobSet ? Theme.textPrimary : Theme.placeholder)
+                .frame(maxWidth: .infinity)
+                .frame(height: 48)
+                .background(Theme.surface)
+                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            Text(caption)
+                .font(.captionText)
+                .foregroundStyle(Theme.placeholder)
         }
     }
 
@@ -252,11 +170,7 @@ struct SignupView: View {
         NavigationLink(value: AuthRoute.signupForm(SignupBasics(
             firstName: firstName,
             lastName: lastName,
-            email: "",
-            password: "",
-            dateOfBirth: dobSet ? dateOfBirth : nil,
-            profileImageData: profileImageData,
-            instagram: instagram.trimmingCharacters(in: .whitespacesAndNewlines)
+            dateOfBirth: dobSet ? dateOfBirth : nil
         ))) {
             Text("Next")
                 .primaryActionButtonStyle(enabled: canContinue)
@@ -278,9 +192,8 @@ struct SignupView: View {
     }
 
     private func borderedTextField<Content: View>(@ViewBuilder content: () -> Content) -> some View {
-        content().formFieldSurface()
+        content().formFieldSurface(height: 48)
     }
-
 }
 
 #Preview {

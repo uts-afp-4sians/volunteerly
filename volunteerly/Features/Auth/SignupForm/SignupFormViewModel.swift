@@ -6,19 +6,20 @@ import Observation
 final class SignupFormViewModel {
     let basics: SignupBasics
 
+    // 6 numbered steps drive the progress bar (step 1 is SignupView; the form
+    // owns 2–6). The unnumbered finalising loader runs at `totalSteps + 1`.
     var step = 2
     let totalSteps = 6
 
-    // Step 2 — Location. The step renders a `LocationPickerMap`, which owns
+    // Step 2 — Add your photo (profile photo + Instagram, both optional).
+    var profileImageData: Data?
+    var instagram = ""
+
+    // Step 3 — Location. The step renders a `LocationPickerMap`, which owns
     // the geocoding; the form keeps the display string plus the structured
     // pick that becomes the profile's location_id at save time.
     var city = ""
     var pickedLocation: PickedLocation?
-
-    // Step 3 — Interests
-    var selectedInterests: Set<String> = []
-    var interestCatalog: [Keyword] = []
-    var isLoadingInterests = false
 
     // Step 4 — Secure your account
     var email = ""
@@ -29,12 +30,17 @@ final class SignupFormViewModel {
     var emailFieldError: String?
     var passwordFieldError: String?
 
-    // Step 5 — Goals
+    // Step 5 — Interests
+    var selectedInterests: Set<String> = []
+    var interestCatalog: [Keyword] = []
+    var isLoadingInterests = false
+
+    // Step 6 — Goals
     var expectations = ""
     var occupation = ""
     var keySkills = ""
 
-    // Step 6 — Finalising
+    // Finalising (loader, unnumbered — step `totalSteps + 1`)
     var hasStartedFinalising = false
     var finalisingError: String?
 
@@ -46,13 +52,14 @@ final class SignupFormViewModel {
 
     var canAdvance: Bool {
         switch step {
-        case 2: return !city.isEmpty
-        case 3: return selectedInterests.count >= 2
+        case 2: return true   // photo + Instagram are optional
+        case 3: return !city.isEmpty
         case 4:
             return !email.isEmpty
                 && AuthValidation.isValidPassword(password)
                 && password == passwordConfirmation
-        case 5: return !expectations.isEmpty
+        case 5: return selectedInterests.count >= 2
+        case 6: return !expectations.isEmpty
         default: return false
         }
     }
@@ -87,18 +94,19 @@ final class SignupFormViewModel {
     }
 
     func advance(profileStore: UserProfileStore, router: AppRouter?) {
-        guard step < totalSteps else { return }
+        guard step <= totalSteps else { return }
         commitCurrentStep(profileStore: profileStore)
         step += 1
-        if step == 6 { startFinalisingIfNeeded(profileStore: profileStore, router: router) }
+        // Advancing past the last numbered step (6, Goals) kicks off finalising.
+        if step > totalSteps { startFinalisingIfNeeded(profileStore: profileStore, router: router) }
     }
 
     private func commitCurrentStep(profileStore: UserProfileStore) {
         switch step {
-        case 2:
+        case 3:
             profileStore.city = city
             profileStore.pickedLocation = pickedLocation
-        case 3:
+        case 5:
             // Include every selected interest — both catalog picks and any
             // custom names the user typed via the "Add more" chip. Custom names
             // without a matching backend keyword will be dropped server-side by
@@ -110,7 +118,7 @@ final class SignupFormViewModel {
                     name: name
                 )
             }
-        case 5:
+        case 6:
             profileStore.personalGoal = expectations
             profileStore.occupation = occupation
             profileStore.keySkills = keySkills
@@ -142,15 +150,16 @@ final class SignupFormViewModel {
 
             do {
                 _ = try await registration.value
-                // Now that we have an auth token, write the step-1 fields the
-                // form collected (date of birth, profile photo, instagram) into
-                // the shared store and persist everything via PATCH /me/profile
-                // + PUT /me/interests. Best-effort: the account is already
-                // created so we proceed to onboarding even if save() fails —
-                // the user can fix anything on the My profile page.
+                // Now that we have an auth token, write the fields the form
+                // collected (date of birth from step 1, profile photo +
+                // instagram from step 2) into the shared store and persist
+                // everything via PATCH /me/profile + PUT /me/interests.
+                // Best-effort: the account is already created so we proceed to
+                // onboarding even if save() fails — the user can fix anything on
+                // the My profile page.
                 profileStore.dateOfBirth = basics.dateOfBirth
-                profileStore.profileImageData = basics.profileImageData
-                profileStore.instagram = basics.instagram
+                profileStore.profileImageData = profileImageData
+                profileStore.instagram = instagram
                 _ = await profileStore.save()
                 withAnimation(.easeInOut(duration: 0.35)) { router?.route = .onboarding }
             } catch let error as APIError {
@@ -186,7 +195,7 @@ final class SignupFormViewModel {
     }
 
     private func returnToAccountStep() {
-        // Allow finalising to re-run once the user advances back through step 6.
+        // Allow finalising to re-run once the user advances back through the flow.
         hasStartedFinalising = false
         finalisingError = nil
         withAnimation(.easeInOut(duration: 0.3)) { step = 4 }

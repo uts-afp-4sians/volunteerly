@@ -26,7 +26,7 @@ struct SignupFormView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.bottom, 16)
             }
-            if vm.step < 6 {
+            if vm.step <= vm.totalSteps {
                 nextButton
             }
         }
@@ -38,7 +38,7 @@ struct SignupFormView: View {
         .navigationBarBackButtonHidden(true)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            if vm.step < 6 {
+            if vm.step <= vm.totalSteps {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button {
                         withAnimation(.easeInOut(duration: 0.2)) {
@@ -60,11 +60,12 @@ struct SignupFormView: View {
     @ViewBuilder
     private var stepContent: some View {
         switch vm.step {
-        case 2: LocationStepView(vm: vm)
-        case 3: InterestsStepView(vm: vm)
+        case 2: ProfilePhotoStepView(vm: vm)
+        case 3: LocationStepView(vm: vm)
         case 4: EmailPasswordStepView(vm: vm)
-        case 5: GoalsStepView(vm: vm)
-        case 6: FinalisingStepView(vm: vm, router: router)
+        case 5: InterestsStepView(vm: vm)
+        case 6: GoalsStepView(vm: vm)
+        case 7: FinalisingStepView(vm: vm, router: router)
         default:
             VStack(alignment: .leading, spacing: 12) {
                 Text("Step \(vm.step)")
@@ -81,7 +82,7 @@ struct SignupFormView: View {
                 vm.advance(profileStore: profileStore, router: router)
             }
         } label: {
-            Text(vm.step == 5 ? "Find your people!" : "Next")
+            Text(vm.step == vm.totalSteps ? "Find your people!" : "Next")
                 .primaryActionButtonStyle(enabled: vm.canAdvance)
         }
         .disabled(!vm.canAdvance)
@@ -93,11 +94,7 @@ struct SignupFormView: View {
         SignupFormView(basics: SignupBasics(
             firstName: "Ada",
             lastName: "Lovelace",
-            email: "ada@example.com",
-            password: "password123",
-            dateOfBirth: nil,
-            profileImageData: nil,
-            instagram: ""
+            dateOfBirth: nil
         ))
     }
     .environment(AppRouter())

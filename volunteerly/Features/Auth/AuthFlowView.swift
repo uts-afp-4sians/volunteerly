@@ -33,14 +33,13 @@ enum AuthRoute: Hashable {
     case resetPassword
 }
 
+/// Step 1 (Introduction) fields, carried into the SignupForm via the route.
+/// Photo + Instagram now live on `SignupFormViewModel` (step 2), and
+/// email/password are collected in the form (step 4) — see the 6-step flow.
 struct SignupBasics: Hashable {
     let firstName: String
     let lastName: String
-    let email: String
-    let password: String
     let dateOfBirth: Date?
-    let profileImageData: Data?
-    let instagram: String
 }
 
 #Preview {
