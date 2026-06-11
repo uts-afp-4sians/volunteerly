@@ -27,10 +27,8 @@ struct SettingsView: View {
                     dismiss()
                 } label: {
                     Image(systemName: "arrow.left")
-                        .font(.bodyStrong)
+                        .font(.system(size: 20, weight: .regular))
                         .foregroundStyle(Theme.textPrimary)
-                        .frame(width: 32, height: 32)
-                        .background(Color(.systemGray6), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Back")
