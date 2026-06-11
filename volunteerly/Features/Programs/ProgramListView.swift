@@ -70,9 +70,9 @@ struct ProgramListView: View {
     // MARK: - Sections
 
     private var title: some View {
-        Text("Find New\nOpportunities")
-            .font(.system(size: 36, weight: .bold))
-            .foregroundStyle(.primary)
+        // Figma 86:642 — Large Title 32 Bold · Black/900 · tracking −0.5.
+        Text("Find New Opportunities")
+            .largeTitleStyle()
             .fixedSize(horizontal: false, vertical: true)
             .padding(.horizontal, horizontalPadding)
     }
@@ -86,17 +86,26 @@ struct ProgramListView: View {
     }
 
     private var searchBar: some View {
-        HStack(spacing: 12) {
+        // Figma 329:801 (FILTER-SEARCH) — 52pt tall, Black/50 fill, 30pt corners;
+        // magnifier at x17 and "Search" at x44, both Black/500.
+        HStack(spacing: 10) {
             Image(systemName: "magnifyingglass")
-                .foregroundStyle(.secondary)
-            TextField("Search", text: $viewModel.searchQuery)
-                .textFieldStyle(.plain)
-                .submitLabel(.search)
-                .onSubmit { Task { await viewModel.load() } }
+                .font(.system(size: 17))
+                .foregroundStyle(Theme.textMeta)
+            TextField(
+                "",
+                text: $viewModel.searchQuery,
+                prompt: Text("Search").foregroundColor(Theme.textMeta)
+            )
+            .font(.bodyText)
+            .foregroundStyle(Theme.textBody)
+            .textFieldStyle(.plain)
+            .submitLabel(.search)
+            .onSubmit { Task { await viewModel.load() } }
         }
-        .padding(.horizontal, 16)
-        .frame(height: 42)
-        .background(Color(.systemGray6), in: Capsule())
+        .padding(.horizontal, 17)
+        .frame(height: 52)
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 30, style: .continuous))
     }
 
     private var filterButton: some View {
@@ -105,8 +114,8 @@ struct ProgramListView: View {
         } label: {
             Image(systemName: "line.3.horizontal.decrease")
                 .font(.system(size: 16, weight: .bold))
-                .foregroundStyle(.primary)
-                .frame(height: 42)
+                .foregroundStyle(Theme.iconPrimary)
+                .frame(height: 52)
                 .overlay(alignment: .topTrailing) {
                     if viewModel.hasActiveFilters {
                         Circle()
