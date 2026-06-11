@@ -159,7 +159,7 @@ final class ProgramListViewModel {
         guard categories.isEmpty else { return }
         isLoadingCategories = true
         defer { isLoadingCategories = false }
-        categories = (try? await httpClient.get("/categories")) ?? []
+        categories = (try? await CategoryStore.shared.categories(httpClient: httpClient)) ?? []
     }
 
     /// Emoji for a program's category, resolved via the loaded catalog

@@ -134,7 +134,7 @@ final class PostProgramViewModel {
         isLoadingCategories = true
         defer { isLoadingCategories = false }
         do {
-            let cats: [ProgramCategory] = try await httpClient.get("/categories")
+            let cats = try await CategoryStore.shared.categories(httpClient: httpClient)
             categories = cats
             if let first = cats.first,
                !cats.contains(where: { $0.id == selectedCategoryId }) {

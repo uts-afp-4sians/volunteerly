@@ -78,7 +78,7 @@ final class ProgramDetailViewModel {
             // Host and location are supplementary — a missing one shouldn't fail the screen.
             async let host: UserProfile = httpClient.get("/users/\(program.creatorUserId)/profile")
             async let location: Location = httpClient.get("/locations/\(program.locationId)")
-            async let categories: [ProgramCategory] = httpClient.get("/categories")
+            async let categories = CategoryStore.shared.categories(httpClient: httpClient)
             // One server-side suggestion (bounded LIMIT 1) instead of pulling
             // whole tables to rank client-side.
             async let similar: SimilarProgram = httpClient.get("/programs/\(programId)/similar")
