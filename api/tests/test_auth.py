@@ -54,7 +54,10 @@ def test_register_then_login(client: TestClient) -> None:
 
     # The new account's profile was created and is fetchable.
     new_id = body["user"]["user_id"]
-    profile = client.get(f"/users/{new_id}/profile")
+    profile = client.get(
+        f"/users/{new_id}/profile",
+        headers={"Authorization": f"Bearer {body['token']}"},
+    )
     assert profile.status_code == 200
     assert profile.json()["first_name"] == "New"
 

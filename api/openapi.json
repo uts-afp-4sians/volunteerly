@@ -1378,6 +1378,11 @@
         ],
         "summary": "Get User",
         "operationId": "get_user_users__user_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "user_id",
@@ -1420,6 +1425,11 @@
         ],
         "summary": "Get User Profile",
         "operationId": "get_user_profile_users__user_id__profile_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "user_id",
@@ -1437,7 +1447,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/UserProfileRead"
+                  "$ref": "#/components/schemas/UserProfilePublicRead"
                 }
               }
             }
@@ -1462,6 +1472,11 @@
         ],
         "summary": "List User Interests",
         "operationId": "list_user_interests_users__user_id__interests_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "user_id",
@@ -2674,6 +2689,45 @@
         ],
         "title": "UserInterestRead",
         "description": "Wire shape matching iOS `UserInterest`."
+      },
+      "UserProfilePublicRead": {
+        "properties": {
+          "user_id": {
+            "type": "integer",
+            "title": "User Id"
+          },
+          "first_name": {
+            "type": "string",
+            "title": "First Name"
+          },
+          "last_name": {
+            "type": "string",
+            "title": "Last Name"
+          },
+          "profile_image_url": {
+            "title": "Profile Image Url",
+            "nullable": true,
+            "type": "string"
+          },
+          "occupation": {
+            "title": "Occupation",
+            "nullable": true,
+            "type": "string"
+          },
+          "goal_text": {
+            "title": "Goal Text",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id",
+          "first_name",
+          "last_name"
+        ],
+        "title": "UserProfilePublicRead",
+        "description": "Another user's profile as exposed to signed-in clients.\n\nOnly the fields the app actually renders for forum authors and program\nhosts (name, avatar, occupation, goal). Private fields \u2014 date_of_birth,\ninstagram, bio, location, interests \u2014 are served exclusively by\n``/me/profile``. iOS decodes this into the same `UserProfile` model; its\ndecoder treats every omitted key as nil/empty."
       },
       "UserProfileRead": {
         "properties": {

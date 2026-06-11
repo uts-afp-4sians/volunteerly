@@ -138,8 +138,17 @@ def test_list_interests(client: TestClient) -> None:
     assert names == TAXONOMY
 
 
+def _auth(client: TestClient) -> dict[str, str]:
+    res = client.post(
+        "/auth/login",
+        json={"email": "jane.doe@example.com", "password": "password123"},
+    )
+    assert res.status_code == 200
+    return {"Authorization": f"Bearer {res.json()['token']}"}
+
+
 def test_get_user(client: TestClient) -> None:
-    res = client.get("/users/1")
+    res = client.get("/users/1", headers=_auth(client))
     assert res.status_code == 200
     body = res.json()
     assert set(body.keys()) == {
@@ -156,31 +165,31 @@ def test_get_user(client: TestClient) -> None:
 
 
 def test_get_user_profile(client: TestClient) -> None:
-    res = client.get("/users/1/profile")
+    res = client.get("/users/1/profile", headers=_auth(client))
     assert res.status_code == 200
     body = res.json()
+    # The cross-user read is intentionally a subset of /me/profile: no
+    # date_of_birth, instagram, bio, key_skills, location or interests.
     assert set(body.keys()) == {
         "user_id",
         "first_name",
         "last_name",
-        "date_of_birth",
         "profile_image_url",
         "occupation",
         "goal_text",
-        "bio",
-        "instagram",
-        "key_skills",
-        "location_id",
-        "location",
-        "interests",
     }
     assert body["first_name"] == "Jane"
     assert body["last_name"] == "Doe"
-    assert body["location_id"] == 1
+
+
+def test_user_reads_require_auth(client: TestClient) -> None:
+    assert client.get("/users/1").status_code in (401, 403)
+    assert client.get("/users/1/profile").status_code in (401, 403)
+    assert client.get("/users/1/interests").status_code in (401, 403)
 
 
 def test_list_user_interests(client: TestClient) -> None:
-    res = client.get("/users/1/interests")
+    res = client.get("/users/1/interests", headers=_auth(client))
     assert res.status_code == 200
     body = res.json()
     assert len(body) == 2

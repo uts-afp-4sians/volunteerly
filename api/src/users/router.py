@@ -7,6 +7,7 @@ from src.lib.database import get_db
 from src.users.model import User, UserInterest, UserProfile
 from src.users.schema import (
     UserInterestRead,
+    UserProfilePublicRead,
     UserProfileRead,
     UserProfileUpdate,
     UserRead,
@@ -67,7 +68,11 @@ def update_my_profile(
 
 
 @router.get("/users/{user_id}", response_model=UserRead)
-def get_user(user_id: int, db: Session = Depends(get_db)) -> User:
+def get_user(
+    user_id: int,
+    db: Session = Depends(get_db),
+    _: User = Depends(get_current_user),
+) -> User:
     user = db.get(User, user_id)
     if user is None:
         raise HTTPException(
@@ -76,8 +81,12 @@ def get_user(user_id: int, db: Session = Depends(get_db)) -> User:
     return user
 
 
-@router.get("/users/{user_id}/profile", response_model=UserProfileRead)
-def get_user_profile(user_id: int, db: Session = Depends(get_db)) -> UserProfile:
+@router.get("/users/{user_id}/profile", response_model=UserProfilePublicRead)
+def get_user_profile(
+    user_id: int,
+    db: Session = Depends(get_db),
+    _: User = Depends(get_current_user),
+) -> UserProfile:
     profile = db.get(UserProfile, user_id)
     if profile is None:
         raise HTTPException(
@@ -88,7 +97,9 @@ def get_user_profile(user_id: int, db: Session = Depends(get_db)) -> UserProfile
 
 @router.get("/users/{user_id}/interests", response_model=list[UserInterestRead])
 def list_user_interests(
-    user_id: int, db: Session = Depends(get_db)
+    user_id: int,
+    db: Session = Depends(get_db),
+    _: User = Depends(get_current_user),
 ) -> list[UserInterest]:
     result = db.execute(
         select(UserInterest)

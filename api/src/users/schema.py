@@ -61,6 +61,26 @@ class UserProfileRead(BaseModel):
     interests: list[UserInterestDetail] = Field(default_factory=list)
 
 
+class UserProfilePublicRead(BaseModel):
+    """Another user's profile as exposed to signed-in clients.
+
+    Only the fields the app actually renders for forum authors and program
+    hosts (name, avatar, occupation, goal). Private fields — date_of_birth,
+    instagram, bio, location, interests — are served exclusively by
+    ``/me/profile``. iOS decodes this into the same `UserProfile` model; its
+    decoder treats every omitted key as nil/empty.
+    """
+
+    model_config = ConfigDict(from_attributes=True)
+
+    user_id: int
+    first_name: str
+    last_name: str
+    profile_image_url: str | None = None
+    occupation: str | None = None
+    goal_text: str | None = None
+
+
 class UserProfileUpdate(BaseModel):
     """Partial update for the signed-in user's profile (`PATCH /me/profile`).
 
