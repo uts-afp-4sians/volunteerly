@@ -93,10 +93,9 @@ struct NewPostView: View {
                 onSaved: updateDraft
             )
         }
-        .confirmationDialog(
+        .alert(
             "Discard this post?",
-            isPresented: $showDiscardConfirm,
-            titleVisibility: .visible
+            isPresented: $showDiscardConfirm
         ) {
             Button("Discard Changes", role: .destructive) { dismiss() }
             Button("Keep Editing", role: .cancel) {}
