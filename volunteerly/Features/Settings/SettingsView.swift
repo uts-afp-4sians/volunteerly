@@ -43,7 +43,9 @@ struct SettingsView: View {
                 }
 
                 section(title: "Legal") {
-                    Link(destination: Self.privacyPolicyURL) {
+                    NavigationLink {
+                        WebPageView(title: "Privacy policy", url: Self.privacyPolicyURL)
+                    } label: {
                         rowLabel(icon: "lock.shield.fill", label: "Privacy policy")
                     }
                     .buttonStyle(.plain)
