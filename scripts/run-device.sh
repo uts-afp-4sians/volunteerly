@@ -25,9 +25,29 @@ DD="${DD:-/tmp/voldd}"
 PROFILE_DIR="$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles"
 
 # --- 1. connected device UDID (xcodebuild-style id) -------------------------
-DEVICE_ID="$(xcrun xctrace list devices 2>/dev/null \
-  | grep -iE 'iPhone' | grep -viE 'simulator|offline' \
-  | head -1 | sed -E 's/.*\(([0-9A-Fa-f-]{25,})\)$/\1/')"
+# devicectl reliably reports connection state; xctrace supplies the UDID format
+# that xcodebuild accepts (00008140-... vs devicectl's UUID form).
+if [ -z "${DEVICE_ID:-}" ]; then
+  # Match any state that is not "unavailable" (covers "connected", "available", etc.)
+  AVAIL_NAME="$(xcrun devicectl list devices 2>/dev/null \
+    | awk '!/unavailable/ && /coredevice\.local/ {
+        match($0, /[[:alnum:]-]+\.coredevice\.local/)
+        name = substr($0, 1, RSTART-1)
+        gsub(/[[:space:]]+$/, "", name)
+        print name; exit
+      }')"
+  [ -n "$AVAIL_NAME" ] || { echo "✗ No connected iPhone found (devicectl)"; exit 1; }
+  # Try xctrace first, fall back to xcodebuild destinations
+  DEVICE_ID="$(xcrun xctrace list devices 2>/dev/null \
+    | grep -F "$AVAIL_NAME" \
+    | sed -E 's/.*\(([0-9A-Fa-f-]{25,})\)$/\1/' | head -1)"
+  if [ -z "$DEVICE_ID" ]; then
+    DEVICE_ID="$(DEVELOPER_DIR="$DEVELOPER_DIR" xcodebuild -project "$PROJECT" -scheme "$SCHEME" \
+      -showdestinations 2>/dev/null \
+      | grep -F "$AVAIL_NAME" \
+      | sed -E 's/.*id:([0-9A-Fa-f-]{25,}).*/\1/' | head -1)"
+  fi
+fi
 [ -n "$DEVICE_ID" ] || { echo "✗ No connected iPhone found"; exit 1; }
 echo "• device      : $DEVICE_ID"
 
