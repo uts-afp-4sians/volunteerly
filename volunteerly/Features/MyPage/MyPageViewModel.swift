@@ -60,21 +60,27 @@ final class MyPageViewModel {
         return list.sorted { $0.startDatetime < $1.startDatetime }
     }
 
+    /// True once a joined program has finished — its end passed, or it was
+    /// closed/cancelled. Active and Past split on this single predicate so every
+    /// program `GET /me/programs` returns lands in exactly one bucket. An earlier
+    /// Active allow-list (`endDatetime >= now && status ∈ {open, full}`) silently
+    /// dropped a joined program in any other state — notably a `.draft` with a
+    /// future end date — leaving it invisible in both lists.
+    private func isPast(_ program: Program, now: Date) -> Bool {
+        program.endDatetime < now || program.status == .closed || program.status == .cancelled
+    }
+
     /// Joined, not-yet-finished programs, soonest first.
     var activePrograms: [Program] {
         let now = Date.now
-        let list = filtered(myPrograms) { program in
-            program.endDatetime >= now && (program.status == .open || program.status == .full)
-        }
+        let list = filtered(myPrograms) { !isPast($0, now: now) }
         return list.sorted { $0.startDatetime < $1.startDatetime }
     }
 
     /// Joined programs that have already taken place (or were closed/cancelled).
     var pastPrograms: [Program] {
         let now = Date.now
-        let list = filtered(myPrograms) { program in
-            program.endDatetime < now || program.status == .closed || program.status == .cancelled
-        }
+        let list = filtered(myPrograms) { isPast($0, now: now) }
         return list.sorted { $0.startDatetime > $1.startDatetime }
     }
 

@@ -289,6 +289,40 @@ struct MyPageViewModelTests {
         #expect(viewModel.errorMessage == nil)
     }
 
+    /// Regression: a joined program in any state `GET /me/programs` can return
+    /// must show up in My Page. The Active list once required
+    /// `status ∈ {open, full}`, so a joined `.draft` program with a future end
+    /// date matched neither Active (wrong status) nor Past (not yet ended) and
+    /// vanished from the profile — the user had joined it but couldn't see it.
+    /// Active and Past now split on a single "is past" predicate, so it lands in
+    /// Active.
+    @Test func activePrograms_includesJoinedDraftWithFutureEnd() {
+        let viewModel = MyPageViewModel(httpClient: RecordingHTTPClient())
+        let future = Date(timeIntervalSinceNow: 7 * 24 * 3600)
+        let draft = Program(
+            id: 11,
+            creatorUserId: 99,
+            categoryId: 1,
+            locationId: 1,
+            name: "Pacific Showcase",
+            description: "Joined but unpublished",
+            bannerImageURL: nil,
+            startDatetime: Date(timeIntervalSinceNow: 6 * 24 * 3600),
+            endDatetime: future,
+            maxVolunteers: 10,
+            commitmentFrequency: nil,
+            commitmentDuration: nil,
+            status: .draft,
+            isDeleted: false,
+            deletedAt: nil,
+            createdAt: Date(timeIntervalSince1970: 0)
+        )
+        viewModel.myPrograms = [draft]
+
+        #expect(viewModel.activePrograms.contains { $0.id == 11 })
+        #expect(viewModel.pastPrograms.contains { $0.id == 11 } == false)
+    }
+
     /// The bookmarks list is derived from the cached program pool and the shared
     /// bookmark id set — so it re-filters when the set changes, with no refetch.
     @Test func bookmarkPrograms_derivesFromGivenIds() async {
