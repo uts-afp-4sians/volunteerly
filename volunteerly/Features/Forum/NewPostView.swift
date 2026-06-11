@@ -89,7 +89,8 @@ struct NewPostView: View {
             DraftsView(
                 drafts: drafts,
                 viewModel: viewModel,
-                onPosted: removeDraftAndDismiss
+                onPosted: removeDraftAndDismiss,
+                onSaved: updateDraft
             )
         }
         .confirmationDialog(
@@ -334,6 +335,12 @@ struct NewPostView: View {
         drafts.removeAll { $0.id == draft.id }
         ForumDraftStore.save(drafts, programId: viewModel.programId)
         dismiss()
+    }
+
+    private func updateDraft(_ draft: PostDraft) {
+        guard let index = drafts.firstIndex(where: { $0.id == draft.id }) else { return }
+        drafts[index] = draft
+        ForumDraftStore.save(drafts, programId: viewModel.programId)
     }
 
     private func loadPhoto(_ item: PhotosPickerItem?) async {

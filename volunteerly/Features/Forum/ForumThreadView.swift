@@ -34,8 +34,7 @@ struct ForumThreadView: View {
                 divider
                     .padding(.vertical, 18)
 
-                replyButton
-                    .frame(maxWidth: .infinity, alignment: .trailing)
+                replyComposer
                     .padding(.bottom, 18)
 
                 divider
@@ -49,7 +48,6 @@ struct ForumThreadView: View {
         }
         .scrollDismissesKeyboard(.interactively)
         .toolbar(.hidden, for: .navigationBar)
-        .safeAreaInset(edge: .bottom) { composer }
         .alert(
             "Couldn't post",
             isPresented: Binding(
@@ -108,11 +106,37 @@ struct ForumThreadView: View {
         return raw.lowercased().hasPrefix("q.") ? raw : "Q. \(raw)"
     }
 
-    /// Green pill that aims the composer at the thread (a top-level reply).
+    /// Inline reply composer: a tappable text box the user types into, with the
+    /// green "Reply" pill beneath it to post. Replaces the old bottom "Add a
+    /// reply…" bar so the input lives right in the thread.
+    private var replyComposer: some View {
+        VStack(alignment: .trailing, spacing: 14) {
+            TextField("Add a reply…", text: $viewModel.draft, axis: .vertical)
+                .font(.bodyText)
+                .foregroundStyle(Theme.textPrimary)
+                .lineLimit(4...10)
+                .focused($composerFocused)
+                .submitLabel(.return)
+                .frame(maxWidth: .infinity, minHeight: 120, alignment: .topLeading)
+                .padding(14)
+                .background(Theme.surface, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .stroke(Theme.border, lineWidth: 1)
+                )
+                // Make the whole box (not just the text line) focus the field.
+                .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .onTapGesture { composerFocused = true }
+
+            replyButton
+        }
+    }
+
+    /// Green pill that posts the typed reply.
     private var replyButton: some View {
         Button {
-            viewModel.beginReply(to: nil)
-            composerFocused = true
+            viewModel.submitDraft()
+            composerFocused = false
         } label: {
             Text("Reply")
                 .font(.captionText)
@@ -122,6 +146,9 @@ struct ForumThreadView: View {
                 .background(Theme.brand300, in: Capsule())
         }
         .buttonStyle(.plain)
+        .disabled(!viewModel.canSubmit)
+        .opacity(viewModel.canSubmit ? 1 : 0.5)
+        .accessibilityLabel("Post reply")
     }
 
     private var divider: some View {
@@ -158,66 +185,6 @@ struct ForumThreadView: View {
         nodes.flatMap { [$0] + flatten($0.replies) }
     }
 
-    // MARK: Composer
-
-    private var composer: some View {
-        VStack(spacing: 0) {
-            Divider().background(Theme.border)
-            if let target = viewModel.replyingTo {
-                replyBanner(target)
-            }
-            HStack(spacing: 12) {
-                TextField(composerPlaceholder, text: $viewModel.draft, axis: .vertical)
-                    .font(.bodyText)
-                    .textFieldStyle(.plain)
-                    .lineLimit(1...4)
-                    .focused($composerFocused)
-                    .submitLabel(.send)
-
-                Button {
-                    viewModel.submitDraft()
-                    composerFocused = false
-                } label: {
-                    Image(systemName: "paperplane.fill")
-                        .font(.system(size: 18))
-                        .foregroundStyle(viewModel.canSubmit ? Color.brand : Theme.textSecondary)
-                }
-                .buttonStyle(.plain)
-                .disabled(!viewModel.canSubmit)
-                .accessibilityLabel("Send")
-            }
-            .padding(.horizontal, horizontalPadding)
-            .padding(.vertical, 12)
-        }
-        .background(.regularMaterial)
-    }
-
-    private var composerPlaceholder: String {
-        if let target = viewModel.replyingTo {
-            return "Reply to \(target.authorName)…"
-        }
-        return "Add a reply…"
-    }
-
-    private func replyBanner(_ target: CommentNode) -> some View {
-        HStack(spacing: 8) {
-            Text("Replying to \(target.authorName)")
-                .font(.buttonLabel)
-                .foregroundStyle(Theme.textSecondary)
-            Spacer(minLength: 8)
-            Button {
-                viewModel.cancelReply()
-            } label: {
-                Image(systemName: "xmark.circle.fill")
-                    .font(.system(size: 16))
-                    .foregroundStyle(Theme.textSecondary)
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Cancel reply")
-        }
-        .padding(.horizontal, horizontalPadding)
-        .padding(.top, 8)
-    }
 }
 
 /// One chat message: a 40pt avatar with the author's name and timestamp on the
