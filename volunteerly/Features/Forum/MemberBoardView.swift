@@ -5,9 +5,10 @@ struct NewPostRoute: Hashable {
     let programId: Int
 }
 
-/// The Member board block shown at the bottom of a joined program's detail:
-/// a "Member board" header with an "Add post" link, a single sort chip, and a
-/// two-column grid of question cards. Matches Figma `group-4-prototype` 2A.
+/// The Community Board block shown at the bottom of a joined program's detail:
+/// a "Community Board" header with an "Add post" link, a single sort chip, and
+/// a two-column grid of question cards. Matches Figma `group-4-prototype`
+/// Community Board (node 398:989).
 struct MemberBoardSection: View {
     @State private var viewModel: MemberBoardViewModel
     private let httpClient: HTTPClient
@@ -38,16 +39,16 @@ struct MemberBoardSection: View {
 
     private var header: some View {
         HStack(alignment: .firstTextBaseline) {
-            Text("Member board")
-                .font(.sectionHeader)
-                .bold()
+            Text("Community Board")
+                .font(.pageTitle)
+                .tracking(-0.3)
                 .foregroundStyle(Theme.textPrimary)
             Spacer(minLength: 8)
             NavigationLink(value: NewPostRoute(programId: viewModel.programId)) {
                 Text("Add post")
                     .font(.bodyText)
-                    .underline()
-                    .foregroundStyle(Theme.forest)
+                    .italic()
+                    .foregroundStyle(Theme.placeholder)
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Add post")
@@ -135,7 +136,7 @@ struct QuestionCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(post.title)
-                .font(.sectionHeader)
+                .font(.bodyStrong)
                 .foregroundStyle(Theme.textPrimary)
                 .lineLimit(2)
             Text(post.body)
