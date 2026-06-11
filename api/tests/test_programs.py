@@ -132,10 +132,10 @@ def _ids(client: TestClient, query: str) -> set[int]:
 
 
 # Seeded programs (scripts/seed.py):
-#   1 Tree Planting   cat1 max30 monthly/three_to_six
-#   2 Beach Cleanup   cat1 max50 monthly/continuous
-#   3 Reading Club    cat3 max12 weekly/seven_to_nine
-#   4 Tech Support    cat6 max8  weekly/under_2
+#   1 Tree Planting   cat1 (Nature)    max30 monthly/three_to_six
+#   2 Beach Cleanup   cat1 (Nature)    max50 monthly/continuous
+#   3 Reading Club    cat3 (Education) max12 weekly/seven_to_nine
+#   4 Tech Support    cat7 (Elderly)   max8  weekly/under_2
 
 
 def test_filter_by_search_query(client: TestClient) -> None:

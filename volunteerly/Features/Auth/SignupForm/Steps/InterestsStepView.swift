@@ -117,5 +117,6 @@ struct InterestsStepView: View {
             }
         }
         .buttonStyle(.plain)
+        .accessibilityHint(UserProfileStore.blurb(for: name))
     }
 }

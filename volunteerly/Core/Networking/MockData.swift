@@ -43,8 +43,8 @@ enum MockData {
         keySkills: "Social media, Communication",
         locationId: 1,
         interests: [
-            UserInterestDetail(keywordId: 4, keywordName: "Animal Care"),
-            UserInterestDetail(keywordId: 7, keywordName: "Education"),
+            UserInterestDetail(keywordId: 2, keywordName: "Animals"),
+            UserInterestDetail(keywordId: 3, keywordName: "Education"),
         ]
     )
 
@@ -67,35 +67,28 @@ enum MockData {
     ]
 
     // MARK: Category & Keywords
-    static let category = ProgramCategory(id: 1, name: "Environment")
+    // Unified taxonomy: program categories and signup interests are the same 11
+    // causes, with a 1:1 keyword per category (matching id and name). Mirrors
+    // scripts/seed.py.
+    static let category = ProgramCategory(id: 1, name: "Nature")
 
     static let categories: [ProgramCategory] = [
-        ProgramCategory(id: 1, name: "Environment"),
-        ProgramCategory(id: 2, name: "Community"),
+        ProgramCategory(id: 1, name: "Nature"),
+        ProgramCategory(id: 2, name: "Animals"),
         ProgramCategory(id: 3, name: "Education"),
-        ProgramCategory(id: 4, name: "Health"),
-        ProgramCategory(id: 5, name: "Animals"),
-        ProgramCategory(id: 6, name: "Seniors"),
-        ProgramCategory(id: 7, name: "Food"),
-        ProgramCategory(id: 8, name: "Arts")
+        ProgramCategory(id: 4, name: "Arts"),
+        ProgramCategory(id: 5, name: "Food"),
+        ProgramCategory(id: 6, name: "Wellbeing"),
+        ProgramCategory(id: 7, name: "Elderly"),
+        ProgramCategory(id: 8, name: "Kids"),
+        ProgramCategory(id: 9, name: "Disability"),
+        ProgramCategory(id: 10, name: "Sports"),
+        ProgramCategory(id: 11, name: "Community")
     ]
 
-    static let keywords: [Keyword] = [
-        // Program-tagging keywords.
-        Keyword(id: 1, categoryId: 1, name: "Tree Planting"),
-        Keyword(id: 2, categoryId: 1, name: "Beach Cleanup"),
-        Keyword(id: 3, categoryId: 1, name: "Recycling"),
-        // Profile interest catalogue (mirrors scripts/seed.py).
-        Keyword(id: 4, categoryId: 5, name: "Animal Care"),
-        Keyword(id: 5, categoryId: 8, name: "Arts & Creativity"),
-        Keyword(id: 6, categoryId: 2, name: "Community Building"),
-        Keyword(id: 7, categoryId: 3, name: "Education"),
-        Keyword(id: 8, categoryId: 6, name: "Aged Care"),
-        Keyword(id: 9, categoryId: 1, name: "Environment"),
-        Keyword(id: 10, categoryId: 7, name: "Food"),
-        Keyword(id: 11, categoryId: 2, name: "Social Justice"),
-        Keyword(id: 12, categoryId: 4, name: "Technology")
-    ]
+    static let keywords: [Keyword] = categories.map {
+        Keyword(id: $0.id, categoryId: $0.id, name: $0.name)
+    }
 
     // MARK: Programs
     static let programs: [Program] = [
@@ -164,7 +157,7 @@ enum MockData {
         Program(
             id: 4,
             creatorUserId: 1,
-            categoryId: 6,
+            categoryId: 7,
             locationId: 4,
             name: "Senior Tech Support Drop-In",
             description: "Spend an afternoon helping seniors get comfortable with their phones and laptops.",
@@ -183,7 +176,7 @@ enum MockData {
         Program(
             id: 5,
             creatorUserId: 1,
-            categoryId: 2,
+            categoryId: 1,
             locationId: 2,
             name: "Harbour Foreshore Restoration",
             description: "A weekend spent clearing weeds and replanting natives along the foreshore.",
@@ -202,7 +195,7 @@ enum MockData {
         Program(
             id: 6,
             creatorUserId: 1,
-            categoryId: 7,
+            categoryId: 5,
             locationId: 3,
             name: "Community Kitchen Lunch Service",
             description: "Prepared and served hot meals for those doing it tough in the inner city.",
@@ -221,7 +214,7 @@ enum MockData {
         Program(
             id: 7,
             creatorUserId: 1,
-            categoryId: 5,
+            categoryId: 2,
             locationId: 4,
             name: "Wildlife Shelter Open Day",
             description: "Awaiting confirmation to help out at the local wildlife shelter open day.",
@@ -241,14 +234,15 @@ enum MockData {
 
     // MARK: User Interests (USER_INTEREST junction)
     static let userInterests: [UserInterest] = [
-        UserInterest(userId: 1, keywordId: 4),  // Animal Care
-        UserInterest(userId: 1, keywordId: 7)   // Education
+        UserInterest(userId: 1, keywordId: 2),  // Animals
+        UserInterest(userId: 1, keywordId: 3)   // Education
     ]
 
     // MARK: Program Keywords (PROGRAM_KEYWORD junction)
+    // Both programs are Nature causes, so they tag the Nature keyword (1).
     static let programKeywords: [ProgramKeyword] = [
         ProgramKeyword(programId: 1, keywordId: 1),
-        ProgramKeyword(programId: 2, keywordId: 2)
+        ProgramKeyword(programId: 2, keywordId: 1)
     ]
 
     // MARK: Participation

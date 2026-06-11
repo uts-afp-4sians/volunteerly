@@ -1,7 +1,7 @@
 """Tests for the signed-in user's profile endpoint.
 
 The seeded fixture user is jane.doe@example.com / "password123" (user_id 1)
-with interests {keyword 4 "Animal Care", keyword 7 "Education"} — see
+with interests {keyword 2 "Animals", keyword 3 "Education"} — see
 scripts/seed.py.
 
 Interests are embedded in the profile resource (read) and replaced via the same
@@ -48,10 +48,10 @@ def test_get_my_profile(client: TestClient) -> None:
     assert body["user_id"] == 1
     assert body["first_name"] == "Jane"
     # Interests are embedded, joined with their keyword name.
-    assert {row["keyword_id"] for row in body["interests"]} == {4, 7}
+    assert {row["keyword_id"] for row in body["interests"]} == {2, 3}
     assert set(body["interests"][0].keys()) == {"keyword_id", "keyword_name"}
     assert {row["keyword_name"] for row in body["interests"]} == {
-        "Animal Care",
+        "Animals",
         "Education",
     }
 
@@ -75,7 +75,7 @@ def test_patch_my_profile_partial_update(client: TestClient) -> None:
     assert body["first_name"] == "Jane"
     assert body["last_name"] == "Doe"
     # Interests are left untouched when the field is omitted.
-    assert {row["keyword_id"] for row in body["interests"]} == {4, 7}
+    assert {row["keyword_id"] for row in body["interests"]} == {2, 3}
 
     # The change persists on a fresh read.
     again = client.get("/me/profile", headers=headers).json()

@@ -436,21 +436,11 @@ struct ProgramDetailView: View {
         .background(Theme.surface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 
-    /// Emoji glyph paired with a category, mirroring the Figma chips. Matched on
-    /// substrings so "Community Building" resolves the same as "Community".
+    /// Emoji glyph paired with a category, mirroring the Figma chips. Categories
+    /// and interests share one catalogue, so this resolves via the single
+    /// name → emoji source of truth.
     static func categoryEmoji(for category: String) -> String {
-        let name = category.lowercased()
-        switch true {
-        case name.contains("environment"): return "🌱"
-        case name.contains("community"):   return "👥"
-        case name.contains("education"):   return "📚"
-        case name.contains("health"):      return "❤️"
-        case name.contains("animal"):      return "🐾"
-        case name.contains("senior"):      return "🧓"
-        case name.contains("food"):        return "🍽️"
-        case name.contains("art"):         return "🎨"
-        default:                           return "🏷️"
-        }
+        UserProfileStore.emoji(for: category)
     }
 
     // MARK: Map

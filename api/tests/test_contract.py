@@ -91,59 +91,49 @@ def test_list_categories(client: TestClient) -> None:
     res = client.get("/categories")
     assert res.status_code == 200
     body = res.json()
-    assert len(body) == 8
+    assert len(body) == 11
     assert set(body[0].keys()) == {"category_id", "category_name"}
-    assert body[0] == {"category_id": 1, "category_name": "Environment"}
+    assert body[0] == {"category_id": 1, "category_name": "Nature"}
+
+
+# The unified taxonomy: categories and interests are the same 11 causes, with a
+# 1:1 keyword per category (matching id and name).
+TAXONOMY = [
+    "Nature",
+    "Animals",
+    "Education",
+    "Arts",
+    "Food",
+    "Wellbeing",
+    "Elderly",
+    "Kids",
+    "Disability",
+    "Sports",
+    "Community",
+]
 
 
 def test_list_keywords(client: TestClient) -> None:
     res = client.get("/keywords")
     assert res.status_code == 200
     body = res.json()
-    # 3 program-tagging keywords + 19 profile interest keywords.
-    assert len(body) == 22
+    # One interest keyword per category — they are the same 11 causes.
+    assert len(body) == 11
     assert set(body[0].keys()) == {"keyword_id", "category_id", "keyword_name"}
-    assert body[0] == {
-        "keyword_id": 1,
-        "category_id": 1,
-        "keyword_name": "Tree Planting",
-    }
-    # The interest catalog the profile picker offers.
-    interest_names = {row["keyword_name"] for row in body if row["keyword_id"] >= 4}
-    assert {"Animal Care", "Education", "Technology"} <= interest_names
+    assert body[0] == {"keyword_id": 1, "category_id": 1, "keyword_name": "Nature"}
+    # keyword id == category id for every row (the 1:1 identity mapping).
+    assert all(row["keyword_id"] == row["category_id"] for row in body)
 
 
 def test_list_interests(client: TestClient) -> None:
     res = client.get("/interests")
     assert res.status_code == 200
     body = res.json()
-    # Only the 19 profile-interest keywords (is_interest=True) — program-tagging
-    # keywords like "Tree Planting" are excluded.
-    assert len(body) == 19
+    # All 11 keywords are interests (is_interest=True) — same set as /categories.
+    assert len(body) == 11
     assert set(body[0].keys()) == {"keyword_id", "category_id", "keyword_name"}
     names = [row["keyword_name"] for row in body]
-    assert names == [
-        "Animal Care",
-        "Arts & Creativity",
-        "Community Building",
-        "Education",
-        "Aged Care",
-        "Environment",
-        "Food",
-        "Social Justice",
-        "Technology",
-        "Children & Youth",
-        "Health",
-        "Mental Health",
-        "Disability Support",
-        "Homelessness",
-        "Literacy",
-        "Disaster Relief",
-        "Sports",
-        "Music",
-        "Refugees",
-    ]
-    assert "Tree Planting" not in names
+    assert names == TAXONOMY
 
 
 def test_get_user(client: TestClient) -> None:
@@ -193,7 +183,7 @@ def test_list_user_interests(client: TestClient) -> None:
     body = res.json()
     assert len(body) == 2
     assert set(body[0].keys()) == {"user_id", "keyword_id"}
-    assert {row["keyword_id"] for row in body} == {4, 7}
+    assert {row["keyword_id"] for row in body} == {2, 3}
 
 
 def test_list_program_keywords(client: TestClient) -> None:

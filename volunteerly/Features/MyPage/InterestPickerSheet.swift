@@ -74,6 +74,7 @@ struct InterestPickerSheet: View {
         }
         .buttonStyle(.plain)
         .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
+        .accessibilityHint(UserProfileStore.blurb(for: name))
     }
 
     private var saveButton: some View {
@@ -101,7 +102,7 @@ struct InterestPickerSheet: View {
 #Preview {
     Color.clear.sheet(isPresented: .constant(true)) {
         InterestPickerSheet(
-            selected: [UserProfileStore.Interest(emoji: "🐶", name: "Animal Care")],
+            selected: [UserProfileStore.Interest(emoji: "🐾", name: "Animals")],
             onSave: { _ in }
         )
     }

@@ -17,19 +17,6 @@ final class ProgramListViewModel {
     /// matching these surface above unmatched programs in `filteredPrograms`.
     var preferredCategoryIds: Set<Int> = []
 
-    /// Translates the signup-form interest names to the category names that
-    /// actually exist in the catalog.
-    private static let interestToCategoryName: [String: String] = [
-        "Animal Care": "Animals",
-        "Arts & Creativity": "Arts",
-        "Community Building": "Community",
-        "Education": "Education",
-        "Aged Care": "Seniors",
-        "Elder Care": "Seniors",
-        "Environment": "Environment",
-        "Food": "Food",
-    ]
-
     // MARK: - Filters (the "Confirm details" bottom sheet)
 
     /// Bounds for the distance slider. Distance has no per-program data yet, so
@@ -192,14 +179,13 @@ final class ProgramListViewModel {
 
     /// Resolve the user's chosen interest names against the loaded categories
     /// and remember their ids so `filteredPrograms` can surface them first.
+    /// Interests and categories share one taxonomy, so names match by identity.
     func applyUserInterests(_ interestNames: [String]) {
         guard !categories.isEmpty else {
             preferredCategoryIds = []
             return
         }
-        let categoryNames = Set(interestNames.map {
-            Self.interestToCategoryName[$0] ?? $0
-        })
+        let categoryNames = Set(interestNames)
         preferredCategoryIds = Set(
             categories.filter { categoryNames.contains($0.name) }.map(\.id)
         )

@@ -14,9 +14,8 @@ struct CategoryChip: View {
                     .fill(isSelected ? Color.brandLight : Color(.systemGray6))
                     .frame(width: 50, height: 50)
                     .overlay(
-                        Image(systemName: Self.symbolName(for: category.name))
-                            .font(.system(size: 20))
-                            .foregroundStyle(isSelected ? Color.white : Color.primary)
+                        Text(UserProfileStore.emoji(for: category.name))
+                            .font(.system(size: 24))
                     )
 
                 // Figma 190:639: every category label stays #1f1f1f regular —
@@ -29,20 +28,6 @@ struct CategoryChip: View {
             .frame(width: 56)
         }
         .buttonStyle(.plain)
-    }
-
-    static func symbolName(for category: String) -> String {
-        switch category.lowercased() {
-        case "environment": "leaf.fill"
-        case "community":   "person.3.fill"
-        case "education":   "book.fill"
-        case "health":      "heart.fill"
-        case "animals":     "pawprint.fill"
-        case "seniors":     "figure.roll"
-        case "food":        "fork.knife"
-        case "arts":        "paintpalette.fill"
-        default:            "square.grid.2x2.fill"
-        }
     }
 }
 

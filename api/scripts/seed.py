@@ -125,106 +125,40 @@ def _rows() -> list[Base]:
         )
         for uid, first, last, img, occ in members
     ]
+    # Unified taxonomy: program categories and signup interests are the SAME 11
+    # causes. Each category has a 1:1 interest keyword (same id, same name), so a
+    # program's category matches a user's interest by identity — no mapping table.
+    # Emoji + blurb are presentation-only and live on the iOS client
+    # (UserProfileStore.interestCatalog), keyed by name.
     categories = [
-        ProgramCategory(category_id=1, category_name="Environment"),
-        ProgramCategory(category_id=2, category_name="Community"),
+        ProgramCategory(category_id=1, category_name="Nature"),
+        ProgramCategory(category_id=2, category_name="Animals"),
         ProgramCategory(category_id=3, category_name="Education"),
-        ProgramCategory(category_id=4, category_name="Health"),
-        ProgramCategory(category_id=5, category_name="Animals"),
-        ProgramCategory(category_id=6, category_name="Seniors"),
-        ProgramCategory(category_id=7, category_name="Food"),
-        ProgramCategory(category_id=8, category_name="Arts"),
+        ProgramCategory(category_id=4, category_name="Arts"),
+        ProgramCategory(category_id=5, category_name="Food"),
+        ProgramCategory(category_id=6, category_name="Wellbeing"),
+        ProgramCategory(category_id=7, category_name="Elderly"),
+        ProgramCategory(category_id=8, category_name="Kids"),
+        ProgramCategory(category_id=9, category_name="Disability"),
+        ProgramCategory(category_id=10, category_name="Sports"),
+        ProgramCategory(category_id=11, category_name="Community"),
     ]
+    # One interest keyword per category, sharing the category's id and name.
     keywords = [
-        # Program-tagging keywords (referenced by program_keywords below).
-        Keyword(keyword_id=1, category_id=1, keyword_name="Tree Planting"),
-        Keyword(keyword_id=2, category_id=1, keyword_name="Beach Cleanup"),
-        Keyword(keyword_id=3, category_id=1, keyword_name="Recycling"),
-        # Profile interest catalog — the chips on the signup / "My interests"
-        # picker (is_interest=True). Each maps to the closest existing category
-        # (the category isn't shown in the interest UI; emoji are rendered
-        # client-side by keyword name).
-        Keyword(
-            keyword_id=4, category_id=5, keyword_name="Animal Care", is_interest=True
-        ),
-        Keyword(
-            keyword_id=5,
-            category_id=8,
-            keyword_name="Arts & Creativity",
-            is_interest=True,
-        ),
-        Keyword(
-            keyword_id=6,
-            category_id=2,
-            keyword_name="Community Building",
-            is_interest=True,
-        ),
-        Keyword(
-            keyword_id=7, category_id=3, keyword_name="Education", is_interest=True
-        ),
-        Keyword(
-            keyword_id=8, category_id=6, keyword_name="Aged Care", is_interest=True
-        ),
-        Keyword(
-            keyword_id=9, category_id=1, keyword_name="Environment", is_interest=True
-        ),
-        Keyword(keyword_id=10, category_id=7, keyword_name="Food", is_interest=True),
-        Keyword(
-            keyword_id=11,
-            category_id=2,
-            keyword_name="Social Justice",
-            is_interest=True,
-        ),
-        Keyword(
-            keyword_id=12, category_id=4, keyword_name="Technology", is_interest=True
-        ),
-        # Extra interests added on the iOS picker — mirrored here so they have
-        # real keyword IDs and round-trip through `/me/interests`.
-        Keyword(
-            keyword_id=13,
-            category_id=2,
-            keyword_name="Children & Youth",
-            is_interest=True,
-        ),
-        Keyword(
-            keyword_id=14, category_id=4, keyword_name="Health", is_interest=True
-        ),
-        Keyword(
-            keyword_id=15,
-            category_id=4,
-            keyword_name="Mental Health",
-            is_interest=True,
-        ),
-        Keyword(
-            keyword_id=16,
-            category_id=4,
-            keyword_name="Disability Support",
-            is_interest=True,
-        ),
-        Keyword(
-            keyword_id=17,
-            category_id=2,
-            keyword_name="Homelessness",
-            is_interest=True,
-        ),
-        Keyword(
-            keyword_id=18, category_id=3, keyword_name="Literacy", is_interest=True
-        ),
-        Keyword(
-            keyword_id=19,
-            category_id=2,
-            keyword_name="Disaster Relief",
-            is_interest=True,
-        ),
-        Keyword(
-            keyword_id=20, category_id=2, keyword_name="Sports", is_interest=True
-        ),
-        Keyword(
-            keyword_id=21, category_id=8, keyword_name="Music", is_interest=True
-        ),
-        Keyword(
-            keyword_id=22, category_id=2, keyword_name="Refugees", is_interest=True
-        ),
+        Keyword(keyword_id=cid, category_id=cid, keyword_name=name, is_interest=True)
+        for cid, name in (
+            (1, "Nature"),
+            (2, "Animals"),
+            (3, "Education"),
+            (4, "Arts"),
+            (5, "Food"),
+            (6, "Wellbeing"),
+            (7, "Elderly"),
+            (8, "Kids"),
+            (9, "Disability"),
+            (10, "Sports"),
+            (11, "Community"),
+        )
     ]
     programs = [
         Program(
@@ -292,7 +226,7 @@ def _rows() -> list[Base]:
         Program(
             program_id=4,
             creator_user_id=1,
-            category_id=6,
+            category_id=7,
             location_id=4,
             program_name="Senior Tech Support Drop-In",
             description=(
@@ -311,11 +245,11 @@ def _rows() -> list[Base]:
             created_at=CREATED_AT,
         ),
     ]
-    # Jane's profile interests — "Animal Care" (4) + "Education" (7), matching
-    # the chips on the profile mockup.
+    # Jane's profile interests — "Animals" (2) + "Education" (3), matching the
+    # chips on the profile mockup.
     user_interests = [
-        UserInterest(user_id=1, keyword_id=4),
-        UserInterest(user_id=1, keyword_id=7),
+        UserInterest(user_id=1, keyword_id=2),
+        UserInterest(user_id=1, keyword_id=3),
     ]
     # Banner galleries. Program 1 carries three images so the detail screen's
     # carousel + dots are exercised; the rest mirror their single banner so the
@@ -353,9 +287,10 @@ def _rows() -> list[Base]:
             sort_order=0,
         ),
     ]
+    # Both seeded programs are Nature causes, so they tag the Nature keyword (1).
     program_keywords = [
         ProgramKeyword(program_id=1, keyword_id=1),
-        ProgramKeyword(program_id=2, keyword_id=2),
+        ProgramKeyword(program_id=2, keyword_id=1),
     ]
     # The host (user 1) plus the three extra members all join program 1, so the
     # detail screen's Members row has real participants to render (host + 3).

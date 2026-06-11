@@ -121,35 +121,34 @@ final class UserProfileStore {
 
     // MARK: - Interest catalogue
 
-    /// The fixed set of interests the picker offers, mirroring the seeded
-    /// keyword catalogue (`scripts/seed.py`). Emoji are presentation-only — the
-    /// backend stores just the keyword name — so they live here on the client.
-    static let interestCatalog: [(emoji: String, name: String)] = [
-        ("🐶", "Animal Care"),
-        ("🎨", "Arts & Creativity"),
-        ("👥", "Community Building"),
-        ("📚", "Education"),
-        ("🧓", "Aged Care"),
-        ("🌱", "Environment"),
-        ("🍽️", "Food"),
-        ("✊", "Social Justice"),
-        ("💻", "Technology"),
-        ("🧒", "Children & Youth"),
-        ("🏥", "Health"),
-        ("🧠", "Mental Health"),
-        ("♿️", "Disability Support"),
-        ("🏠", "Homelessness"),
-        ("📖", "Literacy"),
-        ("🚨", "Disaster Relief"),
-        ("⚽️", "Sports"),
-        ("🎵", "Music"),
-        ("🤝", "Refugees"),
+    /// The unified taxonomy: the 11 causes that serve as BOTH the signup-interest
+    /// chips AND the program category chips. The backend stores only the name
+    /// (categories and interest keywords share it 1:1, see `scripts/seed.py`);
+    /// emoji and blurb are presentation-only and live here on the client.
+    static let interestCatalog: [(emoji: String, name: String, blurb: String)] = [
+        ("🌿", "Nature", "Park cleanups, tree planting, conservation"),
+        ("🐾", "Animals", "Shelter care, wildlife rescue, fostering"),
+        ("📚", "Education", "Tutoring, mentoring, literacy support"),
+        ("🎨", "Arts", "Murals, community performances, workshops"),
+        ("🍱", "Food", "Food banks, meal prep, community kitchens"),
+        ("💚", "Wellbeing", "Mental health support, wellness programs"),
+        ("🧓", "Elderly", "Companionship, aged care visits, errands"),
+        ("🧒", "Kids", "After-school programs, play support"),
+        ("♿", "Disability", "Mobility assistance, activity support"),
+        ("⚽", "Sports", "Coaching, local events, recreation programs"),
+        ("👥", "Community", "Local events, cleanups, community festivals"),
     ]
 
-    /// Emoji for a keyword name, defaulting to a generic tag for anything not in
-    /// the catalogue.
+    /// Emoji for a category/interest name, defaulting to a generic tag for
+    /// anything not in the catalogue.
     static func emoji(for name: String) -> String {
         interestCatalog.first { $0.name.caseInsensitiveCompare(name) == .orderedSame }?.emoji ?? "🏷️"
+    }
+
+    /// One-line description for a category/interest name, used as an
+    /// accessibility hint on the chips. Empty for names not in the catalogue.
+    static func blurb(for name: String) -> String {
+        interestCatalog.first { $0.name.caseInsensitiveCompare(name) == .orderedSame }?.blurb ?? ""
     }
 
     // MARK: - Backend sync
