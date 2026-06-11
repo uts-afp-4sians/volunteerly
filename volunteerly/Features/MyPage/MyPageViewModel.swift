@@ -26,14 +26,28 @@ final class MyPageViewModel {
         self.httpClient = httpClient
     }
 
-    func load() async {
+    /// Loads the program pool. `BookmarksView` only needs `/programs` (it filters
+    /// that pool by `bookmarkedProgramIds`), so it passes `includeMyPrograms:
+    /// false` — otherwise a failure of the auth-gated `/me/programs` (expired
+    /// token, cold-started backend) would blank the Bookmarks screen with
+    /// "Something went wrong" even though its own data loaded fine.
+    func load(includeMyPrograms: Bool = true) async {
         isLoading = true
         errorMessage = nil
         do {
-            async let all: [Program] = httpClient.get("/programs")
-            async let mine: [Program] = httpClient.get("/me/programs")
-            programs = try await all
-            myPrograms = try await mine
+            if includeMyPrograms {
+                async let all: [Program] = httpClient.get("/programs")
+                async let mine: [Program] = httpClient.get("/me/programs")
+                programs = try await all
+                myPrograms = try await mine
+            } else {
+                programs = try await httpClient.get("/programs")
+            }
+        } catch where error.isCancellation {
+            // The view's `.task` was torn down mid-request (e.g. rapidly
+            // switching away from the Bookmarks/My Page tab). Not a real
+            // failure — keep the current data and surface no error, otherwise
+            // the persisted view model flashes "Something went wrong" on return.
         } catch {
             errorMessage = error.localizedDescription
         }

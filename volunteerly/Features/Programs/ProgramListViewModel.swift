@@ -151,6 +151,9 @@ final class ProgramListViewModel {
         do {
             self.programs = try await httpClient.get(programsPath)
             self.errorMessage = nil
+        } catch where error.isCancellation {
+            // Fetch cancelled by a tab switch / superseding filter change —
+            // leave the existing list and don't flash an error.
         } catch {
             self.errorMessage = error.localizedDescription
         }

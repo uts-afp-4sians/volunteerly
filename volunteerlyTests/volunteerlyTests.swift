@@ -41,6 +41,10 @@ private final class RecordingHTTPClient: HTTPClient {
         try await inner.post(path, body: body)
     }
 
+    func postExpectingNoContent<B: Encodable>(_ path: String, body: B) async throws {
+        try await inner.postExpectingNoContent(path, body: body)
+    }
+
     func put<B: Encodable, T: Decodable>(_ path: String, body: B) async throws -> T {
         try await inner.put(path, body: body)
     }
@@ -63,6 +67,10 @@ private final class CancellingHTTPClient: HTTPClient {
         throw CancellationError()
     }
 
+    func postExpectingNoContent<B: Encodable>(_ path: String, body: B) async throws {
+        throw CancellationError()
+    }
+
     func put<B: Encodable, T: Decodable>(_ path: String, body: B) async throws -> T {
         throw CancellationError()
     }
@@ -74,6 +82,19 @@ private final class CancellingHTTPClient: HTTPClient {
     func delete(_ path: String) async throws {
         throw CancellationError()
     }
+}
+
+/// Throws `URLError.cancelled` on every request — models `URLSession` aborting
+/// an in-flight call when a view's `.task` is torn down (e.g. a tab switch).
+private final class URLCancellingHTTPClient: HTTPClient {
+    private func cancelled() -> URLError { URLError(.cancelled) }
+
+    func get<T: Decodable>(_ path: String) async throws -> T { throw cancelled() }
+    func post<B: Encodable, T: Decodable>(_ path: String, body: B) async throws -> T { throw cancelled() }
+    func postExpectingNoContent<B: Encodable>(_ path: String, body: B) async throws { throw cancelled() }
+    func put<B: Encodable, T: Decodable>(_ path: String, body: B) async throws -> T { throw cancelled() }
+    func patch<B: Encodable, T: Decodable>(_ path: String, body: B) async throws -> T { throw cancelled() }
+    func delete(_ path: String) async throws { throw cancelled() }
 }
 
 /// Returns a fixed coordinate (or `nil` to model a denied prompt) immediately.
@@ -106,6 +127,24 @@ struct UserProfileStoreTests {
 
         #expect(store.isLoading == false)
         #expect(store.errorMessage == nil)
+    }
+
+    /// Regression: `currentUserId` is nil until `load()` hydrates it from
+    /// `/me/profile`. `ProgramDetailView.isHost` compares this against the
+    /// program's `creatorUserId`, so a view reaching the detail screen before
+    /// the profile is hydrated reads `isHost == false` — hiding the host "…"
+    /// menu and showing the join bar to the program's own owner. The app root
+    /// now calls `load()` so the id is available on every tab.
+    @Test func load_populatesCurrentUserId_forHostDetection() async {
+        let store = UserProfileStore(
+            service: ProfileService(client: RecordingHTTPClient())
+        )
+
+        #expect(store.currentUserId == nil)
+
+        await store.load()
+
+        #expect(store.currentUserId == 1)   // mock /me/profile → user_id 1
     }
 }
 
@@ -165,5 +204,86 @@ struct ProgramListViewModelTests {
 
         #expect(viewModel.programs.isEmpty == false)
         #expect(http.requestedPaths.contains { $0.contains("lat=") } == false)
+    }
+}
+
+// MARK: - MyPageViewModel
+
+/// Serves `/programs` from seeded mock data but throws on the auth-gated
+/// `/me/programs`, modelling an expired token or cold-started backend.
+private final class MyProgramsFailingHTTPClient: HTTPClient {
+    private let inner: MockHTTPClient
+    private(set) var requestedPaths: [String] = []
+
+    init() {
+        inner = MockHTTPClient()
+        MockData.registerAll(in: inner)
+    }
+
+    func get<T: Decodable>(_ path: String) async throws -> T {
+        requestedPaths.append(path)
+        if path.hasPrefix("/me/programs") { throw APIError.unauthorized }
+        return try await inner.get(path)
+    }
+
+    func post<B: Encodable, T: Decodable>(_ path: String, body: B) async throws -> T {
+        try await inner.post(path, body: body)
+    }
+
+    func postExpectingNoContent<B: Encodable>(_ path: String, body: B) async throws {
+        try await inner.postExpectingNoContent(path, body: body)
+    }
+
+    func put<B: Encodable, T: Decodable>(_ path: String, body: B) async throws -> T {
+        try await inner.put(path, body: body)
+    }
+
+    func patch<B: Encodable, T: Decodable>(_ path: String, body: B) async throws -> T {
+        try await inner.patch(path, body: body)
+    }
+
+    func delete(_ path: String) async throws {
+        try await inner.delete(path)
+    }
+}
+
+@MainActor
+struct MyPageViewModelTests {
+    /// Regression: the Bookmarks screen depends only on `/programs`, so a failure
+    /// of the auth-gated `/me/programs` must not blank it with "Something went
+    /// wrong". Loading without `includeMyPrograms` never touches that endpoint.
+    @Test func bookmarksLoad_ignoresMyProgramsFailure() async {
+        let http = MyProgramsFailingHTTPClient()
+        let viewModel = MyPageViewModel(httpClient: http)
+
+        await viewModel.load(includeMyPrograms: false)
+
+        #expect(viewModel.errorMessage == nil)
+        #expect(viewModel.programs.isEmpty == false)
+        #expect(http.requestedPaths.contains { $0.hasPrefix("/me/programs") } == false)
+    }
+
+    /// The full My Page load still surfaces a `/me/programs` failure, since the
+    /// active/Past lists genuinely need it.
+    @Test func fullLoad_surfacesMyProgramsFailure() async {
+        let http = MyProgramsFailingHTTPClient()
+        let viewModel = MyPageViewModel(httpClient: http)
+
+        await viewModel.load()
+
+        #expect(viewModel.errorMessage != nil)
+    }
+
+    /// Regression: rapidly switching away from the Bookmarks tab cancels its
+    /// `.task` mid-request, so `URLSession` throws `URLError.cancelled`. That is
+    /// not a real failure and must not surface as "Something went wrong" on the
+    /// persisted view model when the user returns.
+    @Test func load_doesNotShowError_whenRequestIsCancelled() async {
+        let viewModel = MyPageViewModel(httpClient: URLCancellingHTTPClient())
+
+        await viewModel.load(includeMyPrograms: false)
+
+        #expect(viewModel.isLoading == false)
+        #expect(viewModel.errorMessage == nil)
     }
 }
