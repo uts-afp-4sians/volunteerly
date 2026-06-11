@@ -2087,13 +2087,17 @@
           "banner_image_url": {
             "title": "Banner Image Url",
             "nullable": true,
-            "type": "string"
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1
           },
           "banner_image_urls": {
             "title": "Banner Image Urls",
             "nullable": true,
             "items": {
-              "type": "string"
+              "type": "string",
+              "maxLength": 500,
+              "minLength": 1
             },
             "type": "array",
             "maxItems": 3
@@ -2383,7 +2387,20 @@
           "banner_image_url": {
             "title": "Banner Image Url",
             "nullable": true,
-            "type": "string"
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1
+          },
+          "banner_image_urls": {
+            "title": "Banner Image Urls",
+            "nullable": true,
+            "items": {
+              "type": "string",
+              "maxLength": 500,
+              "minLength": 1
+            },
+            "type": "array",
+            "maxItems": 3
           },
           "location_id": {
             "title": "Location Id",

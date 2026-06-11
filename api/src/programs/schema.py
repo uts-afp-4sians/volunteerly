@@ -1,6 +1,12 @@
 from datetime import datetime
+from typing import Annotated
 
 from pydantic import BaseModel, ConfigDict, Field
+
+# A banner image URL. Capped at 500 to match the ``program_images.image_url`` /
+# ``programs.banner_image_url`` columns so an overlong value fails validation
+# (422) instead of the DB write (500). Gallery items must be non-empty.
+BannerURL = Annotated[str, Field(min_length=1, max_length=500)]
 
 from src.common.enums import (
     CommitmentDuration,
@@ -28,8 +34,8 @@ class ProgramCreate(BaseModel):
     # Ordered banner gallery (up to three). ``banner_image_url`` is kept for
     # back-compat: when ``banner_image_urls`` is omitted it seeds a one-image
     # gallery, and either way the first image is mirrored back to it server-side.
-    banner_image_url: str | None = None
-    banner_image_urls: list[str] | None = Field(default=None, max_length=3)
+    banner_image_url: BannerURL | None = None
+    banner_image_urls: list[BannerURL] | None = Field(default=None, max_length=3)
     location_id: int | None = None
 
 
@@ -46,7 +52,12 @@ class ProgramUpdate(BaseModel):
     max_volunteers: int | None = Field(default=None, ge=1)
     commitment_frequency: CommitmentFrequency | None = None
     commitment_duration: CommitmentDuration | None = None
-    banner_image_url: str | None = None
+    # Ordered banner gallery (up to three). When ``banner_image_urls`` is set the
+    # server replaces the whole gallery; an empty list clears it. ``banner_image_url``
+    # stays for back-compat — alone it seeds a one-image gallery — and either way
+    # the first image is mirrored back to it server-side.
+    banner_image_url: BannerURL | None = None
+    banner_image_urls: list[BannerURL] | None = Field(default=None, max_length=3)
     location_id: int | None = None
 
 

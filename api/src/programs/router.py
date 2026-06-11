@@ -2,7 +2,7 @@ import math
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
-from sqlalchemy import and_, func, or_, select
+from sqlalchemy import and_, delete, func, or_, select
 from sqlalchemy.orm import Session
 
 from src.auth.deps import get_current_user
@@ -712,10 +712,38 @@ def update_program(
             status_code=status.HTTP_404_NOT_FOUND, detail="Location not found"
         )
 
-    # Apply only the fields the caller actually set (PATCH semantics).
+    # Apply only the fields the caller actually set (PATCH semantics). The
+    # gallery is replaced separately below, so keep it out of the plain setattr
+    # loop (``banner_image_urls`` isn't a column on ``Program``).
     update_fields = payload.model_dump(exclude_unset=True)
+    update_fields.pop("banner_image_urls", None)
     for field, value in update_fields.items():
         setattr(program, field, value)
+
+    # Replace the banner gallery when the caller touched either image field.
+    # An explicit ``banner_image_urls`` wins (empty list clears the gallery);
+    # otherwise a lone ``banner_image_url`` seeds a one-image gallery. Fields the
+    # caller left unset don't touch the existing gallery at all.
+    fields_set = payload.model_fields_set
+    if "banner_image_urls" in fields_set or "banner_image_url" in fields_set:
+        if payload.banner_image_urls is not None:
+            gallery = payload.banner_image_urls
+        elif payload.banner_image_url is not None:
+            gallery = [payload.banner_image_url]
+        else:
+            gallery = []
+        db.execute(
+            delete(ProgramImage).where(ProgramImage.program_id == program_id)
+        )
+        for sort_order, url in enumerate(gallery):
+            db.add(
+                ProgramImage(
+                    program_id=program_id,
+                    image_url=url,
+                    sort_order=sort_order,
+                )
+            )
+        program.banner_image_url = gallery[0] if gallery else None
 
     # Capacity may have dropped below current occupancy — clamp the FULL flag.
     count = _participant_count(program, db)
@@ -728,6 +756,7 @@ def update_program(
     read = ProgramRead.model_validate(program)
     read.participant_count = count
     read.is_full = count >= program.max_volunteers
+    _hydrate_images(read, _program_images([program_id], db).get(program_id, []))
     return read
 
 

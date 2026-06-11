@@ -202,3 +202,139 @@ def test_list_distance_grows_with_separation(client: TestClient) -> None:
     body = client.get("/programs?lat=-32.8688&lng=151.2093").json()
     assert body
     assert all(program["distance_km"] > 100 for program in body)
+
+
+def _create_program(client: TestClient, headers: dict, **overrides) -> dict:
+    payload = {**VALID_PROGRAM, **overrides}
+    res = client.post("/programs", json=payload, headers=headers)
+    assert res.status_code == 201
+    return res.json()
+
+
+def test_update_program_replaces_image_gallery(client: TestClient) -> None:
+    # Editing the gallery replaces it wholesale and mirrors the first image to
+    # the legacy single banner, on both the PATCH response and the detail fetch.
+    headers = {"Authorization": f"Bearer {_token(client)}"}
+    created = _create_program(
+        client, headers, banner_image_urls=["https://cdn.example.com/1/a.webp"]
+    )
+    pid = created["program_id"]
+
+    new_urls = [
+        "https://cdn.example.com/1/x.webp",
+        "https://cdn.example.com/1/y.webp",
+    ]
+    res = client.patch(
+        f"/programs/{pid}", json={"banner_image_urls": new_urls}, headers=headers
+    )
+    assert res.status_code == 200
+    body = res.json()
+    assert body["banner_image_urls"] == new_urls
+    assert body["banner_image_url"] == new_urls[0]
+
+    detail = client.get(f"/programs/{pid}").json()
+    assert detail["banner_image_urls"] == new_urls
+    assert detail["banner_image_url"] == new_urls[0]
+
+
+def test_update_program_empty_list_clears_gallery(client: TestClient) -> None:
+    # An explicit empty list removes every image (and nulls the legacy banner).
+    headers = {"Authorization": f"Bearer {_token(client)}"}
+    created = _create_program(
+        client,
+        headers,
+        banner_image_urls=["https://cdn.example.com/1/a.webp"],
+    )
+    pid = created["program_id"]
+
+    res = client.patch(
+        f"/programs/{pid}", json={"banner_image_urls": []}, headers=headers
+    )
+    assert res.status_code == 200
+    body = res.json()
+    assert body["banner_image_urls"] == []
+    assert body["banner_image_url"] is None
+
+    detail = client.get(f"/programs/{pid}").json()
+    assert detail["banner_image_urls"] == []
+
+
+def test_update_program_preserves_gallery_when_untouched(client: TestClient) -> None:
+    # A PATCH that doesn't mention either image field leaves the gallery intact.
+    headers = {"Authorization": f"Bearer {_token(client)}"}
+    urls = [
+        "https://cdn.example.com/1/a.webp",
+        "https://cdn.example.com/1/b.webp",
+    ]
+    created = _create_program(client, headers, banner_image_urls=urls)
+    pid = created["program_id"]
+
+    res = client.patch(
+        f"/programs/{pid}", json={"program_name": "Renamed"}, headers=headers
+    )
+    assert res.status_code == 200
+    body = res.json()
+    assert body["program_name"] == "Renamed"
+    assert body["banner_image_urls"] == urls
+
+
+def test_update_program_rejects_too_many_images(client: TestClient) -> None:
+    headers = {"Authorization": f"Bearer {_token(client)}"}
+    pid = _create_program(client, headers)["program_id"]
+    res = client.patch(
+        f"/programs/{pid}",
+        json={"banner_image_urls": [f"u{i}" for i in range(4)]},
+        headers=headers,
+    )
+    assert res.status_code == 422
+
+
+def test_update_program_rejects_overlong_url(client: TestClient) -> None:
+    # A URL longer than the image_url column (500) must fail validation (422),
+    # not slip through to a DB write error (500).
+    headers = {"Authorization": f"Bearer {_token(client)}"}
+    pid = _create_program(client, headers)["program_id"]
+    res = client.patch(
+        f"/programs/{pid}",
+        json={"banner_image_urls": ["https://x/" + "a" * 600]},
+        headers=headers,
+    )
+    assert res.status_code == 422
+
+
+def test_update_program_rejects_blank_url(client: TestClient) -> None:
+    headers = {"Authorization": f"Bearer {_token(client)}"}
+    pid = _create_program(client, headers)["program_id"]
+    res = client.patch(
+        f"/programs/{pid}", json={"banner_image_urls": [""]}, headers=headers
+    )
+    assert res.status_code == 422
+
+
+def test_update_program_non_creator_forbidden(client: TestClient) -> None:
+    # Only the host may edit. A different authenticated user gets 403.
+    owner = {"Authorization": f"Bearer {_token(client)}"}
+    pid = _create_program(client, owner)["program_id"]
+
+    intruder_token = client.post(
+        "/auth/register",
+        json={
+            "email": "intruder@example.com",
+            "password": "password123",
+            "first_name": "Mal",
+            "last_name": "Lory",
+        },
+    ).json()["token"]
+    intruder = {"Authorization": f"Bearer {intruder_token}"}
+    res = client.patch(
+        f"/programs/{pid}", json={"program_name": "Hijacked"}, headers=intruder
+    )
+    assert res.status_code == 403
+
+
+def test_update_nonexistent_program_404(client: TestClient) -> None:
+    headers = {"Authorization": f"Bearer {_token(client)}"}
+    res = client.patch(
+        "/programs/999999", json={"program_name": "Ghost"}, headers=headers
+    )
+    assert res.status_code == 404
