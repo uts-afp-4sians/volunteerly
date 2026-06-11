@@ -48,6 +48,7 @@ struct ForumThreadView: View {
         }
         .scrollDismissesKeyboard(.interactively)
         .toolbar(.hidden, for: .navigationBar)
+        .enableInteractiveSwipeBack()
         .alert(
             "Couldn't post",
             isPresented: Binding(
