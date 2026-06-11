@@ -1,3 +1,4 @@
+import StoreKit
 import SwiftUI
 
 /// Technical / account settings — change password, accessibility, legal docs,
@@ -7,10 +8,17 @@ import SwiftUI
 struct SettingsView: View {
     @Environment(AppRouter.self) private var router: AppRouter?
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.openURL) private var openURL
+    @Environment(\.requestReview) private var requestReview
     @State private var showDeleteConfirmation = false
 
     private static let dangerColor = Color(red: 0xD9 / 255, green: 0x29 / 255, blue: 0x29 / 255)
     private static let privacyPolicyURL = URL(string: "https://sites.google.com/view/volunteerly-privacypolicy/home")!
+    /// Numeric App Store ID (the digits after `id` in the listing URL). Set once
+    /// the app is published so "Rate the app" can deep-link to the write-review
+    /// page; until then it falls back to the in-app StoreKit prompt.
+    // TODO(oma-deferred): set the App Store ID when the listing exists.
+    private static let appStoreID: String? = nil
 
     var body: some View {
         ScrollView {
@@ -52,7 +60,12 @@ struct SettingsView: View {
                 }
 
                 section(title: "About") {
-                    row(icon: "heart.fill", label: "Rate the app")
+                    Button {
+                        rateApp()
+                    } label: {
+                        rowLabel(icon: "heart.fill", label: "Rate the app")
+                    }
+                    .buttonStyle(.plain)
                 }
 
                 accountActions
@@ -155,6 +168,18 @@ struct SettingsView: View {
             }
         }
         .padding(.top, 8)
+    }
+
+    /// Take the user to leave a review. Once the App Store ID is set this opens
+    /// the listing's write-review page directly; until publication it falls back
+    /// to StoreKit's in-app rating prompt (throttled by the system).
+    private func rateApp() {
+        if let id = Self.appStoreID,
+           let url = URL(string: "https://apps.apple.com/app/id\(id)?action=write-review") {
+            openURL(url)
+        } else {
+            requestReview()
+        }
     }
 
     private func performLogout() {
