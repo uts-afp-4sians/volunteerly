@@ -6,7 +6,9 @@
 //
 
 import CoreLocation
+import SwiftUI
 import Testing
+import UIKit
 @testable import volunteerly
 
 // MARK: - Auth validation
@@ -299,6 +301,55 @@ struct MyPageViewModelTests {
         let shown = viewModel.bookmarkPrograms(bookmarkedIds: [target])
         #expect(shown.allSatisfy { $0.id == target })
         #expect(shown.contains { $0.id == target })
+    }
+}
+
+// MARK: - ProgramCard layout
+
+@MainActor
+struct ProgramCardLayoutTests {
+    /// Regression: the card banner uses `.aspectRatio(contentMode: .fill)` at a
+    /// fixed height, and as a direct layout child its ideal width (height ×
+    /// the photo's aspect ratio) widened the whole card past the screen — the
+    /// list and the detail's "Similar programs nearby" section lost their 20pt
+    /// horizontal padding. The image must stay layout-neutral (overlay).
+    @Test func card_keepsProposedWidth_withWideBannerImage() {
+        let url = URL(string: "https://example.com/test-wide-banner.png")!
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        let wideBanner = UIGraphicsImageRenderer(size: CGSize(width: 2000, height: 500), format: format)
+            .image { context in
+                UIColor.gray.setFill()
+                context.fill(CGRect(x: 0, y: 0, width: 2000, height: 500))
+            }
+        ImageCache.shared.store(wideBanner, for: url)
+
+        let program = Program(
+            id: 999,
+            creatorUserId: 1,
+            categoryId: 1,
+            locationId: 1,
+            name: "Layout test program",
+            description: "Card must not exceed its proposed width",
+            bannerImageURL: url.absoluteString,
+            startDatetime: Date(timeIntervalSince1970: 0),
+            endDatetime: Date(timeIntervalSince1970: 3600),
+            maxVolunteers: 10,
+            commitmentFrequency: .weekly,
+            commitmentDuration: nil,
+            status: .open,
+            isDeleted: false,
+            deletedAt: nil,
+            createdAt: Date(timeIntervalSince1970: 0)
+        )
+
+        let renderer = ImageRenderer(content: ProgramCard(program: program, categoryEmoji: "🌱"))
+        renderer.proposedSize = ProposedViewSize(width: 390, height: nil)
+        renderer.scale = 1
+
+        let rendered = renderer.uiImage
+        #expect(rendered != nil)
+        #expect(rendered?.size.width == 390)
     }
 }
 

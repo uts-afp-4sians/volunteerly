@@ -71,6 +71,12 @@ final class ImageCache {
         memory.object(forKey: url as NSURL)
     }
 
+    /// Seeds the memory cache directly, so tests can render the loaded-image
+    /// state synchronously without any network.
+    func store(_ image: UIImage, for url: URL) {
+        memory.setObject(image, forKey: url as NSURL)
+    }
+
     /// Returns the image for `url`, fetching (and caching) it on a memory miss.
     func image(for url: URL) async -> UIImage? {
         if let hit = memory.object(forKey: url as NSURL) { return hit }
