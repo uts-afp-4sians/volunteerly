@@ -47,6 +47,52 @@ flowchart LR
     spec -. "swift-openapi-generator" .-> generated
 ```
 
+## Screen Flow
+
+App-level routing is a single `AppRouter.route` switch (`volunteerlyApp.swift`);
+inside the main UI each tab owns its own `NavigationStack`. Dotted lines are
+modals (sheet / full-screen cover), solid lines are route changes or pushes.
+
+```mermaid
+flowchart TD
+    splash["SplashView"] -->|"session exists"| tabs
+    splash -->|"no session"| home["HomeView<br/>(landing)"]
+    home -->|"Log in / Sign up"| login
+
+    subgraph auth["Auth flow"]
+        login["LoginView"] --> reset["ResetPasswordView"]
+        login -->|"Sign up"| signup["SignupView<br/>(step 1 · introduction)"]
+        signup --> form["SignupFormView<br/>(steps 2–7 · photo, location,<br/>email/password, interests, goals, finalise)"]
+    end
+
+    login -->|"login success"| tabs
+    form -->|"account created"| welcome["WelcomeView"]
+    welcome --> tabs
+
+    subgraph tabs["MainTabView (floating tab bar)"]
+        programs["ProgramListView<br/>(Programs)"]
+        bookmarks["BookmarksView<br/>(Bookmarks)"]
+        mypage["MyPageView<br/>(My Page)"]
+    end
+
+    programs -.->|"sheet"| filter["FilterSheet"]
+    programs -->|"+ post"| post["PostProgramView"]
+    programs --> detail["ProgramDetailView"]
+    bookmarks --> detail
+    mypage --> detail
+    mypage -.->|"sheet"| interests["InterestPickerSheet"]
+
+    detail -.->|"join confirmed"| joined["ProgramJoinedView"]
+    detail -->|"Community Board"| thread["ForumThreadView"]
+    detail -->|"Add post"| newpost["NewPostView"]
+    newpost -.->|"sheet"| drafts["DraftsView"]
+
+    programs & bookmarks & mypage --> settings["SettingsView"]
+    settings --> changepw["ChangePasswordView"]
+    settings --> web["WebPageView<br/>(privacy / terms)"]
+    settings -->|"log out · delete account"| home
+```
+
 ## ERD
 
 ```mermaid
