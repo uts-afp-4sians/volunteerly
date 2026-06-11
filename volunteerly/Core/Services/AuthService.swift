@@ -44,6 +44,19 @@ final class AuthService {
         return response
     }
 
+    /// Change the signed-in user's password. The backend verifies
+    /// `currentPassword` and returns `204` on success or `401` when it's wrong
+    /// (surfaced as `APIError.unauthorized`).
+    func changePassword(currentPassword: String, newPassword: String) async throws {
+        try await client.postExpectingNoContent(
+            "/auth/change-password",
+            body: ChangePasswordRequest(
+                currentPassword: currentPassword,
+                newPassword: newPassword
+            )
+        )
+    }
+
     func logout() {
         SessionManager.shared.clearSession()
         LiveHTTPClient.shared.authToken = nil

@@ -29,6 +29,10 @@ final class MockHTTPClient: HTTPClient {
         try resolve(path)
     }
 
+    func postExpectingNoContent<B: Encodable>(_ path: String, body: B) async throws {
+        // no-op for mock
+    }
+
     func put<B: Encodable, T: Decodable>(_ path: String, body: B) async throws -> T {
         try resolve(path)
     }

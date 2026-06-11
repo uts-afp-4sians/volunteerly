@@ -20,6 +20,14 @@ class RegisterRequest(BaseModel):
     last_name: str = Field(min_length=1, max_length=255)
 
 
+class ChangePasswordRequest(BaseModel):
+    """Authenticated password change: verify `current`, set `new`."""
+
+    # max_length 72 mirrors bcrypt's byte limit (see auth.security).
+    current_password: str = Field(min_length=8, max_length=72)
+    new_password: str = Field(min_length=8, max_length=72)
+
+
 class AuthResponse(BaseModel):
     """Wire shape matching iOS `AuthResponse` ({ token, user })."""
 

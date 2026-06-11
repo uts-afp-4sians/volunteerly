@@ -27,6 +27,16 @@ struct RegisterRequest: Encodable {
     }
 }
 
+struct ChangePasswordRequest: Encodable {
+    let currentPassword: String
+    let newPassword: String
+
+    enum CodingKeys: String, CodingKey {
+        case currentPassword = "current_password"
+        case newPassword = "new_password"
+    }
+}
+
 struct AuthResponse: Codable {
     let token: String
     let user: User

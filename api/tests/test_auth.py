@@ -142,6 +142,76 @@ def test_me_with_token(client: TestClient) -> None:
     assert res.json()["user_id"] == 1
 
 
+def _token(client: TestClient, email: str, password: str) -> str:
+    return client.post(
+        "/auth/login", json={"email": email, "password": password}
+    ).json()["token"]
+
+
+def test_change_password_success(client: TestClient) -> None:
+    token = _token(client, "jane.doe@example.com", "password123")
+    res = client.post(
+        "/auth/change-password",
+        json={"current_password": "password123", "new_password": "newpassword456"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert res.status_code == 204
+    assert res.content == b""
+
+    # The old password no longer works; the new one does.
+    assert (
+        client.post(
+            "/auth/login",
+            json={"email": "jane.doe@example.com", "password": "password123"},
+        ).status_code
+        == 401
+    )
+    assert (
+        client.post(
+            "/auth/login",
+            json={"email": "jane.doe@example.com", "password": "newpassword456"},
+        ).status_code
+        == 200
+    )
+
+
+def test_change_password_wrong_current(client: TestClient) -> None:
+    token = _token(client, "jane.doe@example.com", "password123")
+    res = client.post(
+        "/auth/change-password",
+        json={"current_password": "notmypassword", "new_password": "newpassword456"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert res.status_code == 401
+    # The original password is unchanged.
+    assert (
+        client.post(
+            "/auth/login",
+            json={"email": "jane.doe@example.com", "password": "password123"},
+        ).status_code
+        == 200
+    )
+
+
+def test_change_password_requires_auth(client: TestClient) -> None:
+    res = client.post(
+        "/auth/change-password",
+        json={"current_password": "password123", "new_password": "newpassword456"},
+    )
+    assert res.status_code == 401
+
+
+def test_change_password_rejects_short_new_password(client: TestClient) -> None:
+    token = _token(client, "jane.doe@example.com", "password123")
+    res = client.post(
+        "/auth/change-password",
+        json={"current_password": "password123", "new_password": "short"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert res.status_code == 422
+    assert "new_password" in res.json()["fields"]
+
+
 def test_me_without_token(client: TestClient) -> None:
     assert client.get("/auth/me").status_code == 401
 

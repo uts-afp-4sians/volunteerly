@@ -1,13 +1,19 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
 from src.auth.deps import get_current_user
-from src.auth.schema import AuthResponse, LoginRequest, RegisterRequest
+from src.auth.schema import (
+    AuthResponse,
+    ChangePasswordRequest,
+    LoginRequest,
+    RegisterRequest,
+)
 from src.auth.security import create_access_token
 from src.auth.service import (
     EmailAlreadyRegistered,
     InvalidCredentials,
     authenticate_user,
+    change_password,
     register_user,
 )
 from src.lib.database import get_db
@@ -47,6 +53,24 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)) -> AuthResponse:
         token=create_access_token(user.user_id),
         user=UserRead.model_validate(user),
     )
+
+
+@router.post("/change-password", status_code=status.HTTP_204_NO_CONTENT)
+def change_password_route(
+    payload: ChangePasswordRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> Response:
+    try:
+        change_password(
+            db, current_user, payload.current_password, payload.new_password
+        )
+    except InvalidCredentials:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Current password is incorrect",
+        ) from None
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.get("/me", response_model=UserRead)

@@ -5,6 +5,8 @@ import Foundation
 protocol HTTPClient {
     func get<T: Decodable>(_ path: String) async throws -> T
     func post<B: Encodable, T: Decodable>(_ path: String, body: B) async throws -> T
+    /// POST whose 2xx response carries no body (e.g. a `204 No Content`).
+    func postExpectingNoContent<B: Encodable>(_ path: String, body: B) async throws
     func put<B: Encodable, T: Decodable>(_ path: String, body: B) async throws -> T
     func patch<B: Encodable, T: Decodable>(_ path: String, body: B) async throws -> T
     func delete(_ path: String) async throws
@@ -84,6 +86,12 @@ final class LiveHTTPClient: HTTPClient {
     func post<B: Encodable, T: Decodable>(_ path: String, body: B) async throws -> T {
         let request = try makeRequest(path: path, method: "POST", body: body)
         return try await perform(request)
+    }
+
+    func postExpectingNoContent<B: Encodable>(_ path: String, body: B) async throws {
+        let request = try makeRequest(path: path, method: "POST", body: body)
+        let (data, response) = try await session.data(for: request)
+        try validate(response, data: data)
     }
 
     func put<B: Encodable, T: Decodable>(_ path: String, body: B) async throws -> T {

@@ -62,3 +62,20 @@ def authenticate_user(db: Session, email: str, password: str) -> User:
     if user is None or user.is_deleted or not password_ok:
         raise InvalidCredentials
     return user
+
+
+def change_password(
+    db: Session, user: User, current_password: str, new_password: str
+) -> None:
+    """Replace ``user``'s password after verifying ``current_password``.
+
+    Raises ``InvalidCredentials`` if the current password is wrong (or the
+    account has no password set, e.g. a future OAuth identity). The new hash is
+    flushed; ``get_db`` commits the surrounding request.
+    """
+    if user.password_hash is None or not verify_password(
+        current_password, user.password_hash
+    ):
+        raise InvalidCredentials
+    user.password_hash = hash_password(new_password)
+    db.flush()

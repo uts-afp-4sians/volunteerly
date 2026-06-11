@@ -33,7 +33,12 @@ struct SettingsView: View {
                     .padding(.horizontal, 20)
 
                 section(title: "Account") {
-                    row(icon: "key.fill", label: "Change password")
+                    NavigationLink {
+                        ChangePasswordView()
+                    } label: {
+                        rowLabel(icon: "key.fill", label: "Change password")
+                    }
+                    .buttonStyle(.plain)
                 }
 
                 section(title: "Legal") {
@@ -82,31 +87,37 @@ struct SettingsView: View {
         }
     }
 
-    /// One settings row. Tap currently no-ops — destinations to be wired up as
-    /// each sub-page is built.
+    /// One settings row whose tap currently no-ops — destinations to be wired
+    /// up as each sub-page is built.
     private func row(icon: String, label: String) -> some View {
         Button {
             // TODO: route to the dedicated screen for each settings entry.
         } label: {
-            HStack(spacing: 14) {
-                Image(systemName: icon)
-                    .font(.system(size: 16, weight: .regular))
-                    .foregroundStyle(Theme.forest)
-                    .frame(width: 24)
-                Text(label)
-                    .font(.body)
-                    .foregroundStyle(Theme.textPrimary)
-                Spacer()
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(Theme.textSecondary)
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 14)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .contentShape(Rectangle())
+            rowLabel(icon: icon, label: label)
         }
         .buttonStyle(.plain)
+    }
+
+    /// The chrome of a settings row (icon, label, chevron, divider). Shared by
+    /// the no-op `row` and the `NavigationLink`-backed entries.
+    private func rowLabel(icon: String, label: String) -> some View {
+        HStack(spacing: 14) {
+            Image(systemName: icon)
+                .font(.system(size: 16, weight: .regular))
+                .foregroundStyle(Theme.forest)
+                .frame(width: 24)
+            Text(label)
+                .font(.body)
+                .foregroundStyle(Theme.textPrimary)
+            Spacer()
+            Image(systemName: "chevron.right")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(Theme.textSecondary)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
         .overlay(alignment: .bottom) {
             Rectangle()
                 .fill(Theme.border)
