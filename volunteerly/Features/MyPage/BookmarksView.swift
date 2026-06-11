@@ -58,7 +58,10 @@ struct BookmarksView: View {
             )
             .padding(.top, 40)
         } else if bookmarks.isEmpty {
-            ContentUnavailableView("No bookmarks yet", systemImage: "bookmark")
+            Text("No bookmarks yet")
+                .font(.subheading)
+                .foregroundStyle(Color.secondary)
+                .frame(maxWidth: .infinity)
                 .padding(.top, 40)
         } else {
             LazyVStack(spacing: 23) {

@@ -2,11 +2,11 @@ import SwiftUI
 import PhotosUI
 
 /// The signed-in volunteer's "My page" tab: an **editable** My profile form
-/// (avatar, name, interests, goal, bio, Instagram + a Save action) followed by
-/// the **My program** list (Active / Bookmark tabs, plus a Past sub-list).
+/// (avatar, name | birthday | city line, Instagram, About Me), the
+/// **Interests and Goals** chips + goal text with a Save Changes action,
+/// followed by the **My Programs** list (search, active + Past).
 ///
-/// Mirrors Figma `group-4-prototype` node 332:211. The profile editing that used
-/// to live on a separate settings screen is integrated here.
+/// Mirrors Figma `group-4-prototype` node 332:211.
 struct MyPageView: View {
     // Optional so previews that don't inject a router still render (gear tap no-ops).
     @Environment(TabRouter.self) private var tabRouter: TabRouter?
@@ -15,8 +15,6 @@ struct MyPageView: View {
 
     @State private var profileItem: PhotosPickerItem?
     @State private var showInterestPicker = false
-    @State private var showDOBPicker = false
-    @State private var editingName: String?
     @State private var didLoad = false
 
     private let horizontalPadding: CGFloat = 20
@@ -50,15 +48,13 @@ struct MyPageView: View {
                 } else {
                     profileSection
                     interestsAndGoalsSection
+                    saveButton
 
                     Divider()
-
-                    editButtons
                 }
                 programSection
             }
             .padding(.horizontal, horizontalPadding)
-            .padding(.top, 16)
             .padding(.bottom, 24)
             .tabScrollTopAnchor()
         }
@@ -93,8 +89,7 @@ struct MyPageView: View {
     private var titleRow: some View {
         HStack(alignment: .center) {
             Text("My Page")
-                .font(.pageTitle)
-                .foregroundStyle(Color.textPrimary)
+                .largeTitleStyle()
 
             Spacer()
 
@@ -113,11 +108,10 @@ struct MyPageView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    /// Green section subheader (#7E924E / `Theme.forest`, SF Pro Regular 30).
+    /// Section subheader — Headline 18 · Black/700 per the Figma frame.
     private func sectionHeader(_ title: String) -> some View {
         Text(title)
-            .font(.subheading)
-            .foregroundStyle(Theme.forest)
+            .headlineStyle()
             .frame(maxWidth: .infinity, alignment: .leading)
     }
 
@@ -128,97 +122,67 @@ struct MyPageView: View {
         return VStack(alignment: .leading, spacing: 16) {
             sectionHeader("My Profile")
 
-            VStack(spacing: 8) {
+            VStack(spacing: 16) {
                 PhotosPicker(selection: $profileItem, matching: .images) {
-                    Avatar(source: avatarSource(emptyPrompt: true), size: 130)
+                    Avatar(source: avatarSource(emptyPrompt: true), size: 112)
                         .overlay(alignment: .bottomTrailing) {
-                            // Small brand-green "+" badge cueing the user that
-                            // tapping the avatar swaps the picture.
-                            Image(systemName: "plus")
-                                .font(.system(size: 16, weight: .bold))
-                                .foregroundStyle(Color.white)
-                                .frame(width: 34, height: 34)
-                                .background(Theme.forest, in: Circle())
-                                .overlay(Circle().strokeBorder(Color.white, lineWidth: 3))
+                            // Brand-green "+" badge cueing the user that tapping
+                            // the avatar swaps the picture (Figma: plus.circle.fill).
+                            Image(systemName: "plus.circle.fill")
+                                .font(.system(size: 26))
+                                .symbolRenderingMode(.palette)
+                                .foregroundStyle(Color.onBrand, Theme.brandPrimary)
+                                .background(Circle().fill(Color.white))
                         }
                 }
                 .onChange(of: profileItem) { _, newItem in
                     Task { store.profileImageData = try? await newItem?.loadTransferable(type: Data.self) }
                 }
 
-                // Name is read-only; the pencil edit button sits inline to its
-                // left as a leading edit affordance.
-                HStack(spacing: 8) {
-                    Button {
-                        editingName = store.displayName
-                    } label: {
-                        Image(systemName: "pencil")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundStyle(Theme.forest)
-                            .padding(6)
-                            .background(Theme.forest.opacity(0.1), in: Circle())
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("Edit name")
-
-                    Text(store.displayName.isEmpty ? "Your name" : store.displayName)
-                        .font(.bodyStrong)
-                        .foregroundStyle(store.displayName.isEmpty ? Theme.textSecondary : Color.textPrimary)
-                }
-                .padding(.top, 6)
+                identityLine
             }
             .frame(maxWidth: .infinity)
 
-            labelledField("Date of birth") { dateOfBirthRow }
-            labelledField("City") {
-                singleLineField(text: $store.city, placeholder: "e.g. Sydney")
-                    .textInputAutocapitalization(.words)
-            }
-            labelledField("Instagram") { instagramField }
-            labelledField("About me") {
+            instagramField
+
+            labelledField("About Me") {
                 TextBox(
                     text: $store.aboutMe,
                     placeholder: "I am a student, I also enjoy social media marketing",
-                    height: 120
+                    height: 110
                 )
             }
         }
-        .alert("Edit name", isPresented: Binding(
-            get: { editingName != nil },
-            set: { if !$0 { editingName = nil } }
-        )) {
-            TextField("Your name", text: Binding(
-                get: { editingName ?? "" },
-                set: { editingName = $0 }
-            ))
-            .textContentType(.name)
-            Button("Cancel", role: .cancel) { editingName = nil }
-            Button("Save") {
-                if let name = editingName?.trimmingCharacters(in: .whitespacesAndNewlines), !name.isEmpty {
-                    profileStore.displayName = name
-                }
-                editingName = nil
-            }
-        } message: {
-            Text("Update the name shown on your profile.")
-        }
-        .sheet(isPresented: $showDOBPicker) {
-            dateOfBirthSheet
-        }
     }
 
-    /// Single-line input styled to match the existing instagram / city fields.
-    private func singleLineField(text: Binding<String>, placeholder: String) -> some View {
-        TextField(placeholder, text: text)
+    /// The read-only "Name | Birthday | City of Residence" line under the
+    /// avatar; unset segments render as placeholder-coloured prompts.
+    private var identityLine: some View {
+        (identitySegment(profileStore.displayName.isEmpty ? nil : profileStore.displayName, prompt: "Name")
+            + identityDivider
+            + identitySegment(formattedDOB, prompt: "Birthday")
+            + identityDivider
+            + identitySegment(profileStore.city.isEmpty ? nil : profileStore.city, prompt: "City of Residence"))
             .font(.bodyText)
-            .foregroundStyle(Theme.textPrimary)
-            .autocorrectionDisabled()
-            .padding(.horizontal, 12)
-            .padding(.vertical, 14)
-            .background(Color(red: 0.959, green: 0.959, blue: 0.959), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .lineLimit(1)
+            .minimumScaleFactor(0.8)
+            .frame(maxWidth: .infinity)
     }
 
-    /// Field with a small labelled header, used for the new profile rows.
+    private var identityDivider: Text {
+        Text(" | ").foregroundColor(Theme.placeholder)
+    }
+
+    private func identitySegment(_ value: String?, prompt: String) -> Text {
+        Text(value ?? prompt)
+            .foregroundColor(value == nil ? Theme.placeholder : Color.textPrimary)
+    }
+
+    private var formattedDOB: String? {
+        profileStore.dateOfBirth?.formatted(date: .abbreviated, time: .omitted)
+    }
+
+    /// Field with a small labelled header, used for the textbox rows.
     private func labelledField<Content: View>(_ label: String, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(label)
@@ -228,65 +192,8 @@ struct MyPageView: View {
         }
     }
 
-    /// Read-only date row that opens a graphical date picker on tap.
-    private var dateOfBirthRow: some View {
-        Button {
-            showDOBPicker = true
-        } label: {
-            HStack {
-                Text(formattedDOB)
-                    .font(.bodyText)
-                    .foregroundStyle(profileStore.dateOfBirth == nil ? Theme.textSecondary : Theme.textPrimary)
-                Spacer()
-                Image(systemName: "calendar")
-                    .foregroundStyle(Theme.forest)
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 14)
-            .background(Color(red: 0.959, green: 0.959, blue: 0.959), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-        }
-        .buttonStyle(.plain)
-    }
-
-    private var formattedDOB: String {
-        guard let dob = profileStore.dateOfBirth else { return "Choose a date" }
-        return dob.formatted(date: .long, time: .omitted)
-    }
-
-    private var dateOfBirthSheet: some View {
-        VStack(spacing: 0) {
-            DatePicker(
-                "",
-                selection: Binding(
-                    get: { profileStore.dateOfBirth ?? Date() },
-                    set: { profileStore.dateOfBirth = $0 }
-                ),
-                in: ...Date(),
-                displayedComponents: .date
-            )
-            .datePickerStyle(.graphical)
-            .labelsHidden()
-            .tint(Theme.forest)
-            .padding(.horizontal, 8)
-            .padding(.top, 24)
-
-            Button { showDOBPicker = false } label: {
-                Text("Done")
-                    .font(.buttonLabel)
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 50)
-                    .background(Theme.forest)
-                    .clipShape(RoundedRectangle(cornerRadius: 25))
-            }
-            .padding(.horizontal, 24)
-            .padding(.vertical, 20)
-        }
-        .presentationDetents([.medium])
-        .presentationDragIndicator(.visible)
-    }
-
     /// Single-line grey input for the Instagram handle (TextBox is multi-line).
+    /// Per Figma it sits directly under the identity line with no label.
     private var instagramField: some View {
         @Bindable var store = profileStore
         return TextField(text: $store.instagram) {
@@ -298,7 +205,7 @@ struct MyPageView: View {
         .autocorrectionDisabled()
         .padding(.horizontal, 12)
         .padding(.vertical, 14)
-        .background(Color(red: 0.959, green: 0.959, blue: 0.959), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
 
     // MARK: - Interests and Goals
@@ -322,83 +229,65 @@ struct MyPageView: View {
                     height: 110
                 )
             }
-
-            labelledField("Current role") {
-                singleLineField(text: $store.occupation, placeholder: "e.g. Uni student, barista, between jobs")
-                    .textInputAutocapitalization(.sentences)
-            }
-
-            labelledField("What I can bring to the team") {
-                singleLineField(text: $store.keySkills, placeholder: "e.g. Positive energy, strong communication")
-                    .textInputAutocapitalization(.sentences)
-            }
         }
     }
 
+    /// Surface-grey chip per Figma (rounded 20, Callout 15 · Black/700).
+    /// Tapping any chip opens the picker, where interests are added/removed.
     private func interestChip(_ interest: UserProfileStore.Interest) -> some View {
-        HStack(spacing: 6) {
-            Text(interest.emoji)
-            Text(interest.name).font(.bodyText)
-            Button {
-                removeInterest(interest)
-            } label: {
-                Image(systemName: "xmark")
-                    .font(.caption2.weight(.semibold))
-                    .foregroundStyle(Theme.textSecondary)
-                    .padding(4)
-                    .background(Circle().fill(Color(.systemGray5)))
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Remove \(interest.name)")
+        Button {
+            showInterestPicker = true
+        } label: {
+            Text("\(interest.emoji) \(interest.name)")
+                .font(.calloutText)
+                .foregroundStyle(Theme.textBody)
+                .padding(10)
+                .background(Theme.surface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
         }
-        .foregroundStyle(Color.textPrimary)
-        .padding(.leading, 14)
-        .padding(.trailing, 6)
-        .padding(.vertical, 6)
-        .background(Color(.systemGray6), in: Capsule())
+        .buttonStyle(.plain)
+        .accessibilityLabel("\(interest.name) interest")
+        .accessibilityHint("Opens the interest picker")
     }
 
+    /// Dashed "+ Add" chip per Figma (Brand/400 dashed border, Brand/300 label).
     private var addInterestChip: some View {
         Button {
             showInterestPicker = true
         } label: {
-            HStack(spacing: 6) {
-                Image(systemName: "plus")
-                Text("Add an interest").font(.bodyText)
-            }
-            .foregroundStyle(Theme.forest)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 8)
-            .overlay(
-                Capsule().stroke(Theme.forest, style: StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
-            )
+            Text("+ Add")
+                .font(.calloutText)
+                .foregroundStyle(Theme.brand300)
+                .padding(10)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                        .strokeBorder(Theme.brandPrimary, style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
+                )
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("Add an interest")
     }
 
-    /// Cancel (outlined, reverts edits) + Edit profile (filled, saves) — the
-    /// Figma footer pair that replaces the single "Save my info" button.
-    private var editButtons: some View {
+    /// Full-width brand "Save Changes" pill — the Figma footer of the editable form.
+    private var saveButton: some View {
         Button {
             Task { await profileStore.save() }
         } label: {
             if profileStore.isSaving {
                 ProgressView().tint(Color.onBrand)
             } else {
-                Text("Save changes")
+                Text("Save Changes")
             }
         }
         .buttonStyle(PrimaryActionButtonStyle())
         .disabled(profileStore.isLoading || profileStore.isSaving || !profileStore.isDirty)
     }
 
-    // MARK: - My program
+    // MARK: - My Programs
 
     private var programSection: some View {
         @Bindable var vm = viewModel
         return VStack(alignment: .leading, spacing: 16) {
             sectionHeader("My Programs")
-                .padding(.top, 8)
 
             SearchBar(text: $vm.searchQuery)
             content
@@ -416,7 +305,6 @@ struct MyPageView: View {
                 .padding(.top, 24)
         } else {
             activeContent
-            viewAllPostsLink
         }
     }
 
@@ -436,7 +324,7 @@ struct MyPageView: View {
 
             if !past.isEmpty {
                 Text("Past")
-                    .font(.bodyText)
+                    .font(.subheadText)
                     .foregroundStyle(Color.textPrimary)
                     .padding(.top, 12)
                 LazyVStack(spacing: 20) {
@@ -456,20 +344,6 @@ struct MyPageView: View {
             .padding(.vertical, 24)
     }
 
-    private var viewAllPostsLink: some View {
-        // TODO(oma-deferred): route to the volunteer's forum posts when a
-        // "my posts" screen exists.
-        HStack {
-            Spacer()
-            Text("View all programs")
-                .linkStyle()
-            Spacer()
-        }
-        .padding(.top, 16)
-    }
-
-    // MARK: - Account actions
-
     // MARK: - Helpers
 
     /// Avatar contents: picked image > saved CDN image > fallback.
@@ -484,20 +358,12 @@ struct MyPageView: View {
         }
         return emptyPrompt ? .uploadPrompt : .placeholder
     }
-
-    // MARK: - Actions
-
-    private func removeInterest(_ interest: UserProfileStore.Interest) {
-        withAnimation(.spring(response: 0.25, dampingFraction: 0.85)) {
-            profileStore.interests.removeAll { $0.id == interest.id }
-        }
-    }
 }
 
 /// A single program row in the My program list: thumbnail + name.
 struct MyPageProgramRow: View {
     let program: Program
-    /// Past programs render in a muted style.
+    /// Past programs render in a muted style (Figma: Black/300).
     var isPast: Bool = false
 
     var body: some View {
@@ -506,14 +372,14 @@ struct MyPageProgramRow: View {
                 CachedAsyncImage(url: URL(string: program.bannerImageURL ?? "")) { image in
                     image.resizable().aspectRatio(contentMode: .fill)
                 } placeholder: {
-                    Rectangle().fill(Color(.systemGray5))
+                    Rectangle().fill(Theme.surface)
                 }
                 .frame(width: 69, height: 69)
                 .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
 
                 Text(program.name)
                     .font(.bodyStrong)
-                    .foregroundStyle(isPast ? Theme.textSecondary : Color.textPrimary)
+                    .foregroundStyle(isPast ? Theme.placeholder : Color.textPrimary)
                     .lineLimit(1)
 
                 Spacer(minLength: 8)
