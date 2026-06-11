@@ -286,4 +286,36 @@ struct MyPageViewModelTests {
         #expect(viewModel.isLoading == false)
         #expect(viewModel.errorMessage == nil)
     }
+
+    /// The bookmarks list is derived from the cached program pool and the shared
+    /// bookmark id set — so it re-filters when the set changes, with no refetch.
+    @Test func bookmarkPrograms_derivesFromGivenIds() async {
+        let viewModel = MyPageViewModel(httpClient: RecordingHTTPClient())
+        await viewModel.load(includeMyPrograms: false)
+        let target = viewModel.programs.first!.id
+
+        #expect(viewModel.bookmarkPrograms(bookmarkedIds: []).isEmpty)
+
+        let shown = viewModel.bookmarkPrograms(bookmarkedIds: [target])
+        #expect(shown.allSatisfy { $0.id == target })
+        #expect(shown.contains { $0.id == target })
+    }
+}
+
+// MARK: - BookmarkStore
+
+@MainActor
+struct BookmarkStoreTests {
+    /// The shared source of truth toggles membership; both the Bookmarks list
+    /// and a program's detail read this same set, so a toggle in one is seen by
+    /// the other instantly.
+    @Test func toggle_addsAndRemoves() {
+        let store = BookmarkStore(ids: [])
+
+        #expect(store.isBookmarked(7) == false)
+        #expect(store.toggle(7) == true)
+        #expect(store.isBookmarked(7) == true)
+        #expect(store.toggle(7) == false)
+        #expect(store.isBookmarked(7) == false)
+    }
 }

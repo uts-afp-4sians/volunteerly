@@ -17,7 +17,6 @@ final class ProgramDetailViewModel {
     var isLoading = false
     var errorMessage: String?
 
-    var isBookmarked = false
     var isJoined = false
 
     /// Live participation snapshot from `GET /programs/{id}/participations`.
@@ -118,8 +117,6 @@ final class ProgramDetailViewModel {
         isFull = summary.isFull
         isJoined = summary.joined
     }
-
-    func toggleBookmark() { isBookmarked.toggle() }
 
     /// Join when there's a free slot, or leave when already joined. Returns
     /// `true` when a join just succeeded so the view can show the confirmation.

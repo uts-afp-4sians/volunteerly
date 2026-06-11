@@ -16,10 +16,6 @@ final class MyPageViewModel {
     var errorMessage: String?
     var searchQuery = ""
 
-    /// Programs the volunteer has bookmarked. Seeded so the Bookmarks screen
-    /// demonstrates content out of the box.
-    var bookmarkedProgramIds: Set<Int> = [1, 2]
-
     private let httpClient: HTTPClient
 
     init(httpClient: HTTPClient = LiveHTTPClient.shared) {
@@ -54,25 +50,13 @@ final class MyPageViewModel {
         isLoading = false
     }
 
-    // MARK: - Bookmarks
-
-    func isBookmarked(_ program: Program) -> Bool {
-        bookmarkedProgramIds.contains(program.id)
-    }
-
-    func toggleBookmark(_ program: Program) {
-        if bookmarkedProgramIds.contains(program.id) {
-            bookmarkedProgramIds.remove(program.id)
-        } else {
-            bookmarkedProgramIds.insert(program.id)
-        }
-    }
-
     // MARK: - Slicing
 
-    /// Bookmarked programs, soonest first.
-    var bookmarkPrograms: [Program] {
-        let list = filtered(programs) { self.isBookmarked($0) }
+    /// Bookmarked programs (from the shared `BookmarkStore`), soonest first.
+    /// The store is the source of truth, so the cached `programs` pool is simply
+    /// re-filtered whenever a bookmark toggles — no refetch needed.
+    func bookmarkPrograms(bookmarkedIds: Set<Int>) -> [Program] {
+        let list = filtered(programs) { bookmarkedIds.contains($0.id) }
         return list.sorted { $0.startDatetime < $1.startDatetime }
     }
 

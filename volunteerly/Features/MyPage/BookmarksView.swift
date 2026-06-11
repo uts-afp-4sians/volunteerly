@@ -2,9 +2,16 @@ import SwiftUI
 
 struct BookmarksView: View {
     @State private var viewModel: MyPageViewModel
+    @Environment(BookmarkStore.self) private var bookmarkStore: BookmarkStore?
 
     init(httpClient: HTTPClient = LiveHTTPClient.shared) {
         _viewModel = State(initialValue: MyPageViewModel(httpClient: httpClient))
+    }
+
+    /// The cached program pool filtered by the shared bookmark set. Re-derives
+    /// instantly when a toggle (here or in a program's detail) mutates the store.
+    private var bookmarks: [Program] {
+        viewModel.bookmarkPrograms(bookmarkedIds: bookmarkStore?.ids ?? [])
     }
 
     var body: some View {
@@ -52,12 +59,12 @@ struct BookmarksView: View {
                 description: Text(error)
             )
             .padding(.top, 40)
-        } else if viewModel.bookmarkPrograms.isEmpty {
+        } else if bookmarks.isEmpty {
             ContentUnavailableView("No bookmarks yet", systemImage: "bookmark")
                 .padding(.top, 40)
         } else {
             LazyVStack(spacing: 23) {
-                ForEach(viewModel.bookmarkPrograms) { program in
+                ForEach(bookmarks) { program in
                     NavigationLink(value: program.id) {
                         BookmarkRow(program: program)
                     }
@@ -164,4 +171,5 @@ private extension View {
         BookmarksView(httpClient: MockHTTPClient.shared)
     }
     .environment(TabRouter())
+    .environment(BookmarkStore())
 }

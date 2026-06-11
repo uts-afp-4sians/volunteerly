@@ -3,6 +3,7 @@ import SwiftUI
 struct MainTabView: View {
     @State private var tabRouter = TabRouter()
     @State private var profileStore = UserProfileStore()
+    @State private var bookmarkStore = BookmarkStore()
     @State private var programRefreshID = 0
 
     var body: some View {
@@ -17,6 +18,7 @@ struct MainTabView: View {
         }
         .environment(tabRouter)
         .environment(profileStore)
+        .environment(bookmarkStore)
         // Hydrate the signed-in profile once at the app root so `currentUserId`
         // is available on every tab — not just after My Page is visited. Without
         // this, opening your own program from the Programs tab first leaves

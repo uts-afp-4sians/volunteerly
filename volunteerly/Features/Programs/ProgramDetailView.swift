@@ -14,6 +14,7 @@ struct ProgramDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(UserProfileStore.self) private var profileStore: UserProfileStore?
     @Environment(TabRouter.self) private var tabRouter: TabRouter?
+    @Environment(BookmarkStore.self) private var bookmarkStore: BookmarkStore?
 
     private let httpClient: HTTPClient
     private let horizontalPadding: CGFloat = 20
@@ -210,8 +211,8 @@ struct ProgramDetailView: View {
 
             HStack(spacing: 17) {
                 shareButton
-                circleButton(systemName: viewModel.isBookmarked ? "bookmark.fill" : "bookmark") {
-                    viewModel.toggleBookmark()
+                circleButton(systemName: (bookmarkStore?.isBookmarked(programId) ?? false) ? "bookmark.fill" : "bookmark") {
+                    bookmarkStore?.toggle(programId)
                 }
                 if isHost {
                     hostMenu
