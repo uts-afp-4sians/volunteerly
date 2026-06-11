@@ -17,6 +17,13 @@ struct MainTabView: View {
         }
         .environment(tabRouter)
         .environment(profileStore)
+        // Hydrate the signed-in profile once at the app root so `currentUserId`
+        // is available on every tab — not just after My Page is visited. Without
+        // this, opening your own program from the Programs tab first leaves
+        // `currentUserId` nil, so `ProgramDetailView.isHost` reads false and the
+        // owner sees the "Joined" join bar instead of the host "…" menu.
+        // Cache-first and idempotent; safe to call alongside My Page's own load.
+        .task { await profileStore.load() }
     }
 
     private var programsTab: some View {
