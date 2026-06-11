@@ -1,14 +1,18 @@
 import SwiftUI
 
-/// Question detail / forum thread. Shows the post title + description above a
-/// threaded comment list where members can like, reply and add comments.
-/// Matches Figma `group-4-prototype` 3A.
+/// Question detail / forum thread. A chat-style layout: the question sits at the
+/// top with its author (avatar + name) above a soft grey bubble, then a "Reply"
+/// pill, then each comment as a chat message (avatar + name + time + bubble).
+/// Matches Figma `group-4-prototype` node 147:360 (Question Page).
 struct ForumThreadView: View {
     @State private var viewModel: ForumThreadViewModel
     @Environment(\.dismiss) private var dismiss
     @FocusState private var composerFocused: Bool
 
-    private let horizontalPadding: CGFloat = 20
+    private let horizontalPadding: CGFloat = 24
+    /// Leading inset that aligns a reply bubble under its author's name
+    /// (avatar width + the gap between avatar and name).
+    private let replyBubbleInset: CGFloat = 60
 
     init(post: ForumPost, currentUserId: Int = 1, httpClient: HTTPClient = LiveHTTPClient.shared) {
         _viewModel = State(
@@ -18,10 +22,25 @@ struct ForumThreadView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
+            VStack(alignment: .leading, spacing: 0) {
                 backButton
-                question
-                Divider().background(Theme.border)
+                    .padding(.bottom, 28)
+
+                questionHeader
+                    .padding(.bottom, 18)
+
+                questionBubble
+
+                divider
+                    .padding(.vertical, 18)
+
+                replyButton
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                    .padding(.bottom, 18)
+
+                divider
+                    .padding(.bottom, 24)
+
                 comments
             }
             .padding(.horizontal, horizontalPadding)
@@ -62,17 +81,53 @@ struct ForumThreadView: View {
         .accessibilityLabel("Back")
     }
 
-    private var question: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(viewModel.post.title)
-                .font(.subheading)
-                .foregroundStyle(Theme.textPrimary)
-                .fixedSize(horizontal: false, vertical: true)
-            Text(viewModel.post.body)
-                .font(.bodyText)
-                .foregroundStyle(Theme.textSecondary)
-                .fixedSize(horizontal: false, vertical: true)
+    /// The question's author — a 59pt avatar beside the bold name.
+    private var questionHeader: some View {
+        HStack(spacing: 20) {
+            Avatar(url: viewModel.postAuthorImageURL, size: 59)
+            Text(viewModel.postAuthorName)
+                .font(.cardTitle)
+                .foregroundStyle(Theme.iconPrimary)
         }
+    }
+
+    /// Full-width grey bubble holding the question text, italic and prefixed
+    /// with "Q." to match the design.
+    private var questionBubble: some View {
+        Text(questionText)
+            .font(.bodyText.italic())
+            .foregroundStyle(Theme.textPrimary)
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(17)
+            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+    }
+
+    private var questionText: String {
+        let raw = viewModel.post.body.isEmpty ? viewModel.post.title : viewModel.post.body
+        return raw.lowercased().hasPrefix("q.") ? raw : "Q. \(raw)"
+    }
+
+    /// Green pill that aims the composer at the thread (a top-level reply).
+    private var replyButton: some View {
+        Button {
+            viewModel.beginReply(to: nil)
+            composerFocused = true
+        } label: {
+            Text("Reply")
+                .font(.captionText)
+                .foregroundStyle(.white)
+                .padding(.horizontal, 18)
+                .padding(.vertical, 8)
+                .background(Theme.brand300, in: Capsule())
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var divider: some View {
+        Rectangle()
+            .fill(Theme.divider)
+            .frame(height: 1)
     }
 
     // MARK: Comments
@@ -84,22 +139,23 @@ struct ForumThreadView: View {
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 24)
         } else if viewModel.nodes.isEmpty {
-            Text("No comments yet. Start the conversation below.")
+            Text("No replies yet. Tap Reply to start the conversation.")
                 .font(.bodyText)
-                .foregroundStyle(Theme.textSecondary)
+                .foregroundStyle(Theme.textMeta)
                 .frame(maxWidth: .infinity, alignment: .leading)
         } else {
-            VStack(alignment: .leading, spacing: 20) {
-                ForEach(viewModel.nodes) { node in
-                    CommentThread(
-                        node: node,
-                        depth: 0,
-                        onLike: { viewModel.toggleLike($0) },
-                        onReply: { beginReply(to: $0) }
-                    )
+            VStack(alignment: .leading, spacing: 24) {
+                ForEach(flatten(viewModel.nodes)) { node in
+                    ChatMessageRow(node: node, bubbleInset: replyBubbleInset)
                 }
             }
         }
+    }
+
+    /// Depth-first flatten so nested replies render in the flat chat list right
+    /// after their parent, matching the prototype's single-column thread.
+    private func flatten(_ nodes: [CommentNode]) -> [CommentNode] {
+        nodes.flatMap { [$0] + flatten($0.replies) }
     }
 
     // MARK: Composer
@@ -140,7 +196,7 @@ struct ForumThreadView: View {
         if let target = viewModel.replyingTo {
             return "Reply to \(target.authorName)…"
         }
-        return "Add a comment…"
+        return "Add a reply…"
     }
 
     private func replyBanner(_ target: CommentNode) -> some View {
@@ -162,104 +218,40 @@ struct ForumThreadView: View {
         .padding(.horizontal, horizontalPadding)
         .padding(.top, 8)
     }
-
-    private func beginReply(to node: CommentNode) {
-        viewModel.beginReply(to: node)
-        composerFocused = true
-    }
 }
 
-/// One comment and its nested replies, drawn recursively. Replies are indented
-/// behind a thin vertical guide, mirroring the Figma thread.
-struct CommentThread: View {
+/// One chat message: a 40pt avatar with the author's name and timestamp on the
+/// same row, then the message in a grey bubble indented under the name.
+struct ChatMessageRow: View {
     let node: CommentNode
-    let depth: Int
-    let onLike: (Int) -> Void
-    let onReply: (CommentNode) -> Void
-
-    private var avatarSize: CGFloat { depth == 0 ? 44 : 40 }
+    let bubbleInset: CGFloat
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            CommentRow(
-                node: node,
-                avatarSize: avatarSize,
-                onLike: { onLike(node.id) },
-                onReply: { onReply(node) }
-            )
-
-            if !node.replies.isEmpty {
-                HStack(alignment: .top, spacing: 12) {
-                    Rectangle()
-                        .fill(Theme.border)
-                        .frame(width: 1)
-                    VStack(alignment: .leading, spacing: 16) {
-                        ForEach(node.replies) { reply in
-                            CommentThread(
-                                node: reply,
-                                depth: depth + 1,
-                                onLike: onLike,
-                                onReply: onReply
-                            )
-                        }
-                    }
-                }
-                .padding(.leading, 20)
-            }
-        }
-    }
-}
-
-/// A single comment line: avatar, author + body, a Reply affordance and a
-/// like (thumbs-up) toggle.
-struct CommentRow: View {
-    let node: CommentNode
-    let avatarSize: CGFloat
-    let onLike: () -> Void
-    let onReply: () -> Void
-
-    var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            Avatar(url: node.authorImageURL, size: avatarSize)
-
-            VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 20) {
+                Avatar(url: node.authorImageURL, size: 40)
                 Text(node.authorName)
-                    .font(.bodyStrong)
-                    .foregroundStyle(Theme.textPrimary)
-                Text(node.body)
                     .font(.bodyText)
-                    .foregroundStyle(Theme.textPrimary)
-                    .fixedSize(horizontal: false, vertical: true)
-                Button(action: onReply) {
-                    Text("Reply")
-                        .font(.buttonLabel)
-                        .foregroundStyle(Theme.textSecondary)
-                }
-                .buttonStyle(.plain)
-                .padding(.top, 2)
+                    .foregroundStyle(Theme.iconPrimary)
+                Spacer(minLength: 8)
+                Text(timeText(node.createdAt))
+                    .font(.captionText.italic())
+                    .foregroundStyle(Theme.black300)
             }
 
-            Spacer(minLength: 8)
-
-            likeButton
+            Text(node.body)
+                .font(.bodyText.italic())
+                .foregroundStyle(Theme.textPrimary)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(17)
+                .background(Theme.surface, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .padding(.leading, bubbleInset)
         }
     }
 
-    private var likeButton: some View {
-        Button(action: onLike) {
-            HStack(spacing: 4) {
-                if node.likeCount > 0 {
-                    Text("\(node.likeCount)")
-                        .font(.buttonLabel)
-                        .foregroundStyle(Theme.textSecondary)
-                }
-                Image(systemName: node.isLiked ? "hand.thumbsup.fill" : "hand.thumbsup")
-                    .font(.system(size: 18))
-                    .foregroundStyle(node.isLiked ? Color.brand : Theme.textPrimary)
-            }
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(node.isLiked ? "Unlike" : "Like")
+    private func timeText(_ date: Date) -> String {
+        date.formatted(date: .omitted, time: .shortened)
     }
 }
 

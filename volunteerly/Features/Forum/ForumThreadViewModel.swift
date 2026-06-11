@@ -40,6 +40,15 @@ final class ForumThreadViewModel {
         !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
+    /// Display name + avatar for the question's author, resolved alongside the
+    /// comment authors so the thread header can mirror the chat rows.
+    var postAuthorName: String {
+        authorNames[post.authorUserId] ?? "Member \(post.authorUserId)"
+    }
+    var postAuthorImageURL: URL? {
+        authorImages[post.authorUserId]
+    }
+
     /// Locally created comments use descending negative ids so they never
     /// collide with server ids.
     private var nextLocalId = -1
@@ -282,7 +291,7 @@ final class ForumThreadViewModel {
     /// non-fatal.
     private func resolveAuthors(for comments: [ForumComment]) async {
         let ids = Set(comments.map(\.authorUserId))
-            .union([currentUserId])
+            .union([currentUserId, post.authorUserId])
             .subtracting(authorNames.keys)
         for id in ids {
             if let profile: UserProfile = try? await httpClient.get("/users/\(id)/profile") {
