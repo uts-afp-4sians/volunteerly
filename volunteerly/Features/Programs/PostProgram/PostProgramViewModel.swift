@@ -106,6 +106,7 @@ final class PostProgramViewModel {
         initialEndDate = end
         baselineCategoryId = Self.defaultCategoryId
         originalImageURLs = []
+        seedCategoriesFromCache()
     }
 
     /// Initialise the form pre-populated for editing an existing program.
@@ -128,23 +129,38 @@ final class PostProgramViewModel {
         initialStartDate = program.startDatetime
         initialEndDate = program.endDatetime
         baselineCategoryId = program.categoryId
+        seedCategoriesFromCache()
+    }
+
+    /// Populate from the still-fresh category cache at init so the selector
+    /// renders immediately instead of flashing skeleton chips for a frame.
+    /// The view then skips `loadCategories()` (it only fetches when empty).
+    private func seedCategoriesFromCache() {
+        if let cached = CategoryStore.shared.cached(httpClient: httpClient) {
+            apply(cached)
+        }
     }
 
     func loadCategories() async {
         isLoadingCategories = true
         defer { isLoadingCategories = false }
         do {
-            let cats = try await CategoryStore.shared.categories(httpClient: httpClient)
-            categories = cats
-            if let first = cats.first,
-               !cats.contains(where: { $0.id == selectedCategoryId }) {
-                selectedCategoryId = first.id
-            }
-            // Rebase so the auto-resolved default category isn't seen as a user edit.
-            baselineCategoryId = selectedCategoryId
+            apply(try await CategoryStore.shared.categories(httpClient: httpClient))
         } catch {
             errorMessage = error.localizedDescription
         }
+    }
+
+    /// Adopt the loaded catalog: resolve the selection when the current id
+    /// isn't in it, then rebase so the auto-resolved default category isn't
+    /// seen as a user edit.
+    private func apply(_ cats: [ProgramCategory]) {
+        categories = cats
+        if let first = cats.first,
+           !cats.contains(where: { $0.id == selectedCategoryId }) {
+            selectedCategoryId = first.id
+        }
+        baselineCategoryId = selectedCategoryId
     }
 
     /// Uploads the banner (if any) and persists the program — either creating

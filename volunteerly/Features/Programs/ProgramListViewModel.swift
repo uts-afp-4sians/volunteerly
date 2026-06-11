@@ -96,6 +96,9 @@ final class ProgramListViewModel {
         // init body — a `= .shared` default argument is evaluated nonisolated
         // and is an error under the Swift 6 language mode.
         self.locationProvider = locationProvider ?? LocationProvider.shared
+        // Seed from the category cache so a recreated list screen renders the
+        // chip row immediately instead of flashing skeletons for a frame.
+        self.categories = CategoryStore.shared.cached(httpClient: httpClient) ?? []
     }
 
     /// Builds `/programs` with the current filters as query items. Repeated

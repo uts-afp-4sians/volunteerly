@@ -27,6 +27,16 @@ final class CategoryStore {
     private var entries: [ObjectIdentifier: Entry] = [:]
     private var inFlight: [ObjectIdentifier: Task<[ProgramCategory], Error>] = [:]
 
+    /// The still-fresh cached catalog for this client, without fetching.
+    /// Lets view models seed their `categories` synchronously at init so a
+    /// cache-hit session never flashes loading skeletons for even a frame.
+    func cached(httpClient: HTTPClient = LiveHTTPClient.shared) -> [ProgramCategory]? {
+        let key = ObjectIdentifier(httpClient as AnyObject)
+        guard let entry = entries[key], Date().timeIntervalSince(entry.fetchedAt) < ttl
+        else { return nil }
+        return entry.categories
+    }
+
     func categories(httpClient: HTTPClient = LiveHTTPClient.shared) async throws -> [ProgramCategory] {
         let key = ObjectIdentifier(httpClient as AnyObject)
 
