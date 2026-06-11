@@ -399,6 +399,7 @@ struct ProgramDetailView: View {
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .fill(skeletonFill)
                     .frame(width: 114, height: 126)
+                    .frame(maxWidth: .infinity, alignment: .center)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -659,6 +660,7 @@ struct ProgramDetailView: View {
             sectionHeader("Members")
 
             hostCard
+                .frame(maxWidth: .infinity, alignment: .center)
 
             if !viewModel.otherMembers.isEmpty {
                 memberAvatars
