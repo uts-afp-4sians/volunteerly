@@ -63,7 +63,8 @@ struct ProgramDetailView: View {
                 .padding(.top, 8)
         }
         .safeAreaInset(edge: .bottom) {
-            if let program = viewModel.program {
+            // The host runs the program — they join nothing, so hide the bar.
+            if let program = viewModel.program, !isHost {
                 joinBar(program)
                     .padding(.horizontal, horizontalPadding)
                     .padding(.top, 12)
