@@ -157,9 +157,12 @@ struct ProgramListView: View {
     @ViewBuilder
     private var content: some View {
         if viewModel.isLoading && viewModel.programs.isEmpty {
-            ProgressView()
-                .frame(maxWidth: .infinity)
-                .padding(.top, 60)
+            LazyVStack(spacing: 21) {
+                ForEach(0..<4, id: \.self) { _ in
+                    ProgramCardSkeleton()
+                }
+            }
+            .padding(.horizontal, horizontalPadding)
         } else if let error = viewModel.errorMessage {
             ContentUnavailableView("Something went wrong", systemImage: "exclamationmark.triangle", description: Text(error))
                 .padding(.top, 40)
