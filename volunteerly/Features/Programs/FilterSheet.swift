@@ -29,10 +29,10 @@ struct FilterSheet: View {
 
     // MARK: - Sections
 
-    /// Slate-blue drag handle drawn in place of the system indicator.
+    /// Neutral drag handle drawn in place of the system indicator.
     private var grabber: some View {
         Capsule()
-            .fill(Color.secondaryBlue)
+            .fill(Color(.systemGray4))
             .frame(width: 120, height: 6)
             .frame(maxWidth: .infinity)
             .padding(.bottom, 2)

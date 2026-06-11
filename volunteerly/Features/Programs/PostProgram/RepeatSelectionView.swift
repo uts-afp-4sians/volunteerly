@@ -42,6 +42,9 @@ struct RepeatSelectionView: View {
             Spacer(minLength: 0)
         }
         .padding(.top, 12)
+        // Figma leaves ~48pt between the caption and the home indicator; the
+        // Spacer only absorbs rounding slack, the detent must stay near-fitted.
+        .padding(.bottom, 48)
         .background(Color.white)
     }
 
@@ -58,7 +61,7 @@ struct RepeatSelectionView: View {
     Color.white
         .sheet(isPresented: .constant(true)) {
             RepeatSelectionView(selectedRepeat: .constant("Never"))
-                .presentationDetents([.height(520)])
+                .presentationDetents([.height(450)])
                 .presentationDragIndicator(.hidden)
         }
 }

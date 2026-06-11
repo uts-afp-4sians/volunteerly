@@ -186,7 +186,7 @@ struct PostProgramView: View {
                 // The reoccurrence sheet carries its own title + custom blue
                 // drag handle (Figma 329:1821), so it isn't wrapped in navSheet.
                 RepeatSelectionView(selectedRepeat: $viewModel.selectedRepeat)
-                    .presentationDetents([.height(520)])
+                    .presentationDetents([.height(450)])
                     .presentationDragIndicator(.hidden)
             }
         }
