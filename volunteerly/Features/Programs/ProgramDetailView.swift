@@ -7,6 +7,7 @@ struct ProgramDetailView: View {
     @State private var viewModel: ProgramDetailViewModel
     @State private var showJoinedConfirmation = false
     @State private var bannerSelection = 0
+    @State private var showImageViewer = false
     @State private var showEditSheet = false
     @State private var showDeleteAlert = false
     @State private var isDeleting = false
@@ -76,6 +77,9 @@ struct ProgramDetailView: View {
             if viewModel.program == nil {
                 await viewModel.load()
             }
+        }
+        .fullScreenCover(isPresented: $showImageViewer) {
+            FullScreenImageViewer(urls: bannerURLs, initialIndex: bannerSelection)
         }
         .fullScreenCover(isPresented: $showJoinedConfirmation) {
             if let program = viewModel.program {
@@ -194,6 +198,10 @@ struct ProgramDetailView: View {
                 }
             )
             .clipped()
+            .contentShape(Rectangle())
+            .onTapGesture {
+                if !bannerURLs.isEmpty { showImageViewer = true }
+            }
     }
 
     private var topControls: some View {
