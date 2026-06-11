@@ -15,14 +15,20 @@ struct ProgramCard: View {
 
     var body: some View {
         ZStack(alignment: .bottomLeading) {
-            CachedAsyncImage(url: URL(string: program.bannerImageURL ?? "")) { image in
-                image.resizable().aspectRatio(contentMode: .fill)
-            } placeholder: {
-                Rectangle().fill(Color(.systemGray5))
-            }
-            .frame(maxWidth: .infinity)
-            .frame(height: 263)
-            .clipped()
+            // The image lives in an overlay of a layout-neutral base so its
+            // `.fill` aspect ratio can't widen the card past the proposed
+            // width (same pattern as the detail banner).
+            Color.clear
+                .frame(maxWidth: .infinity)
+                .frame(height: 263)
+                .overlay(
+                    CachedAsyncImage(url: URL(string: program.bannerImageURL ?? "")) { image in
+                        image.resizable().aspectRatio(contentMode: .fill)
+                    } placeholder: {
+                        Rectangle().fill(Color(.systemGray5))
+                    }
+                )
+                .clipped()
 
             // Transparent at the top, deepening to ~70% black by the lower
             // third so the white content stays legible (Figma gradient).
