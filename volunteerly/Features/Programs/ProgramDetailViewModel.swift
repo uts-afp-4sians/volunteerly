@@ -69,9 +69,11 @@ final class ProgramDetailViewModel {
         do {
             let program: Program = try await httpClient.get("/programs/\(programId)")
             self.program = program
-            // The Join counter is carried by the program resource itself.
+            // The Join counter and the caller's own membership are carried by
+            // the program resource itself (personalised via the auth token).
             participantCount = program.participantCount ?? 0
             isFull = program.isFull ?? false
+            isJoined = program.joined ?? false
 
             // Host and location are supplementary — a missing one shouldn't fail the screen.
             async let host: UserProfile = httpClient.get("/users/\(program.creatorUserId)/profile")
@@ -80,9 +82,6 @@ final class ProgramDetailViewModel {
             // One server-side suggestion (bounded LIMIT 1) instead of pulling
             // whole tables to rank client-side.
             async let similar: SimilarProgram = httpClient.get("/programs/\(programId)/similar")
-            // `joined` is per-user, so it stays an authed lookup on the
-            // participation sub-resource (the counter already came with detail).
-            async let participation: ProgramParticipationSummary = httpClient.get(participationsPath)
             // Member profiles (name + avatar) for the Members row; supplementary,
             // so a failure leaves the row empty rather than blanking the screen.
             async let participants: [UserProfile] = httpClient.get("/programs/\(programId)/participants")
@@ -98,12 +97,6 @@ final class ProgramDetailViewModel {
                 self.similarCategoryEmoji = allCategories
                     .first { $0.id == similar.program.categoryId }
                     .map { UserProfileStore.emoji(for: $0.name) }
-            }
-
-            // Participation is supplementary — failing to load it shouldn't
-            // blank the screen; we just keep the detail-sourced counter.
-            if let summary = try? await participation {
-                apply(summary)
             }
         } catch {
             self.errorMessage = error.localizedDescription

@@ -96,6 +96,11 @@ class ProgramRead(BaseModel):
     # location, set by ``GET /programs`` only when ``lat``/``lng`` are supplied
     # and the location has coordinates; ``None`` otherwise.
     distance_km: float | None = None
+    # Whether the caller has an active participation. Set by
+    # ``GET /programs/{id}`` for signed-in callers so the detail screen renders
+    # the Join button without a second round-trip; ``None`` for anonymous
+    # callers and on endpoints that don't personalise (the lists).
+    joined: bool | None = None
 
 
 class SimilarProgramRead(BaseModel):

@@ -540,6 +540,11 @@
         ],
         "summary": "Get Program",
         "operationId": "get_program_programs__program_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "program_id",
@@ -2412,6 +2417,11 @@
             "title": "Distance Km",
             "nullable": true,
             "type": "number"
+          },
+          "joined": {
+            "title": "Joined",
+            "nullable": true,
+            "type": "boolean"
           }
         },
         "type": "object",

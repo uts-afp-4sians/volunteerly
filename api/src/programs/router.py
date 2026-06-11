@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy import and_, delete, func, or_, select
 from sqlalchemy.orm import Session
 
-from src.auth.deps import get_current_user
+from src.auth.deps import get_current_user, get_optional_user
 from src.categories.model import ProgramCategory
 from src.common.enums import (
     CommitmentDuration,
@@ -503,12 +503,20 @@ def create_program(
 
 
 @router.get("/programs/{program_id}", response_model=ProgramRead)
-def get_program(program_id: int, db: Session = Depends(get_db)) -> ProgramRead:
+def get_program(
+    program_id: int,
+    db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_optional_user),
+) -> ProgramRead:
     program = _load_program(program_id, db)
     count = _participant_count(program, db)
     read = ProgramRead.model_validate(program)
     read.participant_count = count
     read.is_full = count >= program.max_volunteers
+    if current_user is not None:
+        read.joined = (
+            _active_participation(program_id, current_user.user_id, db) is not None
+        )
     _hydrate_images(read, _program_images([program_id], db).get(program_id, []))
     return read
 

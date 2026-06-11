@@ -1085,6 +1085,8 @@ internal enum Components {
             internal var is_full: Swift.Bool?
             /// - Remark: Generated from `#/components/schemas/ProgramRead/distance_km`.
             internal var distance_km: Swift.Double?
+            /// - Remark: Generated from `#/components/schemas/ProgramRead/joined`.
+            internal var joined: Swift.Bool?
             /// Creates a new `ProgramRead`.
             ///
             /// - Parameters:
@@ -1108,6 +1110,7 @@ internal enum Components {
             ///   - participant_count:
             ///   - is_full:
             ///   - distance_km:
+            ///   - joined:
             internal init(
                 program_id: Swift.Int,
                 creator_user_id: Swift.Int,
@@ -1128,7 +1131,8 @@ internal enum Components {
                 created_at: Swift.String,
                 participant_count: Swift.Int? = nil,
                 is_full: Swift.Bool? = nil,
-                distance_km: Swift.Double? = nil
+                distance_km: Swift.Double? = nil,
+                joined: Swift.Bool? = nil
             ) {
                 self.program_id = program_id
                 self.creator_user_id = creator_user_id
@@ -1150,6 +1154,7 @@ internal enum Components {
                 self.participant_count = participant_count
                 self.is_full = is_full
                 self.distance_km = distance_km
+                self.joined = joined
             }
             internal enum CodingKeys: String, CodingKey {
                 case program_id
@@ -1172,6 +1177,7 @@ internal enum Components {
                 case participant_count
                 case is_full
                 case distance_km
+                case joined
             }
         }
         /// Lifecycle status of a program (wire values match iOS ProgramStatus).

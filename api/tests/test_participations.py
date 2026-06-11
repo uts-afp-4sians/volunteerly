@@ -166,3 +166,21 @@ def test_leave_frees_a_slot(client: TestClient) -> None:
     assert (
         client.delete("/programs/1/participations", headers=headers).status_code == 404
     )
+
+
+def test_program_detail_carries_joined(client: TestClient) -> None:
+    # The detail endpoint personalises ``joined`` for signed-in callers so the
+    # iOS screen doesn't need a second participations round-trip.
+    headers = {"Authorization": f"Bearer {_register(client, 'detail@example.com')}"}
+
+    # Anonymous read stays public and unpersonalised.
+    assert client.get("/programs/2").json()["joined"] is None
+
+    assert client.get("/programs/2", headers=headers).json()["joined"] is False
+
+    assert client.post("/programs/2/participations", headers=headers).status_code == 201
+    assert client.get("/programs/2", headers=headers).json()["joined"] is True
+
+    # Seeded: user 1 is APPROVED in program 1.
+    owner_headers = {"Authorization": f"Bearer {_token(client)}"}
+    assert client.get("/programs/1", headers=owner_headers).json()["joined"] is True

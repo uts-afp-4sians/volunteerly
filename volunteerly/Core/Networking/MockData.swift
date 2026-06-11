@@ -114,7 +114,10 @@ enum MockData {
             isDeleted: false,
             deletedAt: nil,
             createdAt: .now,
-            participantCount: 12
+            participantCount: 12,
+            // Mirrors the seeded join (user 1 is APPROVED in program 1) now
+            // that the detail resource carries the caller's membership.
+            joined: true
         ),
         Program(
             id: 2,

@@ -28,6 +28,8 @@ PROGRAM_KEYS = {
     "participant_count",
     "is_full",
     "distance_km",
+    # Per-user: set by GET /programs/{id} for signed-in callers only.
+    "joined",
 }
 
 

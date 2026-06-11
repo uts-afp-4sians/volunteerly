@@ -31,6 +31,9 @@ nonisolated struct Program: Identifiable, Codable {
     /// (`GET /programs?lat=&lng=`) when the device location is available;
     /// `nil` otherwise, in which case the card shows the start date instead.
     var distanceKm: Double? = nil
+    /// Whether the caller has joined, set by the detail (`GET /programs/{id}`)
+    /// for signed-in callers; `nil` from the lists and anonymous reads.
+    var joined: Bool? = nil
 
     enum CodingKeys: String, CodingKey {
         case id = "program_id"
@@ -53,6 +56,7 @@ nonisolated struct Program: Identifiable, Codable {
         case participantCount = "participant_count"
         case isFull = "is_full"
         case distanceKm = "distance_km"
+        case joined
     }
 
     /// Ordered banner images for the carousel. Falls back to the single
