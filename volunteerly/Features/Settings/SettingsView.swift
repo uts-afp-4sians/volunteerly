@@ -34,24 +34,13 @@ struct SettingsView: View {
 
                 section(title: "Account") {
                     row(icon: "key.fill", label: "Change password")
-                    row(icon: "envelope.fill", label: "Change email")
-                    row(icon: "bell.fill", label: "Notifications")
-                }
-
-                section(title: "App") {
-                    row(icon: "accessibility", label: "Accessibility")
-                    row(icon: "globe", label: "Language")
-                    row(icon: "moon.fill", label: "Appearance")
                 }
 
                 section(title: "Legal") {
                     row(icon: "lock.shield.fill", label: "Privacy policy")
-                    row(icon: "doc.text.fill", label: "Terms of service")
-                    row(icon: "exclamationmark.bubble.fill", label: "Report a problem")
                 }
 
                 section(title: "About") {
-                    row(icon: "info.circle.fill", label: "About Volunteerly")
                     row(icon: "heart.fill", label: "Rate the app")
                 }
 
