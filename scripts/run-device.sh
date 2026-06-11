@@ -32,7 +32,7 @@ DEVICE_ID="$(xcrun xctrace list devices 2>/dev/null \
 echo "• device      : $DEVICE_ID"
 
 # --- 2. a valid codesigning identity (sha1 + name) --------------------------
-IDENTITY_LINE="$(security find-identity -v -p codesigning | grep -i 'Apple Development' | head -1)"
+IDENTITY_LINE="$(security find-identity -v -p codesigning | grep -i 'Apple Development' | grep -v 'CSSMERR' | head -1)"
 IDENTITY_SHA="$(echo "$IDENTITY_LINE" | awk '{print $2}')"
 [ -n "$IDENTITY_SHA" ] || { echo "✗ No valid Apple Development identity in keychain"; exit 1; }
 echo "• identity    : $IDENTITY_SHA"
