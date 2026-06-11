@@ -50,7 +50,7 @@ final class PostProgramViewModel {
     var pickedLocation: PickedLocation?
     var startDate: Date
     var endDate: Date
-    var selectedRepeat: String = "Never" // Default reoccurrence (Figma 329:1821)
+    var selectedRepeat: String = "Never" // Default recurrence (Figma 329:1821)
 
     // MARK: - Network-backed state
 

@@ -1,8 +1,8 @@
 import SwiftUI
 
-/// Event-reoccurrence picker bottom sheet (Figma node 329:1820).
+/// Event-recurrence picker bottom sheet (Figma node 329:1820).
 ///
-/// A centered "Event reoccurence" title over a stack of single-select DS
+/// A centered "Event recurrence" title over a stack of single-select DS
 /// `RadioButton` pills (selected = brand-green, others = white outlined),
 /// followed by an italic helper caption. It is presented as a bare sheet with a
 /// custom grey drag handle (Figma 329:1820).
@@ -16,7 +16,7 @@ struct RepeatSelectionView: View {
         VStack(spacing: 0) {
             dragHandle
 
-            Text("Event reoccurence")
+            Text("Event recurrence")
                 .font(.sectionHeader)
                 .foregroundStyle(Theme.textPrimary)
                 .padding(.top, 8)
