@@ -9,7 +9,9 @@ struct FloatingTabBar: View {
     var showsPostButton: Bool = false
     var onPostProgram: () -> Void = {}
 
-    private let itemSize: CGFloat = 56
+    // Figma BOTTOM-TAB-BAR (526:784): 64×36 active pill, 24pt glyphs.
+    private let pillWidth: CGFloat = 64
+    private let pillHeight: CGFloat = 36
 
     var body: some View {
         ZStack {
@@ -27,47 +29,55 @@ struct FloatingTabBar: View {
     }
 
     private var capsule: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: 8) {
             tabButton(.programs, icon: "magnifyingglass", label: "Programs")
-            tabButton(.bookmarks, icon: "bookmark", label: "Bookmarks")
-            tabButton(.myPage, icon: "person.crop.circle", label: "Profile")
+            tabButton(.bookmarks, icon: "heart.fill", label: "Saved")
+            tabButton(.myPage, icon: "person.fill", label: "Profile")
         }
-        .padding(.horizontal, 10)
-        .frame(height: itemSize)
-        .background(.ultraThinMaterial, in: Capsule())
-        .overlay(Capsule().strokeBorder(.white.opacity(0.35), lineWidth: 0.5))
-        .shadow(color: .black.opacity(0.12), radius: 12, y: 4)
+        .padding(.horizontal, 11)
+        .padding(.vertical, 5)
+        .background(.regularMaterial, in: Capsule())
+        .overlay(Capsule().strokeBorder(.white.opacity(0.5), lineWidth: 0.75))
+        .shadow(color: .black.opacity(0.1), radius: 10, y: 4)
+        .shadow(color: .black.opacity(0.05), radius: 1.5, y: 1)
+        .animation(.spring(response: 0.3, dampingFraction: 0.8), value: selection)
     }
 
     private var postButton: some View {
         Button(action: onPostProgram) {
-            icon("plus", selected: false)
-                .frame(width: itemSize, height: itemSize)
-                .background(.ultraThinMaterial, in: Circle())
-                .overlay(Circle().strokeBorder(.white.opacity(0.35), lineWidth: 0.5))
-                .shadow(color: .black.opacity(0.12), radius: 12, y: 4)
+            Image(systemName: "plus")
+                .font(.system(size: 22, weight: .regular))
+                .foregroundStyle(Color.textPrimary)
+                .frame(width: 52, height: 52)
+                .background(.regularMaterial, in: Circle())
+                .overlay(Circle().strokeBorder(.white.opacity(0.5), lineWidth: 0.75))
+                .shadow(color: .black.opacity(0.1), radius: 10, y: 4)
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Post a program")
     }
 
     private func tabButton(_ tab: TabRouter.Tab, icon name: String, label: String) -> some View {
-        Button {
+        let selected = selection == tab
+        return Button {
             selection = tab
         } label: {
-            icon(name, selected: selection == tab)
-                .frame(width: itemSize, height: itemSize)
+            Image(systemName: name)
+                .font(.system(size: 22, weight: .regular))
+                // Active glyph is Black/900 over the Brand/100 pill; idle is Black/500.
+                .foregroundStyle(selected ? Color.textPrimary : Color.black500)
+                .frame(width: pillWidth, height: pillHeight)
+                .background {
+                    if selected {
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .fill(Color.brand100)
+                    }
+                }
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel(label)
-        .accessibilityAddTraits(selection == tab ? .isSelected : [])
-    }
-
-    private func icon(_ name: String, selected: Bool) -> some View {
-        Image(systemName: name)
-            .font(.system(size: 22, weight: .regular))
-            .foregroundStyle(selected ? Color.brand : Color.textPrimary)
+        .accessibilityAddTraits(selected ? .isSelected : [])
     }
 }
 
