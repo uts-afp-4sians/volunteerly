@@ -43,6 +43,21 @@ final class SignupFormViewModel {
     // Finalising (loader, unnumbered — step `totalSteps + 1`)
     var hasStartedFinalising = false
     var finalisingError: String?
+    // Set once `/auth/register` succeeds, so "Try again" after a failed
+    // profile save retries only the save — re-registering would 409 on our
+    // own freshly created email.
+    private var hasRegistered = false
+    /// The in-flight finalising work; exposed so tests can await completion.
+    private(set) var finalisingTask: Task<Void, Never>?
+    /// Registration seam — `AuthService.shared` is a live singleton, so tests
+    /// stub this instead.
+    var registerAccount: (String, String, String, String) async throws -> Void = {
+        _ = try await AuthService.shared.register(
+            email: $0, password: $1, firstName: $2, lastName: $3
+        )
+    }
+    /// Minimum spinner display; tests zero this out.
+    var minimumSpinnerNanos: UInt64 = 2_500_000_000
 
     private let profileService = ProfileService.shared
 
@@ -133,39 +148,45 @@ final class SignupFormViewModel {
         guard !hasStartedFinalising else { return }
         hasStartedFinalising = true
 
-        Task {
-            let registration = Task {
-                // Email/password are collected at step 4 (`self.email`/`self.password`).
-                // `basics` only carries the step-1 name fields — its email/password
-                // are empty, so sending them here is what produced the 422s.
-                try await AuthService.shared.register(
-                    email: email,
-                    password: password,
-                    firstName: basics.firstName,
-                    lastName: basics.lastName
-                )
+        finalisingTask = Task {
+            if !hasRegistered {
+                let registration = Task {
+                    // Email/password are collected at step 4 (`self.email`/`self.password`).
+                    // `basics` only carries the step-1 name fields — its email/password
+                    // are empty, so sending them here is what produced the 422s.
+                    try await registerAccount(
+                        email, password, basics.firstName, basics.lastName
+                    )
+                }
+
+                try? await Task.sleep(nanoseconds: minimumSpinnerNanos)
+
+                do {
+                    _ = try await registration.value
+                    hasRegistered = true
+                } catch let error as APIError {
+                    handleRegistrationFailure(error)
+                    return
+                } catch {
+                    finalisingError = error.localizedDescription
+                    return
+                }
             }
 
-            try? await Task.sleep(nanoseconds: 2_500_000_000)
-
-            do {
-                _ = try await registration.value
-                // Now that we have an auth token, write the fields the form
-                // collected (date of birth from step 1, profile photo +
-                // instagram from step 2) into the shared store and persist
-                // everything via PATCH /me/profile + PUT /me/interests.
-                // Best-effort: the account is already created so we proceed to
-                // onboarding even if save() fails — the user can fix anything on
-                // the My profile page.
-                profileStore.dateOfBirth = basics.dateOfBirth
-                profileStore.profileImageData = profileImageData
-                profileStore.instagram = instagram
-                _ = await profileStore.save()
+            // Now that we have an auth token, write the fields the form
+            // collected (date of birth from step 1, profile photo + instagram
+            // from step 2) into the shared store and persist everything via
+            // PATCH /me/profile. The My Page identity line is read-only by
+            // design, so a dropped save would lose the birthday/city with no
+            // way to re-enter them — surface the failure and let the user
+            // retry the save (the account itself is already created).
+            profileStore.dateOfBirth = basics.dateOfBirth
+            profileStore.profileImageData = profileImageData
+            profileStore.instagram = instagram
+            if await profileStore.save() {
                 withAnimation(.easeInOut(duration: 0.35)) { router?.route = .onboarding }
-            } catch let error as APIError {
-                handleRegistrationFailure(error)
-            } catch {
-                finalisingError = error.localizedDescription
+            } else {
+                finalisingError = profileStore.errorMessage ?? "Couldn't save your profile."
             }
         }
     }

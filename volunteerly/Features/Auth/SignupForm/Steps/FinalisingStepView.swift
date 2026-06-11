@@ -26,7 +26,9 @@ struct FinalisingStepView: View {
                     .foregroundStyle(Color.fieldError)
 
                 VStack(spacing: 8) {
-                    Text("Couldn't create your account")
+                    // "Finish" not "create": the error can also be a failed
+                    // profile save after the account was already registered.
+                    Text("Couldn't finish signing up")
                         .titleStyle()
                     Text(vm.finalisingError ?? "")
                         .bodyStyle()

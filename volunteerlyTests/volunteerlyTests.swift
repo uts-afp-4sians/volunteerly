@@ -387,6 +387,121 @@ struct ProgramCardLayoutTests {
     }
 }
 
+// MARK: - SignupFormViewModel finalising
+
+/// Delegates to seeded mock data but rejects `PATCH /me/profile`, modelling a
+/// backend that registered the account and then dropped the profile save.
+private final class ProfileSaveFailingHTTPClient: HTTPClient {
+    private let inner: MockHTTPClient
+
+    init() {
+        inner = MockHTTPClient()
+        MockData.registerAll(in: inner)
+    }
+
+    func get<T: Decodable>(_ path: String) async throws -> T {
+        try await inner.get(path)
+    }
+
+    func post<B: Encodable, T: Decodable>(_ path: String, body: B) async throws -> T {
+        try await inner.post(path, body: body)
+    }
+
+    func postExpectingNoContent<B: Encodable>(_ path: String, body: B) async throws {
+        try await inner.postExpectingNoContent(path, body: body)
+    }
+
+    func put<B: Encodable, T: Decodable>(_ path: String, body: B) async throws -> T {
+        try await inner.put(path, body: body)
+    }
+
+    func patch<B: Encodable, T: Decodable>(_ path: String, body: B) async throws -> T {
+        throw APIError.serverError(500)
+    }
+
+    func delete(_ path: String) async throws {
+        try await inner.delete(path)
+    }
+}
+
+@MainActor
+struct SignupFormFinalisingTests {
+    private final class RegisterSpy {
+        var calls = 0
+    }
+
+    private func makeViewModel(spy: RegisterSpy) -> SignupFormViewModel {
+        let vm = SignupFormViewModel(
+            basics: SignupBasics(
+                firstName: "New",
+                lastName: "User",
+                dateOfBirth: Date(timeIntervalSince1970: 718_848_000)
+            )
+        )
+        vm.minimumSpinnerNanos = 0
+        vm.registerAccount = { _, _, _, _ in spy.calls += 1 }
+        return vm
+    }
+
+    /// Regression: a failed profile save after a successful registration used
+    /// to be swallowed ("best-effort") and the user was routed onward — losing
+    /// the birthday/city forever, since the My Page identity line is read-only
+    /// by design. It must surface on the finalising screen instead.
+    @Test func finalising_surfacesProfileSaveFailure_insteadOfRoutingOn() async {
+        let spy = RegisterSpy()
+        let vm = makeViewModel(spy: spy)
+        let store = UserProfileStore(
+            service: ProfileService(client: ProfileSaveFailingHTTPClient())
+        )
+        let router = AppRouter()
+
+        vm.startFinalisingIfNeeded(profileStore: store, router: router)
+        await vm.finalisingTask?.value
+
+        #expect(spy.calls == 1)
+        #expect(vm.finalisingError != nil)
+        #expect(router.route == .splash)   // unchanged — no silent advance
+    }
+
+    /// "Try again" after a failed save must not hit `/auth/register` again —
+    /// the account already exists, so a second attempt would 409 on our own
+    /// email and bounce the user back to the account step.
+    @Test func retry_afterSaveFailure_skipsReRegistration() async {
+        let spy = RegisterSpy()
+        let vm = makeViewModel(spy: spy)
+        let store = UserProfileStore(
+            service: ProfileService(client: ProfileSaveFailingHTTPClient())
+        )
+
+        vm.startFinalisingIfNeeded(profileStore: store, router: nil)
+        await vm.finalisingTask?.value
+        // What the finalising screen's "Try again" button does:
+        vm.finalisingError = nil
+        vm.hasStartedFinalising = false
+        vm.startFinalisingIfNeeded(profileStore: store, router: nil)
+        await vm.finalisingTask?.value
+
+        #expect(spy.calls == 1)
+        #expect(vm.finalisingError != nil)
+    }
+
+    /// Happy path: a successful save still routes to onboarding.
+    @Test func finalising_routesToOnboarding_whenSaveSucceeds() async {
+        let spy = RegisterSpy()
+        let vm = makeViewModel(spy: spy)
+        let store = UserProfileStore(
+            service: ProfileService(client: RecordingHTTPClient())
+        )
+        let router = AppRouter()
+
+        vm.startFinalisingIfNeeded(profileStore: store, router: router)
+        await vm.finalisingTask?.value
+
+        #expect(vm.finalisingError == nil)
+        #expect(router.route == .onboarding)
+    }
+}
+
 // MARK: - BookmarkStore
 
 @MainActor
