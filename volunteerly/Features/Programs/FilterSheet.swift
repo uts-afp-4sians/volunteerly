@@ -10,7 +10,6 @@ struct FilterSheet: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 30) {
-                grabber
                 distanceSection
                 teamSizeSection
                 frequencySection
@@ -24,19 +23,10 @@ struct FilterSheet: View {
         }
         .scrollBounceBehavior(.basedOnSize)
         .background(Color(.systemBackground))
-        .presentationDragIndicator(.hidden)
+        .presentationDragIndicator(.visible)
     }
 
     // MARK: - Sections
-
-    /// Neutral drag handle drawn in place of the system indicator.
-    private var grabber: some View {
-        Capsule()
-            .fill(Color(.systemGray4))
-            .frame(width: 120, height: 6)
-            .frame(maxWidth: .infinity)
-            .padding(.bottom, 2)
-    }
 
     private var distanceSection: some View {
         VStack(alignment: .leading, spacing: 14) {
