@@ -8,10 +8,7 @@ import PhotosUI
 /// Mirrors Figma `group-4-prototype` node 332:211. The profile editing that used
 /// to live on a separate settings screen is integrated here.
 struct MyPageView: View {
-    // Optional — logout flips the root route to .auth, tearing this view down
-    // during an animated switch, when a non-optional lookup would `fatalError`.
-    @Environment(AppRouter.self) private var router: AppRouter?
-    // Optional so previews that don't inject a router still render (logo tap no-ops).
+    // Optional so previews that don't inject a router still render (gear tap no-ops).
     @Environment(TabRouter.self) private var tabRouter: TabRouter?
     @Environment(UserProfileStore.self) private var profileStore
     @State private var viewModel: MyPageViewModel
@@ -34,7 +31,6 @@ struct MyPageView: View {
 
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                headerRow
                 titleRow
 
                 if let error = store.errorMessage {
@@ -92,54 +88,29 @@ struct MyPageView: View {
 
     // MARK: - Header
 
-    /// Branding wordmark (taps home) with a trailing Log Out pill — matching the
-    /// Figma top bar where logout lives in the header instead of the form footer.
-    private var headerRow: some View {
-        HStack {
-            Button {
-                tabRouter?.goHome()
-            } label: {
-                HStack(spacing: 0) {
-                    Image(.logo)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 30, height: 30)
-                    Image(.volunteerlyTitle)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(maxWidth: 130, maxHeight: 36)
-                        .padding(.leading, -6)
-                }
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Volunteerly, go to home")
+    /// "My Page" title with a trailing Settings gear. Logout now lives inside
+    /// the Settings screen, so the gear is the only header action here.
+    private var titleRow: some View {
+        HStack(alignment: .center) {
+            Text("My Page")
+                .font(.pageTitle)
+                .foregroundStyle(Color.textPrimary)
 
             Spacer()
-        }
-        // Match VolunteerlyHeader's row height. The wordmark image's intrinsic
-        // 36pt cap drives the row height there; we mirror it here so the title
-        // renders at the same size and the logo lines up with the other tabs.
-        .frame(height: 36)
-        // Float Log Out as an overlay so its taller pill can't grow the logo row.
-        .overlay(alignment: .trailing) {
-            Button(action: performLogout) {
-                Text("Log Out")
-                    .font(.buttonLabel)
+
+            Button {
+                tabRouter?.showSettings()
+            } label: {
+                Image(systemName: "gearshape")
+                    .font(.system(size: 22, weight: .regular))
                     .foregroundStyle(Color.textPrimary)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
-                    .background(Color(.systemGray4).opacity(0.87), in: Capsule())
+                    .frame(width: 32, height: 32)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("Log out")
+            .accessibilityLabel("Settings")
         }
-    }
-
-    private var titleRow: some View {
-        Text("My Page")
-            .font(.pageTitle)
-            .foregroundStyle(Color.textPrimary)
-            .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     /// Green section subheader (#7E924E / `Theme.forest`, SF Pro Regular 30).
@@ -519,13 +490,6 @@ struct MyPageView: View {
     private func removeInterest(_ interest: UserProfileStore.Interest) {
         withAnimation(.spring(response: 0.25, dampingFraction: 0.85)) {
             profileStore.interests.removeAll { $0.id == interest.id }
-        }
-    }
-
-    private func performLogout() {
-        AuthService.shared.logout()
-        withAnimation(.easeInOut(duration: 0.35)) {
-            router?.route = .auth
         }
     }
 }
