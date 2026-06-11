@@ -10,6 +10,7 @@ struct SettingsView: View {
     @State private var showDeleteConfirmation = false
 
     private static let dangerColor = Color(red: 0xD9 / 255, green: 0x29 / 255, blue: 0x29 / 255)
+    private static let privacyPolicyURL = URL(string: "https://sites.google.com/view/volunteerly-privacypolicy/home")!
 
     var body: some View {
         ScrollView {
@@ -42,7 +43,10 @@ struct SettingsView: View {
                 }
 
                 section(title: "Legal") {
-                    row(icon: "lock.shield.fill", label: "Privacy policy")
+                    Link(destination: Self.privacyPolicyURL) {
+                        rowLabel(icon: "lock.shield.fill", label: "Privacy policy")
+                    }
+                    .buttonStyle(.plain)
                 }
 
                 section(title: "About") {
