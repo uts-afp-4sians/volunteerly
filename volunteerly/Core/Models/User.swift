@@ -94,9 +94,9 @@ nonisolated struct UserProfileUpdate: Codable {
     /// Backend row id of the user's location, resolved via `POST /locations`
     /// before the PATCH. `nil` means no change.
     var locationId: Int?
-    /// Replacement interest set (keyword ids). `nil` leaves interests untouched;
+    /// Replacement interest set (category ids). `nil` leaves interests untouched;
     /// a value (including `[]`) replaces the whole set in the same PATCH.
-    var interestKeywordIds: [Int]?
+    var interestCategoryIds: [Int]?
 
     enum CodingKeys: String, CodingKey {
         case firstName = "first_name"
@@ -109,19 +109,20 @@ nonisolated struct UserProfileUpdate: Codable {
         case keySkills = "key_skills"
         case profileImageUrl = "profile_image_url"
         case locationId = "location_id"
-        case interestKeywordIds = "interest_keyword_ids"
+        case interestCategoryIds = "interest_category_ids"
     }
 }
 
-/// A user's interest joined with its keyword name, embedded in the profile.
+/// A user's interest joined with its category name, embedded in the profile.
+/// Interests and program categories are one taxonomy.
 nonisolated struct UserInterestDetail: Codable, Identifiable {
-    let keywordId: Int
-    let keywordName: String
+    let categoryId: Int
+    let categoryName: String
 
-    var id: Int { keywordId }
+    var id: Int { categoryId }
 
     enum CodingKeys: String, CodingKey {
-        case keywordId = "keyword_id"
-        case keywordName = "keyword_name"
+        case categoryId = "category_id"
+        case categoryName = "category_name"
     }
 }

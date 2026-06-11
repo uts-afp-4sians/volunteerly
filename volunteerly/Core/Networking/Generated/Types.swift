@@ -175,13 +175,6 @@ internal protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /keywords`.
     /// - Remark: Generated from `#/paths//keywords/get(list_keywords_keywords_get)`.
     func list_keywords_keywords_get(_ input: Operations.list_keywords_keywords_get.Input) async throws -> Operations.list_keywords_keywords_get.Output
-    /// List Interests
-    ///
-    /// The profile-interest catalog — the chips on the signup interests step.
-    ///
-    /// - Remark: HTTP `GET /interests`.
-    /// - Remark: Generated from `#/paths//interests/get(list_interests_interests_get)`.
-    func list_interests_interests_get(_ input: Operations.list_interests_interests_get.Input) async throws -> Operations.list_interests_interests_get.Output
     /// Presign
     ///
     /// Return a presigned PUT URL for uploading an image to Cloudflare R2.
@@ -498,15 +491,6 @@ extension APIProtocol {
     /// - Remark: Generated from `#/paths//keywords/get(list_keywords_keywords_get)`.
     internal func list_keywords_keywords_get(headers: Operations.list_keywords_keywords_get.Input.Headers = .init()) async throws -> Operations.list_keywords_keywords_get.Output {
         try await list_keywords_keywords_get(Operations.list_keywords_keywords_get.Input(headers: headers))
-    }
-    /// List Interests
-    ///
-    /// The profile-interest catalog — the chips on the signup interests step.
-    ///
-    /// - Remark: HTTP `GET /interests`.
-    /// - Remark: Generated from `#/paths//interests/get(list_interests_interests_get)`.
-    internal func list_interests_interests_get(headers: Operations.list_interests_interests_get.Input.Headers = .init()) async throws -> Operations.list_interests_interests_get.Output {
-        try await list_interests_interests_get(Operations.list_interests_interests_get.Input(headers: headers))
     }
     /// Presign
     ///
@@ -5044,118 +5028,6 @@ internal enum Operations {
             /// - Throws: An error if `self` is not `.ok`.
             /// - SeeAlso: `.ok`.
             internal var ok: Operations.list_keywords_keywords_get.Output.Ok {
-                get throws {
-                    switch self {
-                    case let .ok(response):
-                        return response
-                    default:
-                        try throwUnexpectedResponseStatus(
-                            expectedStatus: "ok",
-                            response: self
-                        )
-                    }
-                }
-            }
-            /// Undocumented response.
-            ///
-            /// A response with a code that is not documented in the OpenAPI document.
-            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
-        }
-        internal enum AcceptableContentType: AcceptableProtocol {
-            case json
-            case other(Swift.String)
-            internal init?(rawValue: Swift.String) {
-                switch rawValue.lowercased() {
-                case "application/json":
-                    self = .json
-                default:
-                    self = .other(rawValue)
-                }
-            }
-            internal var rawValue: Swift.String {
-                switch self {
-                case let .other(string):
-                    return string
-                case .json:
-                    return "application/json"
-                }
-            }
-            internal static var allCases: [Self] {
-                [
-                    .json
-                ]
-            }
-        }
-    }
-    /// List Interests
-    ///
-    /// The profile-interest catalog — the chips on the signup interests step.
-    ///
-    /// - Remark: HTTP `GET /interests`.
-    /// - Remark: Generated from `#/paths//interests/get(list_interests_interests_get)`.
-    internal enum list_interests_interests_get {
-        internal static let id: Swift.String = "list_interests_interests_get"
-        internal struct Input: Sendable, Hashable {
-            /// - Remark: Generated from `#/paths/interests/GET/header`.
-            internal struct Headers: Sendable, Hashable {
-                internal var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.list_interests_interests_get.AcceptableContentType>]
-                /// Creates a new `Headers`.
-                ///
-                /// - Parameters:
-                ///   - accept:
-                internal init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.list_interests_interests_get.AcceptableContentType>] = .defaultValues()) {
-                    self.accept = accept
-                }
-            }
-            internal var headers: Operations.list_interests_interests_get.Input.Headers
-            /// Creates a new `Input`.
-            ///
-            /// - Parameters:
-            ///   - headers:
-            internal init(headers: Operations.list_interests_interests_get.Input.Headers = .init()) {
-                self.headers = headers
-            }
-        }
-        internal enum Output: Sendable, Hashable {
-            internal struct Ok: Sendable, Hashable {
-                /// - Remark: Generated from `#/paths/interests/GET/responses/200/content`.
-                internal enum Body: Sendable, Hashable {
-                    /// - Remark: Generated from `#/paths/interests/GET/responses/200/content/application\/json`.
-                    case json([Components.Schemas.KeywordRead])
-                    /// The associated value of the enum case if `self` is `.json`.
-                    ///
-                    /// - Throws: An error if `self` is not `.json`.
-                    /// - SeeAlso: `.json`.
-                    internal var json: [Components.Schemas.KeywordRead] {
-                        get throws {
-                            switch self {
-                            case let .json(body):
-                                return body
-                            }
-                        }
-                    }
-                }
-                /// Received HTTP response body
-                internal var body: Operations.list_interests_interests_get.Output.Ok.Body
-                /// Creates a new `Ok`.
-                ///
-                /// - Parameters:
-                ///   - body: Received HTTP response body
-                internal init(body: Operations.list_interests_interests_get.Output.Ok.Body) {
-                    self.body = body
-                }
-            }
-            /// Successful Response
-            ///
-            /// - Remark: Generated from `#/paths//interests/get(list_interests_interests_get)/responses/200`.
-            ///
-            /// HTTP response code: `200 ok`.
-            case ok(Operations.list_interests_interests_get.Output.Ok)
-            /// The associated value of the enum case if `self` is `.ok`.
-            ///
-            /// - Throws: An error if `self` is not `.ok`.
-            /// - SeeAlso: `.ok`.
-            internal var ok: Operations.list_interests_interests_get.Output.Ok {
                 get throws {
                     switch self {
                     case let .ok(response):

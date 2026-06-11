@@ -8,7 +8,9 @@ import Foundation
 final class ProfileService {
     static let shared = ProfileService(client: LiveHTTPClient.shared)
 
-    private let client: HTTPClient
+    /// Exposed (not private) so MainActor callers can hand the same client to
+    /// `CategoryStore` for the cached interest/category catalog.
+    let client: HTTPClient
 
     init(client: HTTPClient) {
         self.client = client
@@ -33,17 +35,6 @@ final class ProfileService {
         try await client.post("/locations", body: request)
     }
 
-    // MARK: Catalogues
-
-    /// The full keyword catalogue, used to resolve interest names → ids on save.
-    func fetchKeywordCatalog() async throws -> [Keyword] {
-        try await client.get("/keywords")
-    }
-
-    /// The profile-interest catalogue — the chips offered on the signup
-    /// interests step and the "My interests" picker. Backed by `/interests`,
-    /// the subset of keywords flagged `is_interest` in the DB.
-    func fetchInterestCatalog() async throws -> [Keyword] {
-        try await client.get("/interests")
-    }
+    // The interest catalog is the category catalog (one taxonomy) — callers
+    // read it through `CategoryStore`, which caches `/categories` for an hour.
 }

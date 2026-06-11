@@ -261,7 +261,7 @@ final class UserProfileStore {
 
         do {
             // Fold the interest replacement into the same PATCH — one round-trip.
-            update.interestKeywordIds = try await resolveInterestIds()
+            update.interestCategoryIds = try await resolveInterestIds()
             let saved = try await service.updateMyProfile(update)
             // The server is the source of truth post-save: re-hydrate from its
             // response and refresh the cache so the next launch is instant.
@@ -300,7 +300,7 @@ final class UserProfileStore {
         occupation = profile.occupation ?? ""
         keySkills = profile.keySkills ?? ""
         interests = profile.interests.map {
-            Interest(emoji: Self.emoji(for: $0.keywordName), name: $0.keywordName)
+            Interest(emoji: Self.emoji(for: $0.categoryName), name: $0.categoryName)
         }
     }
 
@@ -324,11 +324,12 @@ final class UserProfileStore {
         return update
     }
 
-    /// Resolve the selected interest names to seeded keyword ids via the
-    /// catalogue. Names without a matching keyword can't be persisted and are
-    /// dropped (the picker only offers catalogue interests, so this is rare).
+    /// Resolve the selected interest names to category ids via the cached
+    /// catalog (interests and program categories are one taxonomy). Names
+    /// without a matching category can't be persisted and are dropped (the
+    /// picker only offers catalog interests, so this is rare).
     private func resolveInterestIds() async throws -> [Int] {
-        let catalog = try await service.fetchKeywordCatalog()
+        let catalog = try await CategoryStore.shared.categories(httpClient: service.client)
         let byName = Dictionary(
             catalog.map { ($0.name.lowercased(), $0.id) },
             uniquingKeysWith: { first, _ in first }

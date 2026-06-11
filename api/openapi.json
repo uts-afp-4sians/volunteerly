@@ -1566,32 +1566,6 @@
         }
       }
     },
-    "/interests": {
-      "get": {
-        "tags": [
-          "categories"
-        ],
-        "summary": "List Interests",
-        "description": "The profile-interest catalog \u2014 the chips on the signup interests step.",
-        "operationId": "list_interests_interests_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/KeywordRead"
-                  },
-                  "type": "array",
-                  "title": "Response List Interests Interests Get"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/locations": {
       "get": {
         "tags": [
@@ -2654,22 +2628,22 @@
       },
       "UserInterestDetail": {
         "properties": {
-          "keyword_id": {
+          "category_id": {
             "type": "integer",
-            "title": "Keyword Id"
+            "title": "Category Id"
           },
-          "keyword_name": {
+          "category_name": {
             "type": "string",
-            "title": "Keyword Name"
+            "title": "Category Name"
           }
         },
         "type": "object",
         "required": [
-          "keyword_id",
-          "keyword_name"
+          "category_id",
+          "category_name"
         ],
         "title": "UserInterestDetail",
-        "description": "A user's interest joined with its keyword name, for the profile screen."
+        "description": "A user's interest joined with its category name, for the profile screen."
       },
       "UserInterestRead": {
         "properties": {
@@ -2677,15 +2651,15 @@
             "type": "integer",
             "title": "User Id"
           },
-          "keyword_id": {
+          "category_id": {
             "type": "integer",
-            "title": "Keyword Id"
+            "title": "Category Id"
           }
         },
         "type": "object",
         "required": [
           "user_id",
-          "keyword_id"
+          "category_id"
         ],
         "title": "UserInterestRead",
         "description": "Wire shape matching iOS `UserInterest`."
@@ -2870,8 +2844,8 @@
             "nullable": true,
             "type": "integer"
           },
-          "interest_keyword_ids": {
-            "title": "Interest Keyword Ids",
+          "interest_category_ids": {
+            "title": "Interest Category Ids",
             "nullable": true,
             "items": {
               "type": "integer"
@@ -2881,7 +2855,7 @@
         },
         "type": "object",
         "title": "UserProfileUpdate",
-        "description": "Partial update for the signed-in user's profile (`PATCH /me/profile`).\n\nEvery field is optional; only fields explicitly present in the request body\nare written, so a client can update a single field without clobbering the\nrest. Use ``model_dump(exclude_unset=True)`` to honour that contract.\n\n``interest_keyword_ids`` folds the interest write into the same request: when\npresent it replaces the user's whole interest set; when omitted the existing\ninterests are left untouched."
+        "description": "Partial update for the signed-in user's profile (`PATCH /me/profile`).\n\nEvery field is optional; only fields explicitly present in the request body\nare written, so a client can update a single field without clobbering the\nrest. Use ``model_dump(exclude_unset=True)`` to honour that contract.\n\n``interest_category_ids`` folds the interest write into the same request:\nwhen present it replaces the user's whole interest set; when omitted the\nexisting interests are left untouched."
       },
       "UserRead": {
         "properties": {

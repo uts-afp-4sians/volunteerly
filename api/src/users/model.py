@@ -59,11 +59,15 @@ class UserProfile(Base):
 
 
 class UserInterest(Base):
-    """Junction: a keyword a user is interested in (USER_INTEREST)."""
+    """Junction: a category the user is interested in (USER_INTEREST).
+
+    Interests and program categories are one taxonomy — this references
+    ``categories`` directly (the old keyword mirror was removed).
+    """
 
     __tablename__ = "user_interests"
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.user_id"), primary_key=True)
-    keyword_id: Mapped[int] = mapped_column(
-        ForeignKey("keywords.keyword_id"), primary_key=True
+    category_id: Mapped[int] = mapped_column(
+        ForeignKey("categories.category_id"), primary_key=True
     )

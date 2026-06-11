@@ -22,16 +22,16 @@ class UserInterestRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     user_id: int
-    keyword_id: int
+    category_id: int
 
 
 class UserInterestDetail(BaseModel):
-    """A user's interest joined with its keyword name, for the profile screen."""
+    """A user's interest joined with its category name, for the profile screen."""
 
     model_config = ConfigDict(from_attributes=True)
 
-    keyword_id: int
-    keyword_name: str
+    category_id: int
+    category_name: str
 
 
 class UserProfileRead(BaseModel):
@@ -88,9 +88,9 @@ class UserProfileUpdate(BaseModel):
     are written, so a client can update a single field without clobbering the
     rest. Use ``model_dump(exclude_unset=True)`` to honour that contract.
 
-    ``interest_keyword_ids`` folds the interest write into the same request: when
-    present it replaces the user's whole interest set; when omitted the existing
-    interests are left untouched.
+    ``interest_category_ids`` folds the interest write into the same request:
+    when present it replaces the user's whole interest set; when omitted the
+    existing interests are left untouched.
     """
 
     first_name: str | None = Field(default=None, min_length=1, max_length=255)
@@ -104,4 +104,4 @@ class UserProfileUpdate(BaseModel):
     key_skills: str | None = Field(default=None, max_length=500)
     # References an existing row (clients resolve one via POST /locations first).
     location_id: int | None = None
-    interest_keyword_ids: list[int] | None = Field(default=None)
+    interest_category_ids: list[int] | None = Field(default=None)

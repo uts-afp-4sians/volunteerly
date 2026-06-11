@@ -43,8 +43,8 @@ enum MockData {
         keySkills: "Social media, Communication",
         locationId: 1,
         interests: [
-            UserInterestDetail(keywordId: 2, keywordName: "Animals"),
-            UserInterestDetail(keywordId: 3, keywordName: "Education"),
+            UserInterestDetail(categoryId: 2, categoryName: "Animals"),
+            UserInterestDetail(categoryId: 3, categoryName: "Education"),
         ]
     )
 
@@ -67,9 +67,9 @@ enum MockData {
     ]
 
     // MARK: Category & Keywords
-    // Unified taxonomy: program categories and signup interests are the same 11
-    // causes, with a 1:1 keyword per category (matching id and name). Mirrors
-    // scripts/seed.py.
+    // Unified taxonomy: the 11 causes. Profile interests reference these
+    // categories directly; keywords are program-tagging rows under them.
+    // Mirrors scripts/seed.py.
     static let category = ProgramCategory(id: 1, name: "Nature")
 
     static let categories: [ProgramCategory] = [
@@ -237,8 +237,8 @@ enum MockData {
 
     // MARK: User Interests (USER_INTEREST junction)
     static let userInterests: [UserInterest] = [
-        UserInterest(userId: 1, keywordId: 2),  // Animals
-        UserInterest(userId: 1, keywordId: 3)   // Education
+        UserInterest(userId: 1, categoryId: 2),  // Animals
+        UserInterest(userId: 1, categoryId: 3)   // Education
     ]
 
     // MARK: Program Keywords (PROGRAM_KEYWORD junction)

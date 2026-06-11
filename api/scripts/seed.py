@@ -143,9 +143,10 @@ def _rows() -> list[Base]:
         ProgramCategory(category_id=10, category_name="Sports"),
         ProgramCategory(category_id=11, category_name="Community"),
     ]
-    # One interest keyword per category, sharing the category's id and name.
+    # One program-tagging keyword per category, sharing the category's id and
+    # name. Profile interests reference categories directly, not keywords.
     keywords = [
-        Keyword(keyword_id=cid, category_id=cid, keyword_name=name, is_interest=True)
+        Keyword(keyword_id=cid, category_id=cid, keyword_name=name)
         for cid, name in (
             (1, "Nature"),
             (2, "Animals"),
@@ -246,10 +247,10 @@ def _rows() -> list[Base]:
         ),
     ]
     # Jane's profile interests — "Animals" (2) + "Education" (3), matching the
-    # chips on the profile mockup.
+    # chips on the profile mockup. Interests reference categories directly.
     user_interests = [
-        UserInterest(user_id=1, keyword_id=2),
-        UserInterest(user_id=1, keyword_id=3),
+        UserInterest(user_id=1, category_id=2),
+        UserInterest(user_id=1, category_id=3),
     ]
     # Banner galleries. Program 1 carries three images so the detail screen's
     # carousel + dots are exercised; the rest mirror their single banner so the

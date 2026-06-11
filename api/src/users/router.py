@@ -14,7 +14,7 @@ from src.users.schema import (
 )
 from src.users.service import (
     ProfileNotFound,
-    UnknownKeyword,
+    UnknownCategory,
     UnknownLocation,
     get_profile,
     read_profile_with_interests,
@@ -53,7 +53,7 @@ def update_my_profile(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found"
         ) from None
-    except UnknownKeyword as exc:
+    except UnknownCategory as exc:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)
         ) from None
@@ -104,6 +104,6 @@ def list_user_interests(
     result = db.execute(
         select(UserInterest)
         .where(UserInterest.user_id == user_id)
-        .order_by(UserInterest.keyword_id)
+        .order_by(UserInterest.category_id)
     )
     return list(result.scalars().all())

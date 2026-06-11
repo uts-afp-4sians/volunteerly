@@ -19,7 +19,6 @@ from src.lib import config as config_module
 from src.uploads.schema import PresignResponse, UploadKind
 from src.uploads.service import _r2_client, generate_presigned_url
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------

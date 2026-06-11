@@ -22,13 +22,13 @@ nonisolated struct Keyword: Identifiable, Codable {
     }
 }
 
-/// Junction between a user and a keyword they're interested in (USER_INTEREST).
+/// Junction between a user and a category they're interested in (USER_INTEREST).
 nonisolated struct UserInterest: Codable {
     let userId: Int
-    let keywordId: Int
+    let categoryId: Int
 
     enum CodingKeys: String, CodingKey {
         case userId = "user_id"
-        case keywordId = "keyword_id"
+        case categoryId = "category_id"
     }
 }

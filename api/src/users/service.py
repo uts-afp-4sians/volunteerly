@@ -7,7 +7,7 @@ Sits between the router (HTTP) and the ORM. Raises domain-meaningful
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from src.categories.model import Keyword
+from src.categories.model import ProgramCategory
 from src.locations.model import Location
 from src.locations.schema import LocationRead
 from src.users.model import UserInterest, UserProfile
@@ -22,12 +22,12 @@ class ProfileNotFound(UserError):
     """The requested user profile does not exist."""
 
 
-class UnknownKeyword(UserError):
-    """An interest referenced a keyword_id that does not exist."""
+class UnknownCategory(UserError):
+    """An interest referenced a category_id that does not exist."""
 
-    def __init__(self, keyword_id: int) -> None:
-        self.keyword_id = keyword_id
-        super().__init__(f"Unknown keyword_id: {keyword_id}")
+    def __init__(self, category_id: int) -> None:
+        self.category_id = category_id
+        super().__init__(f"Unknown category_id: {category_id}")
 
 
 class UnknownLocation(UserError):
@@ -52,16 +52,16 @@ def update_profile(
     """Apply a partial update to the user's profile.
 
     Only fields explicitly set on ``payload`` are written, so omitting a field
-    leaves it untouched. ``interest_keyword_ids`` is not a profile column — when
-    present it replaces the user's interest set in the same transaction; when
-    omitted the interests are left untouched. When no row exists yet (older
+    leaves it untouched. ``interest_category_ids`` is not a profile column —
+    when present it replaces the user's interest set in the same transaction;
+    when omitted the interests are left untouched. When no row exists yet (older
     signup flows skipped the auto-create), this upserts: the profile is
     created from the patch payload, with empty strings filling the non-null
     name columns if the caller didn't provide them. Runs in the caller's
     request-scoped transaction.
     """
     data = payload.model_dump(exclude_unset=True)
-    interest_keyword_ids = data.pop("interest_keyword_ids", None)
+    interest_category_ids = data.pop("interest_category_ids", None)
     location_id = data.get("location_id")
     if location_id is not None and db.get(Location, location_id) is None:
         raise UnknownLocation(location_id)
@@ -77,46 +77,50 @@ def update_profile(
     else:
         for field, value in data.items():
             setattr(profile, field, value)
-    if interest_keyword_ids is not None:
-        replace_interests(db, user_id, interest_keyword_ids)
+    if interest_category_ids is not None:
+        replace_interests(db, user_id, interest_category_ids)
     db.flush()
     return profile
 
 
-def list_interests(db: Session, user_id: int) -> list[Keyword]:
-    """Return the keywords the user has marked as interests, ordered by id."""
+def list_interests(db: Session, user_id: int) -> list[ProgramCategory]:
+    """Return the categories the user has marked as interests, ordered by id."""
     result = db.execute(
-        select(Keyword)
-        .join(UserInterest, UserInterest.keyword_id == Keyword.keyword_id)
+        select(ProgramCategory)
+        .join(
+            UserInterest, UserInterest.category_id == ProgramCategory.category_id
+        )
         .where(UserInterest.user_id == user_id)
-        .order_by(Keyword.keyword_id)
+        .order_by(ProgramCategory.category_id)
     )
     return list(result.scalars().all())
 
 
 def replace_interests(
-    db: Session, user_id: int, keyword_ids: list[int]
-) -> list[Keyword]:
-    """Replace the user's interest set with ``keyword_ids`` (deduplicated).
+    db: Session, user_id: int, category_ids: list[int]
+) -> list[ProgramCategory]:
+    """Replace the user's interest set with ``category_ids`` (deduplicated).
 
-    Validates every keyword exists before mutating, so a bad id rejects the
+    Validates every category exists before mutating, so a bad id rejects the
     whole request rather than leaving a partial set. One delete + N inserts in
     the caller's transaction.
     """
-    unique_ids = list(dict.fromkeys(keyword_ids))  # preserve order, drop dupes
+    unique_ids = list(dict.fromkeys(category_ids))  # preserve order, drop dupes
     if unique_ids:
         existing = set(
             db.execute(
-                select(Keyword.keyword_id).where(Keyword.keyword_id.in_(unique_ids))
+                select(ProgramCategory.category_id).where(
+                    ProgramCategory.category_id.in_(unique_ids)
+                )
             ).scalars()
         )
-        for keyword_id in unique_ids:
-            if keyword_id not in existing:
-                raise UnknownKeyword(keyword_id)
+        for category_id in unique_ids:
+            if category_id not in existing:
+                raise UnknownCategory(category_id)
 
     db.execute(UserInterest.__table__.delete().where(UserInterest.user_id == user_id))
-    for keyword_id in unique_ids:
-        db.add(UserInterest(user_id=user_id, keyword_id=keyword_id))
+    for category_id in unique_ids:
+        db.add(UserInterest(user_id=user_id, category_id=category_id))
     db.flush()
     return list_interests(db, user_id)
 
@@ -132,7 +136,7 @@ def read_profile_with_interests(db: Session, profile: UserProfile) -> UserProfil
         if location := db.get(Location, profile.location_id):
             response.location = LocationRead.model_validate(location)
     response.interests = [
-        UserInterestDetail.model_validate(keyword)
-        for keyword in list_interests(db, profile.user_id)
+        UserInterestDetail.model_validate(category)
+        for category in list_interests(db, profile.user_id)
     ]
     return response

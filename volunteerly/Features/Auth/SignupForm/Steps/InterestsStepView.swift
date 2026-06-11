@@ -23,10 +23,10 @@ struct InterestsStepView: View {
                     .padding(.top, 32)
             } else {
                 FlowLayout(spacing: 10, lineSpacing: 12) {
-                    ForEach(vm.interestCatalog) { keyword in
+                    ForEach(vm.interestCatalog) { category in
                         interestChip(
-                            emoji: UserProfileStore.emoji(for: keyword.name),
-                            name: keyword.name
+                            emoji: UserProfileStore.emoji(for: category.name),
+                            name: category.name
                         )
                     }
                     ForEach(customInterests, id: \.self) { name in

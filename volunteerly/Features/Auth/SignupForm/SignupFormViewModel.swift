@@ -30,9 +30,10 @@ final class SignupFormViewModel {
     var emailFieldError: String?
     var passwordFieldError: String?
 
-    // Step 5 — Interests
+    // Step 5 — Interests. The catalog is the program-category taxonomy
+    // (interests and categories are one set of 11 causes).
     var selectedInterests: Set<String> = []
-    var interestCatalog: [Keyword] = []
+    var interestCatalog: [ProgramCategory] = []
     var isLoadingInterests = false
 
     // Step 6 — Goals
@@ -79,9 +80,9 @@ final class SignupFormViewModel {
         }
     }
 
-    var fallbackCatalog: [Keyword] {
+    var fallbackCatalog: [ProgramCategory] {
         UserProfileStore.interestCatalog.enumerated().map { idx, entry in
-            Keyword(id: -(idx + 1), categoryId: 0, name: entry.name)
+            ProgramCategory(id: -(idx + 1), name: entry.name)
         }
     }
 
@@ -90,19 +91,21 @@ final class SignupFormViewModel {
         isLoadingInterests = true
         defer { isLoadingInterests = false }
         do {
-            let fetched = try await profileService.fetchInterestCatalog()
+            let fetched = try await CategoryStore.shared.categories(
+                httpClient: profileService.client
+            )
             interestCatalog = fetched.isEmpty ? fallbackCatalog : merged(backend: fetched)
         } catch {
             interestCatalog = fallbackCatalog
         }
     }
 
-    /// Merge the backend's keyword catalogue with the iOS-local fallback list,
+    /// Merge the backend's category catalog with the iOS-local fallback list,
     /// appending any local entries whose names aren't already on the server.
     /// Lets the picker show interests we've added on the client even if the
     /// backend's seed hasn't been re-run yet — server persistence still uses
-    /// only the rows whose keyword.id matches via `resolveInterestIds`.
-    private func merged(backend: [Keyword]) -> [Keyword] {
+    /// only the rows whose category id matches via `resolveInterestIds`.
+    private func merged(backend: [ProgramCategory]) -> [ProgramCategory] {
         let backendNames = Set(backend.map { $0.name.lowercased() })
         let extras = fallbackCatalog.filter { !backendNames.contains($0.name.lowercased()) }
         return backend + extras
@@ -124,7 +127,7 @@ final class SignupFormViewModel {
         case 5:
             // Include every selected interest — both catalog picks and any
             // custom names the user typed via the "Add more" chip. Custom names
-            // without a matching backend keyword will be dropped server-side by
+            // without a matching backend category will be dropped server-side by
             // `resolveInterestIds` but stay visible in the local profile during
             // the session.
             profileStore.interests = selectedInterests.map { name in
