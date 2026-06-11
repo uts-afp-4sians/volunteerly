@@ -20,7 +20,7 @@ struct ProgramCard: View {
             // width (same pattern as the detail banner).
             Color.clear
                 .frame(maxWidth: .infinity)
-                .frame(height: 263)
+                .frame(height: 253)
                 .overlay(
                     CachedAsyncImage(url: URL(string: program.bannerImageURL ?? "")) { image in
                         image.resizable().aspectRatio(contentMode: .fill)
@@ -75,7 +75,7 @@ struct ProgramCard: View {
                 .padding(.top, 2)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(14)
+        .padding(16)
     }
 
     private func emojiChip(_ emoji: String) -> some View {
@@ -90,7 +90,7 @@ struct ProgramCard: View {
     private var progressBar: some View {
         GeometryReader { geo in
             ZStack(alignment: .leading) {
-                Capsule().fill(Color.brand100)
+                Capsule().fill(Color.black50)
                 Capsule()
                     .fill(Color.brand300)
                     .frame(width: geo.size.width * progressFraction)
