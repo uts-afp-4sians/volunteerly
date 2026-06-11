@@ -8,12 +8,12 @@ struct ProgramDetailView: View {
     @State private var showJoinedConfirmation = false
     @State private var bannerSelection = 0
     @State private var showImageViewer = false
-    @State private var showEditSheet = false
     @State private var showDeleteAlert = false
     @State private var isDeleting = false
     @State private var deleteError: String?
     @Environment(\.dismiss) private var dismiss
     @Environment(UserProfileStore.self) private var profileStore: UserProfileStore?
+    @Environment(TabRouter.self) private var tabRouter: TabRouter?
 
     private let httpClient: HTTPClient
     private let horizontalPadding: CGFloat = 20
@@ -97,20 +97,17 @@ struct ProgramDetailView: View {
                 )
             }
         }
-        .sheet(isPresented: $showEditSheet) {
-            if let program = viewModel.program {
-                NavigationStack {
-                    PostProgramView(
-                        editing: program,
-                        httpClient: httpClient,
-                        onCreated: {
-                            showEditSheet = false
-                            onChanged()
-                            Task { await viewModel.load() }
-                        }
-                    )
+        .navigationDestination(for: EditProgramRoute.self) { route in
+            PostProgramView(
+                editing: route.program,
+                httpClient: httpClient,
+                onCreated: {
+                    // Reload before the edit form pops so the detail reflects
+                    // the saved changes the moment it reappears.
+                    onChanged()
+                    Task { await viewModel.load() }
                 }
-            }
+            )
         }
         .confirmationDialog(
             "Delete this program?",
@@ -229,7 +226,9 @@ struct ProgramDetailView: View {
     private var hostMenu: some View {
         Menu {
             Button {
-                showEditSheet = true
+                if let program = viewModel.program {
+                    tabRouter?.showEditProgram(program)
+                }
             } label: {
                 SwiftUI.Label("Edit program", systemImage: "pencil")
             }

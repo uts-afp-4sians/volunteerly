@@ -126,7 +126,7 @@ struct PostProgramView: View {
             // Figma 190:639: "Post Program" is a 30pt regular title (.subheading),
             // centered, not the default ~17pt inline title.
             ToolbarItem(placement: .principal) {
-                Text("Post Program")
+                Text(viewModel.isEditing ? "Edit Program" : "Post Program")
                     .font(.subheading)
                     .foregroundStyle(Theme.textPrimary)
             }
@@ -237,7 +237,7 @@ struct PostProgramView: View {
                 if viewModel.isSubmitting {
                     ProgressView().tint(Color.onBrand)
                 } else {
-                    Text("Post").font(.bodyStrong)
+                    Text(viewModel.isEditing ? "Save" : "Post").font(.bodyStrong)
                 }
             }
             .foregroundStyle(Color.onBrand)

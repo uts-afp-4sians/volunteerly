@@ -318,10 +318,18 @@ extension PostProgramView {
 
             // Only show the thumbnail row once at least one photo is picked —
             // an empty row of grey placeholders reads as a loading skeleton.
+            // A fresh pick supersedes the saved gallery, so show one or the
+            // other: new local picks take priority over the existing remote set.
             if !photoImages.isEmpty {
                 HStack(spacing: 12) {
                     ForEach(0..<maxPhotos, id: \.self) { index in
                         photoThumbnail(at: index)
+                    }
+                }
+            } else if !viewModel.existingImageURLs.isEmpty {
+                HStack(spacing: 12) {
+                    ForEach(0..<maxPhotos, id: \.self) { index in
+                        existingImageThumbnail(at: index)
                     }
                 }
             }
@@ -395,9 +403,42 @@ extension PostProgramView {
         }
     }
 
-    /// Circular "✕" delete badge that hangs over the thumbnail's top-right
-    /// corner. The visible disc is small, but transparent padding inflates the
-    /// hit area to ~44pt so it stays comfortably thumb-tappable.
+    /// One slot of the saved-gallery row shown in edit mode: an existing remote
+    /// banner image loaded async, or an empty placeholder for the unused slots.
+    /// Uses the same 1:1 square sizing/crop as `photoThumbnail` so the two rows
+    /// line up identically.
+    @ViewBuilder
+    private func existingImageThumbnail(at index: Int) -> some View {
+        let shape = RoundedRectangle(cornerRadius: 12, style: .continuous)
+        let urls = viewModel.existingImageURLs
+        if index < urls.count {
+            shape
+                .fill(Color(.systemGray6))
+                .frame(maxWidth: .infinity)
+                .aspectRatio(1, contentMode: .fit)
+                .overlay {
+                    AsyncImage(url: URL(string: urls[index])) { image in
+                        image.resizable().scaledToFill()
+                    } placeholder: {
+                        Rectangle().fill(Color(.systemGray5))
+                    }
+                }
+                .clipShape(shape)
+        } else {
+            shape
+                .fill(Color(.systemGray6))
+                .frame(maxWidth: .infinity)
+                .aspectRatio(1, contentMode: .fit)
+        }
+    }
+
+    /// Circular "✕" delete badge pinned to the thumbnail's top-right corner.
+    /// The visible disc is small, but transparent padding inflates the hit area
+    /// to ~44pt so it stays comfortably thumb-tappable. The badge's hit region
+    /// must stay *inside* the thumbnail's bounds: if it overhangs, taps land
+    /// outside the slot and fall through to the ScrollView's `onTapGesture`
+    /// (which dismisses edit mode) instead of reaching this button — so the
+    /// remove action never fires.
     private func photoDeleteBadge(at index: Int) -> some View {
         Button {
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
@@ -416,7 +457,9 @@ extension PostProgramView {
                 .contentShape(Circle())
         }
         .buttonStyle(.plain)
-        .offset(x: 14, y: -14)
+        // Hug the corner, but keep the 44pt hit circle within the 10pt padding
+        // margin so it never overhangs the slot (see doc comment above).
+        .offset(x: 6, y: -6)
     }
 
     // MARK: Commitment

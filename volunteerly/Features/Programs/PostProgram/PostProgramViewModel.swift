@@ -24,6 +24,11 @@ final class PostProgramViewModel {
     /// preview `Image`s stay view-side since they aren't submitted.
     var bannerImageData: [Data] = []
 
+    /// Banner URLs already saved on the program being edited, shown as
+    /// thumbnails so the host sees the current images. Empty in create mode and
+    /// once the host picks replacements (a new pick supersedes the gallery).
+    var existingImageURLs: [String] = []
+
     // MARK: - Details
 
     var selectedRegion: String = ""
@@ -104,6 +109,7 @@ final class PostProgramViewModel {
         self.commitmentDuration = program.commitmentDuration
         self.startDate = program.startDatetime
         self.endDate = program.endDatetime
+        self.existingImageURLs = program.galleryImageURLs
         // Baselines mirror the prefilled values so `isDirty`'s date/category
         // checks only fire on actual edits.
         initialStartDate = program.startDatetime
