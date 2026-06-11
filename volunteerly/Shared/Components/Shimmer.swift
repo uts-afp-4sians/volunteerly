@@ -14,13 +14,12 @@ struct Shimmer: ViewModifier {
                 .overlay {
                     GeometryReader { geo in
                         LinearGradient(
-                            colors: [.clear, Color.white.opacity(0.55), .clear],
+                            colors: [.clear, Color.white.opacity(0.25), .clear],
                             startPoint: .leading,
                             endPoint: .trailing
                         )
                         .frame(width: geo.size.width * 0.6)
                         .offset(x: phase * geo.size.width * 1.6)
-                        .blendMode(.plusLighter)
                     }
                 }
                 .mask(content)
