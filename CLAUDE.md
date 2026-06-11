@@ -51,7 +51,7 @@ aren't obvious from the code, not things the code already shows.
   `PostProgramViewSections.swift` not `PostProgramView+Sections.swift`.
 
 ## R2 object storage
-- Bucket: `volunteerly-media` (Cloudflare account `<r2-account-id>`, APAC)
+- Bucket: `volunteerly-media` (Cloudflare R2, APAC; account id comes from `R2_ACCOUNT_ID` env)
 - Public base URL: `https://pub-33ddcaa8fd164c628cabe79a0c47c85c.r2.dev`
 - Object key schema: `{kind}/{user_id}/{uuid4().hex}.webp`
   - `profile_image/{user_id}/{32-char-hex}.webp`
