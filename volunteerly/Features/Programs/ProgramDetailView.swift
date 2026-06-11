@@ -350,9 +350,81 @@ struct ProgramDetailView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         } else {
-            ProgressView()
-                .frame(maxWidth: .infinity)
-                .padding(.top, 60)
+            detailSkeleton
+        }
+    }
+
+    // MARK: Loading skeleton
+
+    /// Loading placeholder mirroring the real content layout — title, category
+    /// chip, schedule/location rows, map card, description and host card — so
+    /// the screen keeps its shape and nothing jumps when the program arrives.
+    /// Swept by `.shimmering()`; static and dimmed under Reduce Motion.
+    private var detailSkeleton: some View {
+        VStack(alignment: .leading, spacing: 32) {
+            VStack(alignment: .leading, spacing: 24) {
+                VStack(alignment: .leading, spacing: 16) {
+                    skeletonBar(width: 240, height: 26)
+                    Capsule()
+                        .fill(skeletonFill)
+                        .frame(width: 120, height: 42)
+                }
+
+                VStack(spacing: 0) {
+                    skeletonInfoRow
+                        .padding(.vertical, 14)
+                    Rectangle()
+                        .fill(Theme.divider)
+                        .frame(height: 1)
+                    skeletonInfoRow
+                        .padding(.vertical, 14)
+                }
+
+                RoundedRectangle(cornerRadius: 30, style: .continuous)
+                    .fill(skeletonFill)
+                    .frame(height: 211)
+                    .frame(maxWidth: .infinity)
+            }
+
+            VStack(alignment: .leading, spacing: 16) {
+                skeletonBar(width: 90, height: 16)
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(skeletonFill)
+                    .frame(height: 120)
+                    .frame(maxWidth: .infinity)
+            }
+
+            VStack(alignment: .leading, spacing: 24) {
+                skeletonBar(width: 110, height: 20)
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(skeletonFill)
+                    .frame(width: 114, height: 126)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .shimmering()
+        .accessibilityLabel("Loading program")
+    }
+
+    private var skeletonFill: Color { Color(.systemGray5) }
+
+    private func skeletonBar(width: CGFloat, height: CGFloat) -> some View {
+        RoundedRectangle(cornerRadius: 4, style: .continuous)
+            .fill(skeletonFill)
+            .frame(width: width, height: height)
+    }
+
+    /// Mirrors `infoRow` (24pt icon + two caption lines).
+    private var skeletonInfoRow: some View {
+        HStack(spacing: 12) {
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .fill(skeletonFill)
+                .frame(width: 24, height: 24)
+            VStack(alignment: .leading, spacing: 6) {
+                skeletonBar(width: 170, height: 12)
+                skeletonBar(width: 110, height: 12)
+            }
+            Spacer(minLength: 0)
         }
     }
 
