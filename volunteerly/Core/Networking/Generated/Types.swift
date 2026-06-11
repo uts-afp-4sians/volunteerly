@@ -28,6 +28,11 @@ internal protocol APIProtocol: Sendable {
     /// - Remark: HTTP `POST /auth/login`.
     /// - Remark: Generated from `#/paths//auth/login/post(login_auth_login_post)`.
     func login_auth_login_post(_ input: Operations.login_auth_login_post.Input) async throws -> Operations.login_auth_login_post.Output
+    /// Change Password Route
+    ///
+    /// - Remark: HTTP `POST /auth/change-password`.
+    /// - Remark: Generated from `#/paths//auth/change-password/post(change_password_route_auth_change_password_post)`.
+    func change_password_route_auth_change_password_post(_ input: Operations.change_password_route_auth_change_password_post.Input) async throws -> Operations.change_password_route_auth_change_password_post.Output
     /// Me
     ///
     /// - Remark: HTTP `GET /auth/me`.
@@ -194,6 +199,19 @@ extension APIProtocol {
         body: Operations.login_auth_login_post.Input.Body
     ) async throws -> Operations.login_auth_login_post.Output {
         try await login_auth_login_post(Operations.login_auth_login_post.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// Change Password Route
+    ///
+    /// - Remark: HTTP `POST /auth/change-password`.
+    /// - Remark: Generated from `#/paths//auth/change-password/post(change_password_route_auth_change_password_post)`.
+    internal func change_password_route_auth_change_password_post(
+        headers: Operations.change_password_route_auth_change_password_post.Input.Headers = .init(),
+        body: Operations.change_password_route_auth_change_password_post.Input.Body
+    ) async throws -> Operations.change_password_route_auth_change_password_post.Output {
+        try await change_password_route_auth_change_password_post(Operations.change_password_route_auth_change_password_post.Input(
             headers: headers,
             body: body
         ))
@@ -469,6 +487,31 @@ internal enum Components {
             internal enum CodingKeys: String, CodingKey {
                 case token
                 case user
+            }
+        }
+        /// Authenticated password change: verify `current`, set `new`.
+        ///
+        /// - Remark: Generated from `#/components/schemas/ChangePasswordRequest`.
+        internal struct ChangePasswordRequest: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/ChangePasswordRequest/current_password`.
+            internal var current_password: Swift.String
+            /// - Remark: Generated from `#/components/schemas/ChangePasswordRequest/new_password`.
+            internal var new_password: Swift.String
+            /// Creates a new `ChangePasswordRequest`.
+            ///
+            /// - Parameters:
+            ///   - current_password:
+            ///   - new_password:
+            internal init(
+                current_password: Swift.String,
+                new_password: Swift.String
+            ) {
+                self.current_password = current_password
+                self.new_password = new_password
+            }
+            internal enum CodingKeys: String, CodingKey {
+                case current_password
+                case new_password
             }
         }
         /// Expected length of commitment in months, as filter buckets (wire values
@@ -1133,6 +1176,8 @@ internal enum Components {
             internal var commitment_duration: Components.Schemas.ProgramUpdate.commitment_durationPayload?
             /// - Remark: Generated from `#/components/schemas/ProgramUpdate/banner_image_url`.
             internal var banner_image_url: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/ProgramUpdate/banner_image_urls`.
+            internal var banner_image_urls: [Swift.String]?
             /// - Remark: Generated from `#/components/schemas/ProgramUpdate/location_id`.
             internal var location_id: Swift.Int?
             /// Creates a new `ProgramUpdate`.
@@ -1147,6 +1192,7 @@ internal enum Components {
             ///   - commitment_frequency:
             ///   - commitment_duration:
             ///   - banner_image_url:
+            ///   - banner_image_urls:
             ///   - location_id:
             internal init(
                 category_id: Swift.Int? = nil,
@@ -1158,6 +1204,7 @@ internal enum Components {
                 commitment_frequency: Components.Schemas.ProgramUpdate.commitment_frequencyPayload? = nil,
                 commitment_duration: Components.Schemas.ProgramUpdate.commitment_durationPayload? = nil,
                 banner_image_url: Swift.String? = nil,
+                banner_image_urls: [Swift.String]? = nil,
                 location_id: Swift.Int? = nil
             ) {
                 self.category_id = category_id
@@ -1169,6 +1216,7 @@ internal enum Components {
                 self.commitment_frequency = commitment_frequency
                 self.commitment_duration = commitment_duration
                 self.banner_image_url = banner_image_url
+                self.banner_image_urls = banner_image_urls
                 self.location_id = location_id
             }
             internal enum CodingKeys: String, CodingKey {
@@ -1181,6 +1229,7 @@ internal enum Components {
                 case commitment_frequency
                 case commitment_duration
                 case banner_image_url
+                case banner_image_urls
                 case location_id
             }
         }
@@ -1860,6 +1909,162 @@ internal enum Operations {
             /// - Throws: An error if `self` is not `.unprocessableContent`.
             /// - SeeAlso: `.unprocessableContent`.
             internal var unprocessableContent: Operations.login_auth_login_post.Output.UnprocessableContent {
+                get throws {
+                    switch self {
+                    case let .unprocessableContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unprocessableContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        internal enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            internal init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            internal var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            internal static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Change Password Route
+    ///
+    /// - Remark: HTTP `POST /auth/change-password`.
+    /// - Remark: Generated from `#/paths//auth/change-password/post(change_password_route_auth_change_password_post)`.
+    internal enum change_password_route_auth_change_password_post {
+        internal static let id: Swift.String = "change_password_route_auth_change_password_post"
+        internal struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/auth/change-password/POST/header`.
+            internal struct Headers: Sendable, Hashable {
+                internal var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.change_password_route_auth_change_password_post.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                internal init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.change_password_route_auth_change_password_post.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            internal var headers: Operations.change_password_route_auth_change_password_post.Input.Headers
+            /// - Remark: Generated from `#/paths/auth/change-password/POST/requestBody`.
+            internal enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/auth/change-password/POST/requestBody/content/application\/json`.
+                case json(Components.Schemas.ChangePasswordRequest)
+            }
+            internal var body: Operations.change_password_route_auth_change_password_post.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            ///   - body:
+            internal init(
+                headers: Operations.change_password_route_auth_change_password_post.Input.Headers = .init(),
+                body: Operations.change_password_route_auth_change_password_post.Input.Body
+            ) {
+                self.headers = headers
+                self.body = body
+            }
+        }
+        internal enum Output: Sendable, Hashable {
+            internal struct NoContent: Sendable, Hashable {
+                /// Creates a new `NoContent`.
+                internal init() {}
+            }
+            /// Successful Response
+            ///
+            /// - Remark: Generated from `#/paths//auth/change-password/post(change_password_route_auth_change_password_post)/responses/204`.
+            ///
+            /// HTTP response code: `204 noContent`.
+            case noContent(Operations.change_password_route_auth_change_password_post.Output.NoContent)
+            /// Successful Response
+            ///
+            /// - Remark: Generated from `#/paths//auth/change-password/post(change_password_route_auth_change_password_post)/responses/204`.
+            ///
+            /// HTTP response code: `204 noContent`.
+            internal static var noContent: Self {
+                .noContent(.init())
+            }
+            /// The associated value of the enum case if `self` is `.noContent`.
+            ///
+            /// - Throws: An error if `self` is not `.noContent`.
+            /// - SeeAlso: `.noContent`.
+            internal var noContent: Operations.change_password_route_auth_change_password_post.Output.NoContent {
+                get throws {
+                    switch self {
+                    case let .noContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "noContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            internal struct UnprocessableContent: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/auth/change-password/POST/responses/422/content`.
+                internal enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/auth/change-password/POST/responses/422/content/application\/json`.
+                    case json(Components.Schemas.HTTPValidationError)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    internal var json: Components.Schemas.HTTPValidationError {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                internal var body: Operations.change_password_route_auth_change_password_post.Output.UnprocessableContent.Body
+                /// Creates a new `UnprocessableContent`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                internal init(body: Operations.change_password_route_auth_change_password_post.Output.UnprocessableContent.Body) {
+                    self.body = body
+                }
+            }
+            /// Validation Error
+            ///
+            /// - Remark: Generated from `#/paths//auth/change-password/post(change_password_route_auth_change_password_post)/responses/422`.
+            ///
+            /// HTTP response code: `422 unprocessableContent`.
+            case unprocessableContent(Operations.change_password_route_auth_change_password_post.Output.UnprocessableContent)
+            /// The associated value of the enum case if `self` is `.unprocessableContent`.
+            ///
+            /// - Throws: An error if `self` is not `.unprocessableContent`.
+            /// - SeeAlso: `.unprocessableContent`.
+            internal var unprocessableContent: Operations.change_password_route_auth_change_password_post.Output.UnprocessableContent {
                 get throws {
                     switch self {
                     case let .unprocessableContent(response):

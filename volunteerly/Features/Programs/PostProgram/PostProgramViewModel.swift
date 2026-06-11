@@ -25,9 +25,22 @@ final class PostProgramViewModel {
     var bannerImageData: [Data] = []
 
     /// Banner URLs already saved on the program being edited, shown as
-    /// thumbnails so the host sees the current images. Empty in create mode and
-    /// once the host picks replacements (a new pick supersedes the gallery).
+    /// thumbnails so the host sees the current images. The host can delete from
+    /// this set; surviving entries are merged with freshly uploaded picks on
+    /// submit. Empty in create mode.
     var existingImageURLs: [String] = []
+
+    /// Whether the host has actually changed the images while editing — a saved
+    /// image was removed, or new photos were picked. Derived (not a sticky flag)
+    /// so undoing every change flips it back to false: `submit()` then leaves
+    /// both image fields nil and the backend keeps the saved gallery untouched.
+    var imagesEdited: Bool {
+        existingImageURLs != originalImageURLs || !bannerImageData.isEmpty
+    }
+
+    /// Snapshot of the saved gallery captured at edit-init, the baseline
+    /// `imagesEdited` compares against. Empty in create mode.
+    private let originalImageURLs: [String]
 
     // MARK: - Details
 
@@ -63,7 +76,7 @@ final class PostProgramViewModel {
         !name.isEmpty
             || !description.isEmpty
             || !selectedRegion.isEmpty
-            || !bannerImageData.isEmpty
+            || imagesEdited
             || maxVolunteers != Self.defaultMaxVolunteers
             || commitmentFrequency != nil
             || commitmentDuration != nil
@@ -94,6 +107,7 @@ final class PostProgramViewModel {
         initialStartDate = start
         initialEndDate = end
         baselineCategoryId = Self.defaultCategoryId
+        originalImageURLs = []
     }
 
     /// Initialise the form pre-populated for editing an existing program.
@@ -110,6 +124,7 @@ final class PostProgramViewModel {
         self.startDate = program.startDatetime
         self.endDate = program.endDatetime
         self.existingImageURLs = program.galleryImageURLs
+        self.originalImageURLs = program.galleryImageURLs
         // Baselines mirror the prefilled values so `isDirty`'s date/category
         // checks only fire on actual edits.
         initialStartDate = program.startDatetime
@@ -175,10 +190,18 @@ final class PostProgramViewModel {
                     endDatetime: endDate,
                     maxVolunteers: maxVolunteers,
                     commitmentFrequency: commitmentFrequency,
-                    commitmentDuration: commitmentDuration,
-                    bannerImageURL: galleryURLs.first  // nil → backend keeps existing
+                    commitmentDuration: commitmentDuration
                 )
                 request.locationId = locationId
+                // Only touch images when the host edited them. The new gallery is
+                // the surviving saved images followed by freshly uploaded picks;
+                // an empty result clears the gallery. Untouched → both fields nil
+                // so the backend leaves the saved images alone.
+                if imagesEdited {
+                    let gallery = existingImageURLs + galleryURLs
+                    request.bannerImageURLs = gallery
+                    request.bannerImageURL = gallery.first
+                }
                 let _: Program = try await httpClient.patch("/programs/\(programId)", body: request)
             } else {
                 var request = ProgramCreateRequest(

@@ -114,6 +114,10 @@ nonisolated struct ProgramUpdateRequest: Encodable {
     var commitmentFrequency: CommitmentFrequency?
     var commitmentDuration: CommitmentDuration?
     var bannerImageURL: String?
+    /// Ordered banner gallery (up to three). When set the server replaces the
+    /// whole gallery; an empty list clears it. Left `nil` (omitted) to keep the
+    /// saved images untouched.
+    var bannerImageURLs: [String]?
     var locationId: Int?
 
     enum CodingKeys: String, CodingKey {
@@ -126,6 +130,7 @@ nonisolated struct ProgramUpdateRequest: Encodable {
         case commitmentFrequency = "commitment_frequency"
         case commitmentDuration = "commitment_duration"
         case bannerImageURL = "banner_image_url"
+        case bannerImageURLs = "banner_image_urls"
         case locationId = "location_id"
     }
 }

@@ -316,50 +316,63 @@ extension PostProgramView {
                     .foregroundStyle(Theme.textSecondary)
             }
 
-            // Only show the thumbnail row once at least one photo is picked —
-            // an empty row of grey placeholders reads as a loading skeleton.
-            // A fresh pick supersedes the saved gallery, so show one or the
-            // other: new local picks take priority over the existing remote set.
-            if !photoImages.isEmpty {
+            // One row holding the saved images first (edit mode) then any fresh
+            // picks, both long-press deletable. Hidden until there's something to
+            // show — an empty row of grey placeholders reads as a loading skeleton.
+            let existingCount = viewModel.existingImageURLs.count
+            let totalCount = existingCount + photoImages.count
+            if totalCount > 0 {
                 HStack(spacing: 12) {
-                    ForEach(0..<maxPhotos, id: \.self) { index in
-                        photoThumbnail(at: index)
-                    }
-                }
-            } else if !viewModel.existingImageURLs.isEmpty {
-                HStack(spacing: 12) {
-                    ForEach(0..<maxPhotos, id: \.self) { index in
-                        existingImageThumbnail(at: index)
+                    ForEach(0..<maxPhotos, id: \.self) { slot in
+                        if slot < existingCount {
+                            existingImageThumbnail(at: slot)
+                        } else if slot - existingCount < photoImages.count {
+                            photoThumbnail(at: slot - existingCount)
+                        } else {
+                            emptyThumbnailSlot
+                        }
                     }
                 }
             }
 
-            PhotosPicker(
-                selection: $photoItems,
-                maxSelectionCount: maxPhotos,
-                matching: .images
-            ) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .fill(Color(.systemGray6))
-                    VStack(spacing: 12) {
-                        Image(systemName: "camera")
-                            .font(.system(size: 36))
-                            .foregroundStyle(Theme.textSecondary)
-                        Text("Tap to upload\nimage")
-                            .font(.labelItalic)
-                            .multilineTextAlignment(.center)
-                            .foregroundStyle(Theme.textSecondary)
+            // Hide the picker once all three slots are filled (saved + new).
+            if totalCount < maxPhotos {
+                PhotosPicker(
+                    selection: $photoItems,
+                    maxSelectionCount: maxPhotos - existingCount,
+                    matching: .images
+                ) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .fill(Color(.systemGray6))
+                        VStack(spacing: 12) {
+                            Image(systemName: "camera")
+                                .font(.system(size: 36))
+                                .foregroundStyle(Theme.textSecondary)
+                            Text("Tap to upload\nimage")
+                                .font(.labelItalic)
+                                .multilineTextAlignment(.center)
+                                .foregroundStyle(Theme.textSecondary)
+                        }
                     }
+                    .frame(height: 240)
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                 }
-                .frame(height: 240)
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
         }
         .onChange(of: photoItems) { _, items in
             Task { await loadPhotos(items) }
         }
+    }
+
+    /// An empty grey 1:1 slot — the same footprint as a filled thumbnail so the
+    /// row keeps three even columns whether or not every slot is used.
+    private var emptyThumbnailSlot: some View {
+        RoundedRectangle(cornerRadius: 12, style: .continuous)
+            .fill(Color(.systemGray6))
+            .frame(maxWidth: .infinity)
+            .aspectRatio(1, contentMode: .fit)
     }
 
     /// One of the three thumbnail slots: the selected photo, or an empty
@@ -385,28 +398,22 @@ extension PostProgramView {
                 .modifier(JiggleEffect(isActive: photosEditing, index: index))
                 .overlay(alignment: .topTrailing) {
                     if photosEditing {
-                        photoDeleteBadge(at: index)
+                        deleteBadge { removePhoto(at: index) }
                             .transition(.scale.combined(with: .opacity))
                     }
                 }
                 .onLongPressGesture(minimumDuration: 0.35) {
-                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
-                        photosEditing = true
-                    }
+                    enterPhotosEditing()
                 }
         } else {
-            shape
-                .fill(Color(.systemGray6))
-                .frame(maxWidth: .infinity)
-                .aspectRatio(1, contentMode: .fit)
+            emptyThumbnailSlot
         }
     }
 
     /// One slot of the saved-gallery row shown in edit mode: an existing remote
-    /// banner image loaded async, or an empty placeholder for the unused slots.
-    /// Uses the same 1:1 square sizing/crop as `photoThumbnail` so the two rows
-    /// line up identically.
+    /// banner image loaded async, deletable via the same long-press jiggle as a
+    /// fresh pick. Uses the same 1:1 square sizing/crop as `photoThumbnail` so
+    /// the two line up identically.
     @ViewBuilder
     private func existingImageThumbnail(at index: Int) -> some View {
         let shape = RoundedRectangle(cornerRadius: 12, style: .continuous)
@@ -424,27 +431,47 @@ extension PostProgramView {
                     }
                 }
                 .clipShape(shape)
+                .modifier(JiggleEffect(isActive: photosEditing, index: index))
+                .overlay(alignment: .topTrailing) {
+                    if photosEditing {
+                        deleteBadge { removeExistingImage(at: index) }
+                            .transition(.scale.combined(with: .opacity))
+                    }
+                }
+                .onLongPressGesture(minimumDuration: 0.35) {
+                    enterPhotosEditing()
+                }
         } else {
-            shape
-                .fill(Color(.systemGray6))
-                .frame(maxWidth: .infinity)
-                .aspectRatio(1, contentMode: .fit)
+            emptyThumbnailSlot
+        }
+    }
+
+    /// Enter the iOS home-screen-style jiggle edit mode shared by saved and
+    /// freshly-picked thumbnails.
+    private func enterPhotosEditing() {
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+            photosEditing = true
         }
     }
 
     /// Circular "✕" delete badge pinned to the thumbnail's top-right corner.
+    /// `action` removes the specific image; once nothing remains, edit mode
+    /// exits on its own.
     /// The visible disc is small, but transparent padding inflates the hit area
     /// to ~44pt so it stays comfortably thumb-tappable. The badge's hit region
     /// must stay *inside* the thumbnail's bounds: if it overhangs, taps land
     /// outside the slot and fall through to the ScrollView's `onTapGesture`
     /// (which dismisses edit mode) instead of reaching this button — so the
     /// remove action never fires.
-    private func photoDeleteBadge(at index: Int) -> some View {
+    private func deleteBadge(action: @escaping () -> Void) -> some View {
         Button {
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
             withAnimation(.easeOut(duration: 0.2)) {
-                removePhoto(at: index)
-                if photoImages.isEmpty { photosEditing = false }
+                action()
+                if photoImages.isEmpty && viewModel.existingImageURLs.isEmpty {
+                    photosEditing = false
+                }
             }
         } label: {
             Image(systemName: "xmark")

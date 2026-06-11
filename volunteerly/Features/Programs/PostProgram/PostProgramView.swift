@@ -257,9 +257,12 @@ struct PostProgramView: View {
     /// All photos (up to `maxPhotos`) are uploaded as the program's banner
     /// gallery on submit; the first doubles as the legacy single banner.
     func loadPhotos(_ items: [PhotosPickerItem]) async {
+        // New picks fill the slots left after any surviving saved images, so the
+        // combined gallery never exceeds `maxPhotos`.
+        let freeSlots = max(0, maxPhotos - viewModel.existingImageURLs.count)
         var images: [Image] = []
         var photoData: [Data] = []
-        for item in items.prefix(maxPhotos) {
+        for item in items.prefix(freeSlots) {
             guard let data = try? await item.loadTransferable(type: Data.self),
                   let uiImage = UIImage(data: data) else { continue }
             photoData.append(data)
@@ -271,10 +274,19 @@ struct PostProgramView: View {
 
     func removePhoto(at index: Int) {
         guard index < photoItems.count else { return }
+        // Mutating `photoItems` re-fires `onChange` → `loadPhotos`, which
+        // rebuilds `photoImages` and `viewModel.bannerImageData` in sync.
         photoItems.remove(at: index)
         if index < photoImages.count {
             photoImages.remove(at: index)
         }
+    }
+
+    /// Remove one of the program's already-saved images (edit mode). The
+    /// surviving set is sent as the new gallery on submit.
+    func removeExistingImage(at index: Int) {
+        guard index < viewModel.existingImageURLs.count else { return }
+        viewModel.existingImageURLs.remove(at: index)
     }
 }
 

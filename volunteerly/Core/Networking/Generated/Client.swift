@@ -281,6 +281,77 @@ internal struct Client: APIProtocol {
             }
         )
     }
+    /// Change Password Route
+    ///
+    /// - Remark: HTTP `POST /auth/change-password`.
+    /// - Remark: Generated from `#/paths//auth/change-password/post(change_password_route_auth_change_password_post)`.
+    internal func change_password_route_auth_change_password_post(_ input: Operations.change_password_route_auth_change_password_post.Input) async throws -> Operations.change_password_route_auth_change_password_post.Output {
+        try await client.send(
+            input: input,
+            forOperation: Operations.change_password_route_auth_change_password_post.id,
+            serializer: { input in
+                let path = try converter.renderedPath(
+                    template: "/auth/change-password",
+                    parameters: []
+                )
+                var request: HTTPTypes.HTTPRequest = .init(
+                    soar_path: path,
+                    method: .post
+                )
+                suppressMutabilityWarning(&request)
+                converter.setAcceptHeader(
+                    in: &request.headerFields,
+                    contentTypes: input.headers.accept
+                )
+                let body: OpenAPIRuntime.HTTPBody?
+                switch input.body {
+                case let .json(value):
+                    body = try converter.setRequiredRequestBodyAsJSON(
+                        value,
+                        headerFields: &request.headerFields,
+                        contentType: "application/json; charset=utf-8"
+                    )
+                }
+                return (request, body)
+            },
+            deserializer: { response, responseBody in
+                switch response.status.code {
+                case 204:
+                    return .noContent(.init())
+                case 422:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Operations.change_password_route_auth_change_password_post.Output.UnprocessableContent.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.HTTPValidationError.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .json(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .unprocessableContent(.init(body: body))
+                default:
+                    return .undocumented(
+                        statusCode: response.status.code,
+                        .init(
+                            headerFields: response.headerFields,
+                            body: responseBody
+                        )
+                    )
+                }
+            }
+        )
+    }
     /// Me
     ///
     /// - Remark: HTTP `GET /auth/me`.
