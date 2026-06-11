@@ -28,20 +28,23 @@ struct BookmarksView: View {
         .toolbar(.hidden, for: .navigationBar)
         .task {
             if viewModel.programs.isEmpty {
-                await viewModel.load()
+                await viewModel.load(includeMyPrograms: false)
             }
         }
         .refreshable {
-            await viewModel.load()
+            await viewModel.load(includeMyPrograms: false)
         }
     }
 
     @ViewBuilder
     private var content: some View {
         if viewModel.isLoading && viewModel.programs.isEmpty {
-            ProgressView()
-                .frame(maxWidth: .infinity)
-                .padding(.top, 60)
+            LazyVStack(spacing: 23) {
+                ForEach(0..<3, id: \.self) { _ in
+                    BookmarkRowSkeleton()
+                }
+            }
+            .shimmering()
         } else if let error = viewModel.errorMessage {
             ContentUnavailableView(
                 "Something went wrong",
@@ -72,7 +75,7 @@ private struct BookmarkRow: View {
 
     var body: some View {
         HStack(spacing: 17) {
-            AsyncImage(url: URL(string: program.bannerImageURL ?? "")) { image in
+            CachedAsyncImage(url: URL(string: program.bannerImageURL ?? "")) { image in
                 image.resizable().aspectRatio(contentMode: .fill)
             } placeholder: {
                 Rectangle().fill(Color(.systemGray6))
@@ -89,6 +92,70 @@ private struct BookmarkRow: View {
         }
         .contentShape(Rectangle())
     }
+}
+
+/// Placeholder row shown while bookmarks load — mirrors `BookmarkRow`'s
+/// geometry (69×69 thumbnail + two text lines) so the list doesn't reflow when
+/// real content arrives. Animated by the parent's `.shimmering()`.
+private struct BookmarkRowSkeleton: View {
+    private var fill: Color { Color(.systemGray5) }
+
+    var body: some View {
+        HStack(spacing: 17) {
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(fill)
+                .frame(width: 69, height: 69)
+
+            VStack(alignment: .leading, spacing: 8) {
+                RoundedRectangle(cornerRadius: 4, style: .continuous)
+                    .fill(fill)
+                    .frame(height: 14)
+                    .frame(maxWidth: .infinity)
+                RoundedRectangle(cornerRadius: 4, style: .continuous)
+                    .fill(fill)
+                    .frame(width: 140, height: 14)
+            }
+
+            Spacer(minLength: 0)
+        }
+    }
+}
+
+/// Sweeps a soft highlight across the view to signal loading. Honours Reduce
+/// Motion by falling back to a static, slightly-dimmed state.
+private struct Shimmer: ViewModifier {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var phase: CGFloat = -1
+
+    func body(content: Content) -> some View {
+        if reduceMotion {
+            content.opacity(0.6)
+        } else {
+            content
+                .overlay {
+                    GeometryReader { geo in
+                        LinearGradient(
+                            colors: [.clear, Color.white.opacity(0.55), .clear],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                        .frame(width: geo.size.width * 0.6)
+                        .offset(x: phase * geo.size.width * 1.6)
+                        .blendMode(.plusLighter)
+                    }
+                }
+                .mask(content)
+                .onAppear {
+                    withAnimation(.linear(duration: 1.2).repeatForever(autoreverses: false)) {
+                        phase = 1
+                    }
+                }
+        }
+    }
+}
+
+private extension View {
+    func shimmering() -> some View { modifier(Shimmer()) }
 }
 
 #Preview {

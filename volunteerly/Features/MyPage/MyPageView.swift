@@ -539,7 +539,7 @@ struct MyPageProgramRow: View {
     var body: some View {
         NavigationLink(value: program.id) {
             HStack(spacing: 16) {
-                AsyncImage(url: URL(string: program.bannerImageURL ?? "")) { image in
+                CachedAsyncImage(url: URL(string: program.bannerImageURL ?? "")) { image in
                     image.resizable().aspectRatio(contentMode: .fill)
                 } placeholder: {
                     Rectangle().fill(Color(.systemGray5))

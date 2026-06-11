@@ -424,7 +424,7 @@ extension PostProgramView {
                 .frame(maxWidth: .infinity)
                 .aspectRatio(1, contentMode: .fit)
                 .overlay {
-                    AsyncImage(url: URL(string: urls[index])) { image in
+                    CachedAsyncImage(url: URL(string: urls[index])) { image in
                         image.resizable().scaledToFill()
                     } placeholder: {
                         Rectangle().fill(Color(.systemGray5))

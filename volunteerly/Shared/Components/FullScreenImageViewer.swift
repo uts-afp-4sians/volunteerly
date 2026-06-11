@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 /// A full-screen, dark-backdrop image viewer. Shows the original (uncropped)
 /// image with `contentMode: .fit`, supports pinch / double-tap zoom, and pages
@@ -55,14 +56,16 @@ private struct ZoomableImage: View {
     @State private var offset: CGSize = .zero
     @State private var lastOffset: CGSize = .zero
 
+    @State private var loaded: UIImage?
+    @State private var failed = false
+
     private let minScale: CGFloat = 1
     private let maxScale: CGFloat = 4
 
     var body: some View {
-        AsyncImage(url: URL(string: url)) { phase in
-            switch phase {
-            case .success(let image):
-                image
+        Group {
+            if let image = loaded ?? URL(string: url).flatMap(ImageCache.shared.cached) {
+                Image(uiImage: image)
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .scaleEffect(scale)
@@ -70,15 +73,25 @@ private struct ZoomableImage: View {
                     .gesture(magnification)
                     .simultaneousGesture(scale > 1 ? pan : nil)
                     .onTapGesture(count: 2) { toggleZoom() }
-            case .failure:
+            } else if failed {
                 Image(systemName: "photo")
                     .font(.system(size: 44))
                     .foregroundStyle(.white.opacity(0.5))
-            default:
+            } else {
                 ProgressView().tint(.white)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .task(id: url) { await load() }
+    }
+
+    private func load() async {
+        guard loaded == nil, let target = URL(string: url) else { return }
+        if let image = await ImageCache.shared.image(for: target) {
+            loaded = image
+        } else {
+            failed = true
+        }
     }
 
     private var magnification: some Gesture {

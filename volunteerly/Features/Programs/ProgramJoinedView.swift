@@ -51,7 +51,7 @@ struct ProgramJoinedView: View {
             .frame(maxWidth: .infinity)
             .frame(height: 215)
             .overlay(
-                AsyncImage(url: URL(string: program.bannerImageURL ?? "")) { image in
+                CachedAsyncImage(url: URL(string: program.bannerImageURL ?? "")) { image in
                     image.resizable().aspectRatio(contentMode: .fill)
                 } placeholder: {
                     Rectangle().fill(Color(.systemGray5))

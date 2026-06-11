@@ -189,7 +189,7 @@ struct ProgramDetailView: View {
     private func bannerImage(_ url: String?) -> some View {
         Color.clear
             .overlay(
-                AsyncImage(url: URL(string: url ?? "")) { image in
+                CachedAsyncImage(url: URL(string: url ?? "")) { image in
                     image.resizable().aspectRatio(contentMode: .fill)
                 } placeholder: {
                     Rectangle().fill(Color(.systemGray5))
