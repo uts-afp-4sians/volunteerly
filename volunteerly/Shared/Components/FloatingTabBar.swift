@@ -24,15 +24,20 @@ struct FloatingTabBar: View {
                 }
             }
         }
+        // Pin to the post button's height so the bar — and the capsule centred
+        // in it — sits at the same spot whether or not the "+" is shown. Without
+        // this the taller "+" grew the stack and nudged the icons up on the
+        // Programs tab.
+        .frame(height: 52)
         .padding(.horizontal, 20)
         .padding(.bottom, 6)
     }
 
     private var capsule: some View {
         HStack(spacing: 8) {
-            tabButton(.programs, icon: "magnifyingglass", label: "Programs")
-            tabButton(.bookmarks, icon: "heart.fill", label: "Saved")
-            tabButton(.myPage, icon: "person.fill", label: "Profile")
+            tabButton(.programs, icon: .iconTravelExplore, label: "Programs")
+            tabButton(.bookmarks, icon: .iconFavorite, label: "Saved")
+            tabButton(.myPage, icon: .iconPerson, label: "Profile")
         }
         .padding(.horizontal, 11)
         .padding(.vertical, 5)
@@ -57,13 +62,16 @@ struct FloatingTabBar: View {
         .accessibilityLabel("Post a program")
     }
 
-    private func tabButton(_ tab: TabRouter.Tab, icon name: String, label: String) -> some View {
+    private func tabButton(_ tab: TabRouter.Tab, icon: ImageResource, label: String) -> some View {
         let selected = selection == tab
         return Button {
             selection = tab
         } label: {
-            Image(systemName: name)
-                .font(.system(size: 22, weight: .regular))
+            Image(icon)
+                .renderingMode(.template)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 24, height: 24)
                 // Active glyph is Black/900 over the Brand/100 pill; idle is Black/500.
                 .foregroundStyle(selected ? Color.textPrimary : Color.black500)
                 .frame(width: pillWidth, height: pillHeight)
