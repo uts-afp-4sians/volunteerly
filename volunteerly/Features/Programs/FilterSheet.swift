@@ -18,7 +18,7 @@ struct FilterSheet: View {
                     .padding(.top, 8)
             }
             .padding(.horizontal, 24)
-            .padding(.top, 12)
+            .padding(.top, 24)
             .padding(.bottom, 32)
         }
         .scrollBounceBehavior(.basedOnSize)
