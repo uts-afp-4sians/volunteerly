@@ -175,24 +175,26 @@ struct MyPageView: View {
                     Task { store.profileImageData = try? await newItem?.loadTransferable(type: Data.self) }
                 }
 
-                // Name is read-only and centered; the pencil button sits
-                // directly below it to keep the name truly centred on screen.
-                Text(store.displayName.isEmpty ? "Your name" : store.displayName)
-                    .font(.bodyStrong)
-                    .foregroundStyle(store.displayName.isEmpty ? Theme.textSecondary : Color.textPrimary)
-                    .padding(.top, 6)
+                // Name is read-only; the pencil edit button sits inline to its
+                // left as a leading edit affordance.
+                HStack(spacing: 8) {
+                    Button {
+                        editingName = store.displayName
+                    } label: {
+                        Image(systemName: "pencil")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundStyle(Theme.forest)
+                            .padding(6)
+                            .background(Theme.forest.opacity(0.1), in: Circle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Edit name")
 
-                Button {
-                    editingName = store.displayName
-                } label: {
-                    Image(systemName: "pencil")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundStyle(Theme.forest)
-                        .padding(6)
-                        .background(Theme.forest.opacity(0.1), in: Circle())
+                    Text(store.displayName.isEmpty ? "Your name" : store.displayName)
+                        .font(.bodyStrong)
+                        .foregroundStyle(store.displayName.isEmpty ? Theme.textSecondary : Color.textPrimary)
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Edit name")
+                .padding(.top, 6)
             }
             .frame(maxWidth: .infinity)
 
