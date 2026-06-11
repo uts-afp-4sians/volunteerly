@@ -7,6 +7,12 @@ duplication: ``user_interests.keyword_id`` becomes ``category_id`` (FK to
 ``categories``), mapped through each keyword's parent category, and the
 ``is_interest`` flag is dropped.
 
+Turso notes: Hrana autocommits DDL (no transactional rollback), so the staging
+table is dropped up-front to make re-runs after a partial failure safe. And
+foreign_keys is ON there, so ``is_interest`` must go via native
+``ALTER TABLE … DROP COLUMN`` (SQLite ≥ 3.35) — batch mode would rebuild
+``keywords``, and dropping the old table trips ``program_keywords``'s FK.
+
 Revision ID: c9d0e1f2a3b4
 Revises: b8c9d0e1f2a3
 Create Date: 2026-06-11 18:30:00.000000
@@ -30,6 +36,7 @@ def upgrade() -> None:
     # SQLite/libSQL can't rewrite an FK in place — rebuild the junction. The
     # copy maps each interest keyword to its parent category; INSERT OR IGNORE
     # collapses any two keywords that share a category into one interest row.
+    op.execute("DROP TABLE IF EXISTS user_interests_new")
     op.create_table(
         "user_interests_new",
         sa.Column("user_id", sa.Integer(), nullable=False),
@@ -49,20 +56,15 @@ def upgrade() -> None:
     op.drop_table("user_interests")
     op.rename_table("user_interests_new", "user_interests")
 
-    with op.batch_alter_table("keywords", schema=None) as batch_op:
-        batch_op.drop_column("is_interest")
+    # Native column drop — no table rebuild, FK-safe under enforced FKs.
+    op.execute("ALTER TABLE keywords DROP COLUMN is_interest")
 
 
 def downgrade() -> None:
-    with op.batch_alter_table("keywords", schema=None) as batch_op:
-        batch_op.add_column(
-            sa.Column(
-                "is_interest",
-                sa.Boolean(),
-                nullable=False,
-                server_default="0",
-            )
-        )
+    op.execute(
+        "ALTER TABLE keywords"
+        " ADD COLUMN is_interest BOOLEAN NOT NULL DEFAULT '0'"
+    )
     # Re-flag one keyword per category as the interest mirror (lowest id wins),
     # then point user_interests back at those keywords.
     op.execute(
@@ -73,6 +75,7 @@ def downgrade() -> None:
         )
         """
     )
+    op.execute("DROP TABLE IF EXISTS user_interests_old")
     op.create_table(
         "user_interests_old",
         sa.Column("user_id", sa.Integer(), nullable=False),
