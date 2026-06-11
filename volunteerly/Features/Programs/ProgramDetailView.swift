@@ -196,6 +196,17 @@ struct ProgramDetailView: View {
                     Rectangle().fill(Color(.systemGray5))
                 }
             )
+            // Dark scrim at the top so the white back/share/bookmark controls
+            // stay legible over bright banners (Figma node 227:815).
+            .overlay(alignment: .top) {
+                LinearGradient(
+                    colors: [.black.opacity(0.35), .clear],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .frame(height: 110)
+                .allowsHitTesting(false)
+            }
             .clipped()
             .contentShape(Rectangle())
             .onTapGesture {
@@ -271,12 +282,15 @@ struct ProgramDetailView: View {
         .buttonStyle(.plain)
     }
 
+    /// Top-bar control — a plain white glyph over the banner (Figma node
+    /// 227:815). No chip background; a soft shadow plus the banner's top scrim
+    /// keep it legible against brighter parts of the image.
     private func circleIcon(systemName: String) -> some View {
         Image(systemName: systemName)
             .font(.bodyStrong)
-            .foregroundStyle(Theme.textPrimary)
+            .foregroundStyle(.white)
             .frame(width: 32, height: 32)
-            .background(Color(.systemGray6), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .shadow(color: .black.opacity(0.25), radius: 3, y: 1)
     }
 
     // MARK: - Content
