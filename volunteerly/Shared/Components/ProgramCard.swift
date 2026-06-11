@@ -19,8 +19,7 @@ struct ProgramCard: View {
             // `.fill` aspect ratio can't widen the card past the proposed
             // width (same pattern as the detail banner).
             Color.clear
-                .frame(maxWidth: .infinity)
-                .frame(height: 253)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .overlay(
                     CachedAsyncImage(url: URL(string: program.bannerImageURL ?? "")) { image in
                         image.resizable().aspectRatio(contentMode: .fill)
