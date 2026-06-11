@@ -196,8 +196,8 @@ struct ProgramDetailView: View {
                     Rectangle().fill(Color(.systemGray5))
                 }
             )
-            // Dark scrim at the top so the white back/share/bookmark controls
-            // stay legible over bright banners (Figma node 227:815).
+            // Soft scrim at the top so the glass control chips (back / share /
+            // save) keep separation from bright banners.
             .overlay(alignment: .top) {
                 LinearGradient(
                     colors: [.black.opacity(0.35), .clear],
@@ -222,9 +222,7 @@ struct ProgramDetailView: View {
 
             HStack(spacing: 17) {
                 shareButton
-                circleButton(systemName: (bookmarkStore?.isBookmarked(programId) ?? false) ? "bookmark.fill" : "bookmark") {
-                    bookmarkStore?.toggle(programId)
-                }
+                favoriteButton
                 if isHost {
                     hostMenu
                 }
@@ -261,14 +259,44 @@ struct ProgramDetailView: View {
     private var shareButton: some View {
         if let program = viewModel.program {
             ShareLink(item: shareMessage(for: program)) {
-                circleIcon(systemName: "square.and.arrow.up")
+                circleChip { assetIcon(.iconShare) }
             }
             .buttonStyle(.plain)
         } else {
-            circleButton(systemName: "square.and.arrow.up") {}
-                .disabled(true)
+            circleChip { assetIcon(.iconShare) }
                 .opacity(0.5)
         }
+    }
+
+    /// Heart (save) toggle — Figma CIRCLE-ICON-BUTTON with the favorite glyph.
+    /// Outline when unsaved (the design default); a filled red heart on save
+    /// gives clear feedback. Backed by the same bookmark store as before.
+    private var favoriteButton: some View {
+        let saved = bookmarkStore?.isBookmarked(programId) ?? false
+        return Button {
+            bookmarkStore?.toggle(programId)
+        } label: {
+            circleChip {
+                if saved {
+                    Image(systemName: "heart.fill")
+                        .font(.system(size: 20))
+                        .foregroundStyle(.red)
+                } else {
+                    assetIcon(.iconFavorite)
+                }
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(saved ? "Remove from saved" : "Save")
+    }
+
+    /// A 24pt template asset glyph tinted Black/700 (the Figma icon colour).
+    private func assetIcon(_ resource: ImageResource) -> some View {
+        Image(resource)
+            .resizable()
+            .scaledToFit()
+            .frame(width: 24, height: 24)
+            .foregroundStyle(Theme.textBody)
     }
 
     private func shareMessage(for program: Program) -> String {
@@ -282,15 +310,24 @@ struct ProgramDetailView: View {
         .buttonStyle(.plain)
     }
 
-    /// Top-bar control — a plain white glyph over the banner (Figma node
-    /// 227:815). No chip background; a soft shadow plus the banner's top scrim
-    /// keep it legible against brighter parts of the image.
+    /// Figma CIRCLE-ICON-BUTTON (524:775) — a 44pt frosted-glass circle (white
+    /// 85% + blur, hairline white border, soft drop shadow) holding a centred
+    /// 24pt glyph. Sits over the banner; the material keeps it legible on any image.
+    private func circleChip<Icon: View>(@ViewBuilder _ icon: () -> Icon) -> some View {
+        icon()
+            .frame(width: 44, height: 44)
+            .background(.regularMaterial, in: Circle())
+            .overlay(Circle().strokeBorder(Color.white.opacity(0.5), lineWidth: 0.75))
+            .shadow(color: .black.opacity(0.08), radius: 4, y: 2)
+    }
+
+    /// SF Symbol variant of `circleChip` (back arrow, host ellipsis), Black/700.
     private func circleIcon(systemName: String) -> some View {
-        Image(systemName: systemName)
-            .font(.bodyStrong)
-            .foregroundStyle(.white)
-            .frame(width: 32, height: 32)
-            .shadow(color: .black.opacity(0.25), radius: 3, y: 1)
+        circleChip {
+            Image(systemName: systemName)
+                .font(.system(size: 19, weight: .regular))
+                .foregroundStyle(Theme.textBody)
+        }
     }
 
     // MARK: - Content
