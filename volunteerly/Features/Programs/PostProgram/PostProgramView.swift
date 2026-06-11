@@ -81,8 +81,8 @@ struct PostProgramView: View {
                     // 7. Add images (up to three; the first is the banner, uploaded to R2)
                     imageSection
 
-                    // 9. Commitment (optional)
-                    commitmentFrequencyField
+                    // 9. Commitment duration (optional). Commitment frequency is
+                    // set via the "Repeat" row's recurrence sheet in dateSection.
                     commitmentDurationField
 
                     // Submit button
@@ -142,10 +142,9 @@ struct PostProgramView: View {
         } message: {
             Text(viewModel.errorMessage ?? "")
         }
-        .confirmationDialog(
+        .alert(
             "Discard this program?",
-            isPresented: $showDiscardConfirm,
-            titleVisibility: .visible
+            isPresented: $showDiscardConfirm
         ) {
             Button("Discard Changes", role: .destructive) { dismiss() }
             Button("Keep Editing", role: .cancel) {}
@@ -185,7 +184,7 @@ struct PostProgramView: View {
             case .repeatSelection:
                 // The recurrence sheet carries its own title + custom blue
                 // drag handle (Figma 329:1821), so it isn't wrapped in navSheet.
-                RepeatSelectionView(selectedRepeat: $viewModel.selectedRepeat)
+                RepeatSelectionView(selection: $viewModel.commitmentFrequency)
                     .presentationDetents([.height(450)])
                     .presentationDragIndicator(.hidden)
             }

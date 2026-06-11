@@ -6,11 +6,27 @@ import SwiftUI
 /// `RadioButton` pills (selected = brand-green, others = white outlined),
 /// followed by an italic helper caption. It is presented as a bare sheet with a
 /// custom grey drag handle (Figma 329:1820).
+///
+/// This sheet is the single control for the program's `commitment_frequency`:
+/// "Never" clears it, "Every week" → `.weekly`, "Every month" → `.monthly`.
+/// (Figma's "Custom" row is omitted — the backend has no representation for it
+/// and there's no custom-rule builder yet; re-add it once one exists.)
 struct RepeatSelectionView: View {
-    @Binding var selectedRepeat: String
+    @Binding var selection: CommitmentFrequency?
     @Environment(\.dismiss) private var dismiss
 
-    private let options = ["Never", "Every week", "Every month", "Custom"]
+    /// Sheet rows in display order, paired with the value each persists. Shared
+    /// with the form's "Repeat" row (`label(for:)`) so the two never drift.
+    static let choices: [(label: String, value: CommitmentFrequency?)] = [
+        ("Never", nil),
+        ("Every week", .weekly),
+        ("Every month", .monthly),
+    ]
+
+    /// Display label for a stored frequency, used by the collapsed "Repeat" row.
+    static func label(for value: CommitmentFrequency?) -> String {
+        choices.first { $0.value == value }?.label ?? "Never"
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -23,9 +39,9 @@ struct RepeatSelectionView: View {
                 .padding(.bottom, 20)
 
             VStack(spacing: 16) {
-                ForEach(options, id: \.self) { option in
-                    RadioButton(title: option, isSelected: selectedRepeat == option) {
-                        selectedRepeat = option
+                ForEach(Self.choices, id: \.label) { choice in
+                    RadioButton(title: choice.label, isSelected: selection == choice.value) {
+                        selection = choice.value
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { dismiss() }
                     }
                 }
@@ -60,7 +76,7 @@ struct RepeatSelectionView: View {
 #Preview {
     Color.white
         .sheet(isPresented: .constant(true)) {
-            RepeatSelectionView(selectedRepeat: .constant("Never"))
+            RepeatSelectionView(selection: .constant(nil))
                 .presentationDetents([.height(450)])
                 .presentationDragIndicator(.hidden)
         }

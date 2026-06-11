@@ -226,7 +226,7 @@ extension PostProgramView {
                     .foregroundStyle(Theme.textPrimary)
                 Spacer(minLength: 12)
                 HStack(spacing: 4) {
-                    Text(viewModel.selectedRepeat)
+                    Text(RepeatSelectionView.label(for: viewModel.commitmentFrequency))
                         .font(.buttonLabel)
                         .foregroundStyle(Theme.textPrimary)
                     Image(systemName: "chevron.right")
@@ -490,22 +490,6 @@ extension PostProgramView {
     }
 
     // MARK: Commitment
-
-    var commitmentFrequencyField: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            optionalLabel("Commitment frequency")
-            FlowLayout(spacing: 12) {
-                ForEach(CommitmentFrequency.allCases) { frequency in
-                    FilterChip(
-                        title: frequency.label,
-                        isSelected: viewModel.commitmentFrequency == frequency
-                    ) {
-                        viewModel.commitmentFrequency = (viewModel.commitmentFrequency == frequency) ? nil : frequency
-                    }
-                }
-            }
-        }
-    }
 
     var commitmentDurationField: some View {
         VStack(alignment: .leading, spacing: 8) {

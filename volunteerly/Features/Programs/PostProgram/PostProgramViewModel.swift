@@ -50,7 +50,6 @@ final class PostProgramViewModel {
     var pickedLocation: PickedLocation?
     var startDate: Date
     var endDate: Date
-    var selectedRepeat: String = "Never" // Default recurrence (Figma 329:1821)
 
     // MARK: - Network-backed state
 
@@ -80,7 +79,6 @@ final class PostProgramViewModel {
             || maxVolunteers != Self.defaultMaxVolunteers
             || commitmentFrequency != nil
             || commitmentDuration != nil
-            || selectedRepeat != "Never"
             || startDate != initialStartDate
             || endDate != initialEndDate
             || selectedCategoryId != baselineCategoryId
