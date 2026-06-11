@@ -137,7 +137,8 @@ struct NewPostView: View {
             .foregroundStyle(Theme.textPrimary)
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
-            .background(Color(.systemGray6), in: Capsule())
+            .background(Theme.surface, in: Capsule())
+            .overlay(Capsule().stroke(Theme.divider, lineWidth: 1))
         }
         .buttonStyle(.plain)
         .disabled(drafts.isEmpty)
@@ -151,7 +152,11 @@ struct NewPostView: View {
 
     private var titleSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            fieldLabel("Title")
+            HStack(alignment: .firstTextBaseline) {
+                fieldLabel("Title")
+                Spacer(minLength: 8)
+                counter(count: title.count, limit: titleLimit, isError: title.count > titleLimit)
+            }
             TextField(text: $title) {
                 Text("e.g. Best moment from your last event").italic()
             }
@@ -159,7 +164,9 @@ struct NewPostView: View {
                 .padding(.horizontal, 16)
                 .padding(.vertical, 14)
                 .background(Color(.systemGray6), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-            helper(text: titleHelper.text, isError: titleHelper.isError)
+            if titleHelper.isError {
+                helper(text: titleHelper.text, isError: true)
+            }
         }
     }
 
@@ -167,7 +174,11 @@ struct NewPostView: View {
 
     private var descriptionSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            fieldLabel("Description")
+            HStack(alignment: .firstTextBaseline) {
+                fieldLabel("Description")
+                Spacer(minLength: 8)
+                counter(count: postBody.count, limit: bodyLimit, isError: postBody.count > bodyLimit)
+            }
             TextEditor(text: $postBody)
                 .font(.bodyText)
                 .frame(minHeight: 120, alignment: .topLeading)
@@ -184,14 +195,8 @@ struct NewPostView: View {
                             .allowsHitTesting(false)
                     }
                 }
-            HStack(alignment: .firstTextBaseline) {
-                if postBody.count > bodyLimit {
-                    helper(text: "Keep it under \(bodyLimit) characters", isError: true)
-                }
-                Spacer(minLength: 8)
-                Text("\(postBody.count)/\(bodyLimit)")
-                    .font(.buttonLabel)
-                    .foregroundStyle(postBody.count > bodyLimit ? Color.fieldError : Theme.textPrimary)
+            if postBody.count > bodyLimit {
+                helper(text: "Keep it under \(bodyLimit) characters", isError: true)
             }
         }
     }
@@ -211,13 +216,13 @@ struct NewPostView: View {
                             .scaledToFill()
                     } else {
                         VStack(spacing: 12) {
-                            Image(systemName: "camera")
+                            Image(systemName: "camera.fill")
                                 .font(.system(size: 36))
-                                .foregroundStyle(Theme.textSecondary)
+                                .foregroundStyle(Theme.black300)
                             Text("Tap to upload\nimage")
-                                .font(.labelItalic)
+                                .font(.bodyText)
                                 .multilineTextAlignment(.center)
-                                .foregroundStyle(Theme.textSecondary)
+                                .foregroundStyle(Theme.black500)
                         }
                     }
                 }
@@ -282,6 +287,13 @@ struct NewPostView: View {
         Text(text)
             .font(.buttonLabel)
             .foregroundStyle(isError ? Color.fieldError : Theme.textSecondary)
+    }
+
+    /// The `count/limit` chip shown beside a field label; turns red once over.
+    private func counter(count: Int, limit: Int, isError: Bool) -> some View {
+        Text("\(count)/\(limit)")
+            .font(.buttonLabel)
+            .foregroundStyle(isError ? Color.fieldError : Theme.placeholder)
     }
 
     // MARK: Actions

@@ -2,9 +2,10 @@ import PhotosUI
 import SwiftUI
 
 /// The Drafts browser: a two-column grid of the board drafts saved for a program
-/// (capped at three). Tapping a card opens `DraftDetailView`; the leading arrow
-/// dismisses back to the composer. Matches Figma `group-4-prototype` node
-/// 329-605 (left frame).
+/// (capped at three). Tapping a card opens `DraftDetailView`; the green pencil
+/// in each card's bottom-right corner jumps straight to `DraftEditView`. The
+/// leading arrow dismisses back to the composer. Matches Figma
+/// `group-4-prototype` node 329-605 (left frame).
 struct DraftsView: View {
     let drafts: [PostDraft]
     let viewModel: MemberBoardViewModel
@@ -54,18 +55,45 @@ struct DraftsView: View {
     private var grid: some View {
         LazyVGrid(columns: columns, spacing: 11) {
             ForEach(drafts) { draft in
-                NavigationLink {
-                    DraftDetailView(
-                        draft: draft,
-                        viewModel: viewModel,
-                        onPosted: onPosted
-                    )
-                } label: {
-                    DraftCard(draft: draft)
+                // Two sibling links: the card opens the preview, the pencil
+                // jumps straight to editing. Siblings (not nested) so each
+                // owns its own hit area.
+                ZStack(alignment: .bottomTrailing) {
+                    NavigationLink {
+                        DraftDetailView(
+                            draft: draft,
+                            viewModel: viewModel,
+                            onPosted: onPosted
+                        )
+                    } label: {
+                        DraftCard(draft: draft)
+                    }
+                    .buttonStyle(.plain)
+
+                    NavigationLink {
+                        DraftEditView(
+                            draft: draft,
+                            viewModel: viewModel,
+                            onPosted: onPosted
+                        )
+                    } label: {
+                        editPencil
+                    }
+                    .buttonStyle(.plain)
+                    .padding(10)
                 }
-                .buttonStyle(.plain)
             }
         }
+    }
+
+    /// Green circular pencil overlaying a card's bottom-right corner.
+    private var editPencil: some View {
+        Image(systemName: "pencil")
+            .font(.system(size: 13, weight: .semibold))
+            .foregroundStyle(Theme.onBrand)
+            .frame(width: 28, height: 28)
+            .background(Theme.brandPrimary, in: Circle())
+            .accessibilityLabel("Edit draft")
     }
 
     private var emptyState: some View {
