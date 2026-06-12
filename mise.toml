@@ -10,6 +10,7 @@ experimental = true
 [tools]
 uv = "latest"
 turso = "latest"
+bun = "latest"
 "spm:apple/swift-openapi-generator" = "1.12.2"
 
 [tasks."gen:api"]
@@ -29,3 +30,23 @@ swift-openapi-generator generate api/openapi.json \
   --config openapi-generator-config.yaml \
   --output-directory volunteerly/Core/Networking/Generated
 """
+
+[tasks."web:install"]
+description = "Install web (landing page) dependencies with bun"
+dir = "web"
+run = "bun install"
+
+[tasks."web:dev"]
+description = "Run the web landing page dev server"
+dir = "web"
+run = "bun run dev"
+
+[tasks."web:build"]
+description = "Build the web landing page (GitHub Pages)"
+dir = "web"
+run = "bun run build"
+
+[tasks."web:preview"]
+description = "Preview the built web landing page"
+dir = "web"
+run = "bun run preview"
