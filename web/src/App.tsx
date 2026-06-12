@@ -1,7 +1,7 @@
 const SUPPORT_EMAIL = "gracefullight.dev@gmail.com";
 const PRIVACY_URL =
   "https://sites.google.com/view/volunteerly-privacypolicy/home";
-const APP_STORE_URL = "#"; // TODO: replace with the App Store listing URL once live.
+const APP_STORE_URL = "https://testflight.apple.com/join/uSjC9ax3";
 
 const features = [
   {
@@ -122,9 +122,11 @@ function Hero() {
           <div className="mt-8 flex flex-col items-center gap-4 sm:flex-row md:justify-start">
             <a
               href={APP_STORE_URL}
+              target="_blank"
+              rel="noreferrer"
               className="inline-flex items-center justify-center rounded-full bg-brand-dark px-7 py-3 text-base font-semibold text-on-brand transition-colors hover:bg-brand focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-dark"
             >
-              Download on the App Store
+              Join the TestFlight beta
             </a>
             <a
               href="#features"
