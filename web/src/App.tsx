@@ -137,14 +137,28 @@ function Hero() {
           </div>
         </div>
         <div className="flex justify-center md:justify-end">
-          <div className="rounded-[2rem] bg-page p-8 shadow-xl shadow-brand-dark/10 ring-1 ring-ink-100">
+          <div className="w-full max-w-xs rounded-[2rem] bg-page p-8 text-center shadow-xl shadow-brand-dark/10 ring-1 ring-ink-100">
             <img
               src="./icon.png"
               alt="Volunteerly app icon: a hand cradling the Earth"
               width={220}
               height={220}
-              className="h-44 w-44 sm:h-56 sm:w-56"
+              className="mx-auto h-28 w-28 sm:h-32 sm:w-32"
             />
+            <div className="mt-6 border-t border-ink-100 pt-6">
+              <div className="mx-auto w-fit rounded-2xl bg-page p-3 ring-1 ring-ink-100">
+                <img
+                  src="./testflight-qr.png"
+                  alt="QR code to join the Volunteerly beta on TestFlight"
+                  width={160}
+                  height={160}
+                  className="h-40 w-40"
+                />
+              </div>
+              <p className="mt-4 text-sm leading-relaxed text-ink-700">
+                Scan to join
+              </p>
+            </div>
           </div>
         </div>
       </div>
