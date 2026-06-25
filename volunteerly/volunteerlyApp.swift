@@ -30,6 +30,7 @@ struct volunteerlyApp: App {
                 case .main:       MainTabView()
                 }
             }
+            .preferredColorScheme(.light)
             .transition(.opacity)
             .animation(.easeInOut(duration: 0.35), value: router.route)
             .keyboardDismissable()
