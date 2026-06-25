@@ -1,7 +1,8 @@
 from collections.abc import Generator
 
-from sqlalchemy import MetaData, create_engine, make_url
+from sqlalchemy import URL, MetaData, create_engine, make_url
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
+from sqlalchemy.pool import NullPool, Pool
 
 from src.lib.config import settings
 
@@ -25,30 +26,55 @@ class Base(DeclarativeBase):
 # (sqlite+libsql) has no async dialect; FastAPI runs sync routes in a threadpool.
 #   * local dev / tests → sqlite:// (stdlib pysqlite)
 #   * production        → sqlite+libsql:// (Turso)
-db_url = make_url(settings.DATABASE_URL)
-connect_args: dict[str, object] = {}
+def _engine_config(
+    url: URL,
+) -> tuple[URL, dict[str, object], type[Pool] | None]:
+    """Resolve ``(url, connect_args, poolclass)`` for ``create_engine``.
 
-if db_url.drivername == "sqlite+libsql" and db_url.host:
-    # Remote Turso. The sqlalchemy-libsql 0.2.0 dialect does NOT forward the
-    # URL's `authToken` query param to libsql_experimental.connect(), so Turso
-    # receives an empty token and rejects the connection (401). Pass it
-    # explicitly as `auth_token` and strip it from the URL so the dialect builds
-    # a clean https:// URL. (`secure=true` stays, selecting https.)
-    auth_token = db_url.query.get("authToken")
-    if auth_token:
-        connect_args["auth_token"] = auth_token
-        db_url = db_url.set(
-            query={k: v for k, v in db_url.query.items() if k != "authToken"}
-        )
-elif db_url.get_backend_name() == "sqlite":
-    # Allow pooled SQLite connections to cross FastAPI's threadpool boundaries.
-    connect_args["check_same_thread"] = False
+    Kept pure (no settings/engine access) so the pool choice is unit-testable
+    without a live database — see ``tests/test_database.py``.
+    """
+    connect_args: dict[str, object] = {}
+    # Default pool is dialect-chosen; only the remote-libsql branch overrides it.
+    poolclass: type[Pool] | None = None
+
+    if url.drivername == "sqlite+libsql" and url.host:
+        # Remote Turso. The sqlalchemy-libsql 0.2.0 dialect does NOT forward the
+        # URL's `authToken` query param to libsql_experimental.connect(), so
+        # Turso receives an empty token and rejects the connection (401). Pass
+        # it explicitly as `auth_token` and strip it from the URL so the dialect
+        # builds a clean https:// URL. (`secure=true` stays, selecting https.)
+        auth_token = url.query.get("authToken")
+        if auth_token:
+            connect_args["auth_token"] = auth_token
+            url = url.set(
+                query={k: v for k, v in url.query.items() if k != "authToken"}
+            )
+        # The libsql dialect defaults to StaticPool — a single connection shared
+        # by the whole process. FastAPI runs sync routes in a threadpool, so
+        # concurrent requests then race on that one libsql connection and the
+        # pool raises "can't 'checkout' a detached connection fairy" / "'NoneType'
+        # has no attribute 'commit'" intermittently (HTTP 500). NullPool opens a
+        # fresh connection per checkout and closes it on return — safe across
+        # threads, and cheap because libsql is an HTTP-backed remote DB with no
+        # real pool benefit.
+        poolclass = NullPool
+    elif url.get_backend_name() == "sqlite":
+        # Allow pooled SQLite connections to cross FastAPI's threadpool
+        # boundaries.
+        connect_args["check_same_thread"] = False
+
+    return url, connect_args, poolclass
+
+
+db_url, connect_args, poolclass = _engine_config(make_url(settings.DATABASE_URL))
 
 engine = create_engine(
     db_url,
     echo=settings.PROJECT_ENV == "local",
     pool_pre_ping=True,
     connect_args=connect_args,
+    **({"poolclass": poolclass} if poolclass is not None else {}),
 )
 
 # Session factory
